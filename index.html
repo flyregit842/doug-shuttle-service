@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>道格機場接送 - 線上預約</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+        
+        .form-container {
+            padding: 30px 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .required {
+            color: #e74c3c;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            height: 100px;
+        }
+        
+        .service-type-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .payment-type-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .option-group {
+            position: relative;
+        }
+        
+        .option-group input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .option-group label {
+            display: block;
+            padding: 15px 10px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .option-group input[type="radio"]:checked + label {
+            border-color: #4CAF50;
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .time-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result-message {
+            display: none;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .system-info {
+            background: #e7f3ff;
+            border: 1px solid #bee5ff;
+            color: #055160;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .form-container {
+                padding: 20px 15px;
+            }
+            
+            .service-type-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .payment-type-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .time-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 道格機場接送</h1>
+            <p>專業、安全、準時的接送服務</p>
+        </div>
+        
+        <div class="form-container">
+            <div class="system-info">
+                📱 測試版本 v2.0 | 適用於手機、平板、電腦
+            </div>
+            
+            <div id="resultMessage" class="result-message"></div>
+            
+            <form id="bookingForm">
+                <div class="form-group">
+                    <label>服務項目 <span class="required">*</span></label>
+                    <div class="service-type-grid">
+                        <div class="option-group">
+                            <input type="radio" id="departure" name="serviceType" value="送機" checked>
+                            <label for="departure">✈️ 送機</label>
+                        </div>
+                        <div class="option-group">
+                            <input type="radio" id="arrival" name="serviceType" value="接機">
+                            <label for="arrival">🛬 接機</label>
+                        </div>
+                        <div class="option-group">
+                            <input type="radio" id="other" name="serviceType" value="其他">
+                            <label for="other">🚗 其他</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="companyName">公司名稱 <span class="required">*</span></label>
+                    <input type="text" id="companyName" name="companyName" required placeholder="請輸入您的公司名稱">
+                    <div class="error-message" id="companyName-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="department">部門 <span class="required">*</span></label>
+                    <input type="text" id="department" name="department" required placeholder="請輸入部門名稱">
+                    <div class="error-message" id="department-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">手機號碼 <span class="required">*</span></label>
+                    <input type="tel" id="phone" name="phone" required placeholder="例：0912345678" maxlength="10">
+                    <div class="error-message" id="phone-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="name">姓名 <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" required placeholder="請輸入您的姓名">
+                    <div class="error-message" id="name-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <div class="time-group">
+                        <div>
+                            <label for="date">日期 <span class="required">*</span></label>
+                            <input type="date" id="date" name="date" required>
+                            <div class="error-message" id="date-error"></div>
+                        </div>
+                        <div>
+                            <label for="time">時間 <span class="required">*</span></label>
+                            <input type="time" id="time" name="time" required>
+                            <div class="error-message" id="time-error"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="flight">航班 <span class="required">*</span></label>
+                    <input type="text" id="flight" name="flight" required placeholder="例：BR189、CI106" style="text-transform: uppercase;">
+                    <div class="error-message" id="flight-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="pickupLocation">上車點 <span class="required">*</span></label>
+                    <input type="text" id="pickupLocation" name="pickupLocation" required placeholder="詳細地址或明確地標">
+                    <div class="error-message" id="pickupLocation-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="dropoffLocation">下車點 <span class="required">*</span></label>
+                    <input type="text" id="dropoffLocation" name="dropoffLocation" required placeholder="目的地地址">
+                    <div class="error-message" id="dropoffLocation-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">備註</label>
+                    <textarea id="notes" name="notes" placeholder="特殊需求、注意事項等..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>費用支付 <span class="required">*</span></label>
+                    <div class="payment-type-grid">
+                        <div class="option-group">
+                            <input type="radio" id="credit" name="paymentType" value="簽單" checked>
+                            <label for="credit">💳 簽單</label>
+                        </div>
+                        <div class="option-group">
+                            <input type="radio" id="cash" name="paymentType" value="現金">
+                            <label for="cash">💰 現金</label>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" name="amount" value="">
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    📋 立即預約
+                </button>
+            </form>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>正在處理您的預約...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API 設定 - 您的 Google Apps Script Web App URL
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz1bFmUzvXmTYKtjTyjqpDDntOXsxBmsadRl7V-UG3TsuIqVFnX06ECejjV80fGu7RYNg/exec';
+        
+        // 取得表單元素
+        const form = document.getElementById('bookingForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const resultMessage = document.getElementById('resultMessage');
+        
+        // 即時驗證
+        form.addEventListener('input', function(e) {
+            validateField(e.target);
+        });
+        
+        // 欄位驗證函數
+        function validateField(field) {
+            const errorElement = document.getElementById(field.name + '-error');
+            let isValid = true;
+            let errorMessage = '';
+            
+            // 重設樣式
+            field.style.borderColor = '#e0e0e0';
+            if (errorElement) errorElement.style.display = 'none';
+            
+            // 必填檢查
+            if (field.required && !field.value.trim()) {
+                isValid = false;
+                errorMessage = '此欄位為必填';
+            }
+            
+            // 特定欄位驗證
+            switch (field.name) {
+                case 'phone':
+                    if (field.value && !isValidPhone(field.value)) {
+                        isValid = false;
+                        errorMessage = '請輸入有效的手機號碼 (例：0912345678)';
+                    }
+                    break;
+                case 'date':
+                    if (field.value && new Date(field.value) < new Date().setHours(0,0,0,0)) {
+                        isValid = false;
+                        errorMessage = '日期不能是過去時間';
+                    }
+                    break;
+                case 'flight':
+                    if (field.value && !isValidFlight(field.value)) {
+                        isValid = false;
+                        errorMessage = '請輸入有效的航班號（如：BR189）';
+                    }
+                    break;
+                case 'companyName':
+                    if (field.value && field.value.length < 2) {
+                        isValid = false;
+                        errorMessage = '公司名稱至少需要2個字元';
+                    }
+                    break;
+                case 'name':
+                    if (field.value && field.value.length < 2) {
+                        isValid = false;
+                        errorMessage = '姓名至少需要2個字元';
+                    }
+                    break;
+            }
+            
+            // 顯示錯誤
+            if (!isValid && errorElement) {
+                field.style.borderColor = '#e74c3c';
+                errorElement.textContent = errorMessage;
+                errorElement.style.display = 'block';
+            }
+            
+            return isValid;
+        }
+        
+        // 手機號碼驗證
+        function isValidPhone(phone) {
+            const phoneRegex = /^09\d{8}$/;
+            return phoneRegex.test(phone.replace(/\s+/g, ''));
+        }
+        
+        // 航班號驗證
+        function isValidFlight(flight) {
+            const flightRegex = /^[A-Z]{2,3}\d{3,4}$/i;
+            return flightRegex.test(flight.replace(/\s+/g, ''));
+        }
+        
+        // 表單提交處理
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // 全表單驗證
+            let isFormValid = true;
+            const formData = new FormData(form);
+            
+            const requiredFields = ['serviceType', 'companyName', 'department', 'phone', 'name', 'date', 'time', 'flight', 'pickupLocation', 'dropoffLocation', 'paymentType'];
+            
+            for (const fieldName of requiredFields) {
+                const field = document.querySelector(`[name="${fieldName}"]`);
+                if (field && !validateField(field)) {
+                    isFormValid = false;
+                }
+            }
+            
+            if (!isFormValid) {
+                showMessage('請檢查並修正表單中的錯誤', 'error');
+                return;
+            }
+            
+            // 顯示載入狀態
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            form.style.display = 'none';
+            resultMessage.style.display = 'none';
+            
+            try {
+                // 準備參數
+                const params = new URLSearchParams();
+                params.append('action', 'create');
+                
+                for (let [key, value] of formData.entries()) {
+                    params.append(key, value);
+                }
+                
+                // 發送請求
+                const response = await fetch(API_URL + '?' + params.toString(), {
+                    method: 'GET'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 成功處理
+                    const serviceType = formData.get('serviceType');
+                    const name = formData.get('name');
+                    const date = formData.get('date');
+                    const time = formData.get('time');
+                    const flight = formData.get('flight');
+                    
+                    showMessage(
+                        `✅ 預約成功！<br><br>` +
+                        `<strong>預約資訊</strong><br>` +
+                        `服務：${serviceType}<br>` +
+                        `姓名：${name}<br>` +
+                        `日期：${date} ${time}<br>` +
+                        `航班：${flight}<br><br>` +
+                        `我們將盡快與您聯繫確認。`,
+                        'success'
+                    );
+                    form.reset();
+                    setMinDate(); // 重設最小日期
+                } else {
+                    throw new Error(result.error || '預約失敗');
+                }
+                
+            } catch (error) {
+                console.error('預約錯誤:', error);
+                showMessage(
+                    `❌ 預約失敗，請稍後再試或直接聯繫我們。<br>` +
+                    `錯誤：${error.message}`,
+                    'error'
+                );
+            } finally {
+                // 恢復表單狀態
+                loading.style.display = 'none';
+                form.style.display = 'block';
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // 顯示訊息
+        function showMessage(message, type) {
+            resultMessage.innerHTML = message;
+            resultMessage.className = `result-message ${type}`;
+            resultMessage.style.display = 'block';
+            resultMessage.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 設定最小日期為今天
+        function setMinDate() {
+            const today = new Date();
+            const dateString = today.toISOString().split('T')[0];
+            document.getElementById('date').min = dateString;
+        }
+        
+        // 航班號自動大寫
+        document.getElementById('flight').addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+        
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            setMinDate();
+            console.log('道格機場接送預約系統 v2.0 已載入');
+        });
+        
+        // 手機號碼格式化
+        document.getElementById('phone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // 只保留數字
+            if (value.length > 10) {
+                value = value.slice(0, 10);
+            }
+            e.target.value = value;
+        });
+        
+        // 防止表單重複提交
+        let isSubmitting = false;
+        form.addEventListener('submit', function(e) {
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
+            }
+            isSubmitting = true;
+            
+            setTimeout(() => {
+                isSubmitting = false;
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
