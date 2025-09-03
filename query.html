@@ -1,0 +1,501 @@
+// 機場接送預約系統 - Google Apps Script 安全強化版
+// ===== 安全設定區域 =====
+const SECURITY_CONFIG = {
+  // 允許的來源網域
+  ALLOWED_ORIGINS: [
+    'https://flyregit842.github.io/doug-shuttle-service',
+    'https://flyregit842.github.io/doug-shuttle-service/',
+    'https://flyregit842.github.io/doug-shuttle-service/index.html',
+    'https://flyregit842.github.io/doug-shuttle-service/query.html',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'https://localhost'
+  ],
+  
+  // API調用限制
+  RATE_LIMITS: {
+    MAX_REQUESTS_PER_HOUR: 50,        // 每小時最大請求數
+    MAX_BOOKINGS_PER_PHONE: 5,       // 每個手機號每日最大預約數
+    MIN_INTERVAL_SECONDS: 10         // 最小請求間隔（秒）
+  },
+  
+  // 手機號碼白名單（可選）
+  PHONE_WHITELIST_ENABLED: false,
+  PHONE_WHITELIST: [
+    // '09xxxxxxxx' // 加入信任的手機號碼
+  ]
+};
+
+// ===== 配置區域 =====
+const SPREADSHEET_ID = '1J8wuDVtj2U54O-6VGXmGz1x3JGld4cWYiyYN5bED1gQ';
+const MAIN_SHEET_NAME = 'Sheet1';
+const SECURITY_LOG_SHEET = 'SecurityLog';
+
+// ===== 安全檢查函數 =====
+function securityCheck(e, action) {
+  const timestamp = new Date();
+  const clientIP = getClientIP(e);
+  const userAgent = e.headers?.['User-Agent'] || 'Unknown';
+  const referer = e.headers?.Referer || '';
+  
+  console.log('=== 安全檢查 ===');
+  console.log('來源IP:', clientIP);
+  console.log('User Agent:', userAgent);
+  console.log('Referer:', referer);
+  console.log('Action:', action);
+  
+  // 1. 檢查來源網域
+  if (!isAllowedOrigin(referer)) {
+    logSecurityEvent('BLOCKED_ORIGIN', { referer, clientIP, userAgent });
+    throw new Error('未授權的訪問來源');
+  }
+  
+  // 2. 檢查機器人特徵
+  if (isLikelyBot(userAgent)) {
+    logSecurityEvent('SUSPECTED_BOT', { userAgent, clientIP });
+    throw new Error('疑似機器人訪問');
+  }
+  
+  // 3. 檢查請求頻率
+  if (!checkRateLimit(clientIP)) {
+    logSecurityEvent('RATE_LIMITED', { clientIP, userAgent });
+    throw new Error('請求過於頻繁，請稍後再試');
+  }
+  
+  return true;
+}
+
+function isAllowedOrigin(referer) {
+  if (!referer) return false;
+  
+  // 檢查是否來自您的GitHub Pages網域（放寬檢查）
+  if (referer.includes('flyregit842.github.io/doug-shuttle-service')) {
+    return true;
+  }
+  
+  // 本地開發環境
+  if (referer.includes('localhost') || referer.includes('127.0.0.1')) {
+    return true;
+  }
+  
+  return false;
+}
+
+function isLikelyBot(userAgent) {
+  const botPatterns = [
+    /bot/i, /crawler/i, /spider/i, /scraper/i,
+    /curl/i, /wget/i, /python/i, /java/i
+  ];
+  
+  return botPatterns.some(pattern => pattern.test(userAgent));
+}
+
+function checkRateLimit(clientIP) {
+  const now = new Date().getTime();
+  const cacheKey = `rate_limit_${clientIP}`;
+  
+  try {
+    const cache = CacheService.getScriptCache();
+    const lastRequest = cache.get(cacheKey);
+    
+    if (lastRequest) {
+      const timeDiff = (now - parseInt(lastRequest)) / 1000;
+      if (timeDiff < SECURITY_CONFIG.RATE_LIMITS.MIN_INTERVAL_SECONDS) {
+        return false;
+      }
+    }
+    
+    cache.put(cacheKey, now.toString(), 3600); // 1小時過期
+    return true;
+  } catch (error) {
+    console.warn('Rate limit check failed:', error);
+    return true; // 如果檢查失敗，允許通過
+  }
+}
+
+function getClientIP(e) {
+  // Google Apps Script 無法直接獲取真實IP，但可以記錄
+  return e.headers?.['X-Forwarded-For'] || 
+         e.headers?.['X-Real-IP'] || 
+         'Unknown';
+}
+
+function logSecurityEvent(eventType, details) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let securitySheet = spreadsheet.getSheetByName(SECURITY_LOG_SHEET);
+    
+    // 如果安全日誌表不存在，創建它
+    if (!securitySheet) {
+      securitySheet = spreadsheet.insertSheet(SECURITY_LOG_SHEET);
+      securitySheet.getRange(1, 1, 1, 5).setValues([
+        ['時間', '事件類型', '詳情', 'IP', 'User Agent']
+      ]);
+    }
+    
+    securitySheet.appendRow([
+      new Date().toLocaleString('zh-TW'),
+      eventType,
+      JSON.stringify(details),
+      details.clientIP || 'Unknown',
+      details.userAgent || 'Unknown'
+    ]);
+  } catch (error) {
+    console.error('記錄安全事件失敗:', error);
+  }
+}
+
+// ===== 強化版主要處理函數 =====
+function doPost(e) {
+  try {
+    console.log('=== 收到POST請求 ===');
+    
+    // 安全檢查
+    securityCheck(e, 'POST');
+    
+    if (!e.postData || !e.postData.contents) {
+      throw new Error('無效的請求資料');
+    }
+    
+    const requestData = JSON.parse(e.postData.contents);
+    console.log('解析後的資料:', requestData);
+    
+    // 額外的資料驗證
+    validateRequestData(requestData);
+    
+    let result;
+    switch (requestData.action) {
+      case 'createBooking':
+        result = createBookingSecure(requestData);
+        break;
+      case 'getBookingsByPhone':
+        result = getBookingsByPhone(requestData.phone);
+        break;
+      case 'getUserDataByPhone':
+        result = getUserDataByPhone(requestData.phone);
+        break;
+      default:
+        throw new Error('未知的action: ' + requestData.action);
+    }
+    
+    return result;
+    
+  } catch (error) {
+    console.error('請求處理錯誤:', error);
+    
+    // 記錄錯誤（不包含敏感資訊）
+    logSecurityEvent('REQUEST_ERROR', {
+      error: error.message,
+      clientIP: getClientIP(e),
+      userAgent: e.headers?.['User-Agent'] || 'Unknown'
+    });
+    
+    return createResponse({
+      success: false,
+      message: error.message
+    });
+  }
+}
+
+function doGet(e) {
+  try {
+    securityCheck(e, 'GET');
+    
+    return createResponse({
+      success: true,
+      message: '機場接送預約系統 API 正常運作',
+      timestamp: new Date().toISOString(),
+      version: '1.1-secure'
+    });
+  } catch (error) {
+    return createResponse({
+      success: false,
+      message: error.message
+    });
+  }
+}
+
+// ===== 資料驗證函數 =====
+function validateRequestData(data) {
+  if (data.action === 'createBooking') {
+    // 手機號碼格式驗證
+    const phone = data['手機號碼'];
+    if (!phone || !isValidPhoneNumber(phone)) {
+      throw new Error('無效的手機號碼格式');
+    }
+    
+    // 檢查手機號碼白名單（如果啟用）
+    if (SECURITY_CONFIG.PHONE_WHITELIST_ENABLED) {
+      if (!SECURITY_CONFIG.PHONE_WHITELIST.includes(phone)) {
+        throw new Error('手機號碼未在授權清單中');
+      }
+    }
+    
+    // 必填欄位檢查
+    const required = ['服務項目', '公司名稱', '姓名', '日期', '時間', '手機號碼'];
+    for (const field of required) {
+      if (!data[field] || data[field].toString().trim() === '') {
+        throw new Error(`缺少必填欄位: ${field}`);
+      }
+    }
+    
+    // 日期驗證（不能是過去的日期）
+    const bookingDate = new Date(data['日期']);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (bookingDate < today) {
+      throw new Error('預約日期不能是過去的日期');
+    }
+  }
+}
+
+function isValidPhoneNumber(phone) {
+  // 台灣手機格式: 09xxxxxxxx
+  if (/^09\d{8}$/.test(phone)) {
+    return true;
+  }
+  
+  // 國際格式: +國碼 或 00國碼
+  if (/^(\+|00)\d{1,3}\d{6,14}$/.test(phone)) {
+    return true;
+  }
+  
+  return false;
+}
+
+// ===== 強化版預約建立 =====
+function createBookingSecure(data) {
+  try {
+    console.log('=== 建立新預約（安全版） ===');
+    
+    // 檢查每日預約限制
+    const phone = data['手機號碼'];
+    if (!checkDailyBookingLimit(phone)) {
+      throw new Error('今日預約次數已達上限，請明日再試');
+    }
+    
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = spreadsheet.getSheetByName(MAIN_SHEET_NAME);
+    
+    if (!sheet) {
+      throw new Error('找不到工作表: ' + MAIN_SHEET_NAME);
+    }
+    
+    // 清理和驗證資料
+    const rowData = [
+      sanitizeInput(data['服務項目']),
+      sanitizeInput(data['公司名稱']),
+      sanitizeInput(data['部門'] || ''),
+      sanitizeInput(phone),
+      sanitizeInput(data['姓名']),
+      data['日期'],
+      data['時間'],
+      sanitizeInput(data['機場/航班'] || ''),
+      sanitizeInput(data['上車點'] || ''),
+      sanitizeInput(data['下車點'] || ''),
+      sanitizeInput(data['備註'] || ''),
+      sanitizeInput(data['費用支付'] || ''),
+      new Date().toLocaleString('zh-TW', {timeZone: 'Asia/Taipei'}),
+      'active'
+    ];
+    
+    console.log('準備寫入的資料:', rowData);
+    sheet.appendRow(rowData);
+    
+    // 記錄成功的預約
+    logSecurityEvent('BOOKING_CREATED', {
+      phone: phone,
+      service: data['服務項目'],
+      company: data['公司名稱']
+    });
+    
+    console.log('預約建立成功');
+    
+    return createResponse({
+      success: true,
+      message: '預約建立成功',
+      data: {
+        phone: phone,
+        service: data['服務項目'],
+        date: data['日期'],
+        time: data['時間']
+      }
+    });
+    
+  } catch (error) {
+    console.error('建立預約錯誤:', error);
+    return createResponse({
+      success: false,
+      message: '建立預約失敗: ' + error.toString()
+    });
+  }
+}
+
+// ===== 輔助函數 =====
+function sanitizeInput(input) {
+  if (!input) return '';
+  
+  return input.toString()
+    .replace(/[<>]/g, '') // 移除HTML標籤
+    .replace(/javascript:/gi, '') // 移除JavaScript
+    .replace(/on\w+=/gi, '') // 移除事件處理器
+    .trim()
+    .substring(0, 500); // 限制長度
+}
+
+function checkDailyBookingLimit(phone) {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const cacheKey = `daily_bookings_${phone}_${today}`;
+    const cache = CacheService.getScriptCache();
+    
+    let bookingCount = parseInt(cache.get(cacheKey) || '0');
+    
+    if (bookingCount >= SECURITY_CONFIG.RATE_LIMITS.MAX_BOOKINGS_PER_PHONE) {
+      return false;
+    }
+    
+    // 增加計數
+    cache.put(cacheKey, (bookingCount + 1).toString(), 86400); // 24小時
+    return true;
+  } catch (error) {
+    console.warn('Daily booking limit check failed:', error);
+    return true;
+  }
+}
+
+// ===== 其他原有函數保持不變 =====
+function getUserDataByPhone(phone) {
+  try {
+    console.log('=== 查詢用戶資料 ===');
+    console.log('手機號碼:', phone);
+    
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = spreadsheet.getSheetByName(MAIN_SHEET_NAME);
+    
+    if (!sheet) {
+      throw new Error('找不到工作表: ' + MAIN_SHEET_NAME);
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    const userRecords = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (row[3] === phone) {
+        userRecords.push({
+          company: row[1],
+          department: row[2],
+          name: row[4],
+          date: row[5],
+          time: row[6],
+          service: row[0],
+          pickup: row[8],
+          dropoff: row[9]
+        });
+      }
+    }
+    
+    console.log('找到', userRecords.length, '筆記錄');
+    
+    return createResponse({
+      success: true,
+      data: userRecords
+    });
+    
+  } catch (error) {
+    console.error('查詢用戶資料錯誤:', error);
+    return createResponse({
+      success: false,
+      message: '查詢失敗: ' + error.toString()
+    });
+  }
+}
+
+function getBookingsByPhone(phone) {
+  try {
+    console.log('=== 查詢預約記錄 ===');
+    console.log('手機號碼:', phone);
+    
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = spreadsheet.getSheetByName(MAIN_SHEET_NAME);
+    
+    if (!sheet) {
+      throw new Error('找不到工作表: ' + MAIN_SHEET_NAME);
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    const bookings = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (row[3] === phone) {
+        bookings.push({
+          rowIndex: i + 1,
+          service: row[0],
+          company: row[1],
+          department: row[2],
+          phone: row[3],
+          name: row[4],
+          date: row[5],
+          time: row[6],
+          airport: row[7],
+          pickup: row[8],
+          dropoff: row[9],
+          remarks: row[10],
+          payment: row[11],
+          submitTime: row[12],
+          status: row[13] || 'active'
+        });
+      }
+    }
+    
+    console.log('找到', bookings.length, '筆預約記錄');
+    
+    return createResponse({
+      success: true,
+      data: bookings
+    });
+    
+  } catch (error) {
+    console.error('查詢預約記錄錯誤:', error);
+    return createResponse({
+      success: false,
+      message: '查詢失敗: ' + error.toString()
+    });
+  }
+}
+
+function createResponse(data) {
+  const output = ContentService.createTextOutput(JSON.stringify(data));
+  output.setMimeType(ContentService.MimeType.JSON);
+  return output;
+}
+
+// ===== 管理函數 =====
+function clearSecurityLog() {
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const securitySheet = spreadsheet.getSheetByName(SECURITY_LOG_SHEET);
+  
+  if (securitySheet) {
+    securitySheet.clear();
+    securitySheet.getRange(1, 1, 1, 5).setValues([
+      ['時間', '事件類型', '詳情', 'IP', 'User Agent']
+    ]);
+  }
+}
+
+function getSecurityStats() {
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const securitySheet = spreadsheet.getSheetByName(SECURITY_LOG_SHEET);
+  
+  if (!securitySheet) {
+    return '無安全記錄';
+  }
+  
+  const data = securitySheet.getDataRange().getValues();
+  console.log('安全記錄總數:', data.length - 1);
+  
+  return data;
+}

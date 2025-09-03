@@ -3,266 +3,576 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>道格機場接送 - 線上預約</title>
+    <title>機場接送預約系統</title>
+    <meta name="description" content="專業的機場接送預約服務，提供北北基桃送機、接機及其他行程接送">
+    <meta name="author" content="機場接送服務">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #f8f9fa;
             min-height: 100vh;
             padding: 20px;
+            color: #333;
         }
-        
+
         .container {
-            max-width: 500px;
+            max-width: 480px;
             margin: 0 auto;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             overflow: hidden;
-            animation: slideUp 0.6s ease-out;
         }
-        
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
+
         .header {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-        }
-        
-        .header p {
-            opacity: 0.9;
-            font-size: 0.9rem;
-        }
-        
-        .form-container {
-            padding: 30px 20px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #555;
-        }
-        
-        .required {
-            color: #e74c3c;
-        }
-        
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: #fafafa;
-        }
-        
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #4CAF50;
             background: white;
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+            color: #333;
+            padding: 40px 24px;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
         }
-        
-        .form-group textarea {
-            resize: vertical;
-            height: 100px;
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #2c3e50;
         }
-        
-        .service-type-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
+
+        .header p {
+            font-size: 16px;
+            color: #6c757d;
         }
-        
-        .payment-type-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 10px;
+
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 24px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
         }
-        
-        .option-group {
+
+        .progress-step {
+            flex: 1;
+            text-align: center;
             position: relative;
         }
-        
-        .option-group input[type="radio"] {
+
+        .progress-step:not(:last-child)::after {
+            content: '';
             position: absolute;
-            opacity: 0;
+            top: 12px;
+            right: -50%;
+            width: 100%;
+            height: 2px;
+            background: #e9ecef;
+            z-index: 1;
         }
-        
-        .option-group label {
-            display: block;
-            padding: 15px 10px;
-            text-align: center;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            font-size: 0.9rem;
+
+        .progress-step.active::after {
+            background: #2c3e50;
         }
-        
-        .option-group input[type="radio"]:checked + label {
-            border-color: #4CAF50;
-            background: #4CAF50;
+
+        .step-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 0 auto 8px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .progress-step.active .step-number {
+            background: #2c3e50;
             color: white;
         }
-        
-        .time-group {
+
+        .step-label {
+            font-size: 13px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .progress-step.active .step-label {
+            color: #2c3e50;
+        }
+
+        .content {
+            padding: 32px 24px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .service-card {
+            border: 2px solid #e9ecef;
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .service-card:hover {
+            border-color: #2c3e50;
+            box-shadow: 0 8px 16px rgba(44, 62, 80, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .service-card.selected {
+            border-color: #2c3e50;
+            background: #f8f9fa;
+            box-shadow: 0 8px 16px rgba(44, 62, 80, 0.15);
+        }
+
+        .service-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .service-desc {
+            font-size: 16px;
+            color: #6c757d;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 18px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 17px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2c3e50;
+            box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
+        }
+
+        .form-input.loading {
+            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%232c3e50' fill-rule='evenodd'%3E%3Ccircle cx='10' cy='10' r='1'%3E%3Canimate attributeName='r' begin='0s' dur='1.8s' values='1; 4; 1; 1' calcMode='spline' keyTimes='0; .5; .75; 1' keySplines='0.165, 0.84, 0.44, 1; 0.3, 0.61, 0.355, 1; 0.3, 0.61, 0.355, 1' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: calc(100% - 16px) center;
+            background-size: 20px;
+        }
+
+        .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 16px;
         }
-        
-        .error-message {
-            color: #e74c3c;
-            font-size: 0.85rem;
-            margin-top: 5px;
-            display: none;
-        }
-        
-        .submit-btn {
+
+        .form-select {
             width: 100%;
-            padding: 15px;
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
+            padding: 18px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 17px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 18px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 17px;
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .user-history {
+            margin-top: 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid #2c3e50;
+        }
+
+        .history-title {
+            font-size: 16px;
             font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 14px;
+        }
+
+        .history-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-top: 10px;
+            border: 1px solid #e9ecef;
         }
-        
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+
+        .history-item:hover {
+            background: #f8f9fa;
+            border-color: #2c3e50;
         }
-        
-        .submit-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+
+        .history-item:last-child {
+            margin-bottom: 0;
         }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
+
+        .history-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #4CAF50;
+
+        .history-service {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 15px;
+        }
+
+        .history-date {
+            font-size: 13px;
+            color: #6c757d;
+        }
+
+        .loading-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            color: #6c757d;
+            font-size: 15px;
+        }
+
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e9ecef;
+            border-top: 2px solid #2c3e50;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            margin-right: 8px;
         }
-        
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        .result-message {
+
+        .airport-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .airport-option {
+            cursor: pointer;
+        }
+
+        .airport-option input[type="radio"] {
             display: none;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+        }
+
+        .airport-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 16px;
             text-align: center;
+            transition: all 0.3s ease;
+            background: white;
         }
-        
-        .success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+
+        .airport-option:hover .airport-card {
+            border-color: #2c3e50;
+            box-shadow: 0 4px 8px rgba(44, 62, 80, 0.1);
         }
-        
-        .error {
+
+        .airport-option input[type="radio"]:checked + .airport-card {
+            border-color: #2c3e50;
+            background: #f8f9fa;
+            box-shadow: 0 4px 12px rgba(44, 62, 80, 0.15);
+        }
+
+        .airport-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .airport-option input[type="radio"]:checked + .airport-card .airport-name {
+            color: #2c3e50;
+        }
+
+        .payment-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .payment-option {
+            cursor: pointer;
+        }
+
+        .payment-option input[type="radio"] {
+            display: none;
+        }
+
+        .payment-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .payment-option:hover .payment-card {
+            border-color: #2c3e50;
+            box-shadow: 0 4px 8px rgba(44, 62, 80, 0.1);
+        }
+
+        .payment-option input[type="radio"]:checked + .payment-card {
+            border-color: #2c3e50;
+            background: #f8f9fa;
+            box-shadow: 0 4px 12px rgba(44, 62, 80, 0.15);
+        }
+
+        .payment-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .payment-option input[type="radio"]:checked + .payment-card .payment-name {
+            color: #2c3e50;
+        }
+
+        .btn {
+            padding: 18px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #34495e;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(44, 62, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #2c3e50;
+            color: #2c3e50;
+        }
+
+        .btn-outline:hover {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .summary-card {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-left: 4px solid #2c3e50;
+        }
+
+        .summary-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 18px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            font-size: 15px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .summary-value {
+            font-size: 16px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: #28a745;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+        }
+
+        .success-message {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .success-title {
+            font-size: 26px;
+            font-weight: 600;
+            color: #28a745;
+            margin-bottom: 12px;
+        }
+
+        .success-desc {
+            font-size: 16px;
+            color: #6c757d;
+            line-height: 1.5;
+        }
+
+        .booking-id {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .booking-id-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+
+        .booking-id-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            letter-spacing: 1px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .error-message {
             background: #f8d7da;
             color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .system-info {
-            background: #e7f3ff;
-            border: 1px solid #bee5ff;
-            color: #055160;
-            padding: 10px;
+            padding: 12px 16px;
             border-radius: 8px;
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-            text-align: center;
+            margin-top: 8px;
+            font-size: 14px;
+            border-left: 4px solid #dc3545;
         }
-        
+
         @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-            
             .container {
-                border-radius: 15px;
+                margin: 10px;
+                border-radius: 16px;
             }
-            
+
             .header {
-                padding: 20px 15px;
+                padding: 24px 16px;
             }
-            
-            .form-container {
-                padding: 20px 15px;
+
+            .content {
+                padding: 24px 16px;
             }
-            
-            .service-type-grid {
+
+            .form-row {
                 grid-template-columns: 1fr;
-                gap: 8px;
             }
-            
-            .payment-type-grid {
-                grid-template-columns: 1fr;
-                gap: 8px;
-            }
-            
-            .time-group {
+
+            .btn-group {
                 grid-template-columns: 1fr;
             }
         }
@@ -271,348 +581,257 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚗 道格機場接送</h1>
-            <p>專業、安全、準時的接送服務</p>
+            <h1>機場接送預約</h1>
+            <p>專業商務接送服務</p>
         </div>
-        
-        <div class="form-container">
-            <div class="system-info">
-                📱 測試版本 v2.0 | 適用於手機、平板、電腦
+
+        <div class="progress-bar">
+            <div class="progress-step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-label">選擇服務</div>
             </div>
-            
-            <div id="resultMessage" class="result-message"></div>
-            
-            <form id="bookingForm">
+            <div class="progress-step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">填寫資料</div>
+            </div>
+            <div class="progress-step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-label">確認預約</div>
+            </div>
+            <div class="progress-step" data-step="4">
+                <div class="step-number">4</div>
+                <div class="step-label">完成</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- 第一頁：選擇服務 -->
+            <div class="page active" data-page="1">
+                <div class="service-grid">
+                    <div class="service-card" data-service="北北基桃送機">
+                        <div class="service-title">北北基桃送機</div>
+                        <div class="service-desc">從住家或指定地點送至桃園、松山機場</div>
+                    </div>
+                    <div class="service-card" data-service="北北基桃接機">
+                        <div class="service-title">北北基桃接機</div>
+                        <div class="service-desc">從桃園、松山機場接送至住家或指定地點</div>
+                    </div>
+                    <div class="service-card" data-service="其他行程接送">
+                        <div class="service-title">其他行程接送</div>
+                        <div class="service-desc">高鐵、包車、商務等各種接送服務</div>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-outline" onclick="goToQuery()">查詢預約</button>
+                    <button class="btn btn-primary" onclick="nextPage()" disabled id="nextBtn1">下一步</button>
+                </div>
+            </div>
+
+            <!-- 第二頁：填寫資料 -->
+            <div class="page" data-page="2">
                 <div class="form-group">
-                    <label>服務項目 <span class="required">*</span></label>
-                    <div class="service-type-grid">
-                        <div class="option-group">
-                            <input type="radio" id="departure" name="serviceType" value="送機" checked>
-                            <label for="departure">✈️ 送機</label>
-                        </div>
-                        <div class="option-group">
-                            <input type="radio" id="arrival" name="serviceType" value="接機">
-                            <label for="arrival">🛬 接機</label>
-                        </div>
-                        <div class="option-group">
-                            <input type="radio" id="other" name="serviceType" value="其他">
-                            <label for="other">🚗 其他</label>
-                        </div>
+                    <label class="form-label">手機號碼 *</label>
+                    <input type="tel" class="form-input" id="phone" placeholder="請輸入手機號碼" required>
+                    <div id="phoneError" class="error-message hidden">請輸入有效的手機號碼</div>
+                    <div id="loadingIndicator" class="loading-indicator hidden">
+                        <div class="loading-spinner"></div>
+                        <span>查詢歷史資料中...</span>
+                    </div>
+                    <div id="userHistory" class="user-history hidden">
+                        <div class="history-title">選擇歷史資料自動帶入</div>
+                        <div id="historyList"></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="companyName">公司名稱 <span class="required">*</span></label>
-                    <input type="text" id="companyName" name="companyName" required placeholder="請輸入您的公司名稱">
-                    <div class="error-message" id="companyName-error"></div>
+                    <label class="form-label">公司名稱 *</label>
+                    <input type="text" class="form-input" id="company" placeholder="請輸入公司名稱" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="department">部門 <span class="required">*</span></label>
-                    <input type="text" id="department" name="department" required placeholder="請輸入部門名稱">
-                    <div class="error-message" id="department-error"></div>
+                    <label class="form-label">部門</label>
+                    <input type="text" class="form-input" id="department" placeholder="請輸入部門（選填）">
                 </div>
 
                 <div class="form-group">
-                    <label for="phone">手機號碼 <span class="required">*</span></label>
-                    <input type="tel" id="phone" name="phone" required placeholder="例：0912345678" maxlength="10">
-                    <div class="error-message" id="phone-error"></div>
+                    <label class="form-label">聯絡人姓名 *</label>
+                    <input type="text" class="form-input" id="name" placeholder="請輸入聯絡人姓名" required>
                 </div>
 
-                <div class="form-group">
-                    <label for="name">姓名 <span class="required">*</span></label>
-                    <input type="text" id="name" name="name" required placeholder="請輸入您的姓名">
-                    <div class="error-message" id="name-error"></div>
-                </div>
-
-                <div class="form-group">
-                    <div class="time-group">
-                        <div>
-                            <label for="date">日期 <span class="required">*</span></label>
-                            <input type="date" id="date" name="date" required>
-                            <div class="error-message" id="date-error"></div>
-                        </div>
-                        <div>
-                            <label for="time">時間 <span class="required">*</span></label>
-                            <input type="time" id="time" name="time" required>
-                            <div class="error-message" id="time-error"></div>
-                        </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">預約日期 *</label>
+                        <input type="date" class="form-input" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">預約時間 *</label>
+                        <input type="time" class="form-input" id="time" required>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="flight">航班 <span class="required">*</span></label>
-                    <input type="text" id="flight" name="flight" required placeholder="例：BR189、CI106" style="text-transform: uppercase;">
-                    <div class="error-message" id="flight-error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="pickupLocation">上車點 <span class="required">*</span></label>
-                    <input type="text" id="pickupLocation" name="pickupLocation" required placeholder="詳細地址或明確地標">
-                    <div class="error-message" id="pickupLocation-error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="dropoffLocation">下車點 <span class="required">*</span></label>
-                    <input type="text" id="dropoffLocation" name="dropoffLocation" required placeholder="目的地地址">
-                    <div class="error-message" id="dropoffLocation-error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="notes">備註</label>
-                    <textarea id="notes" name="notes" placeholder="特殊需求、注意事項等..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>費用支付 <span class="required">*</span></label>
-                    <div class="payment-type-grid">
-                        <div class="option-group">
-                            <input type="radio" id="credit" name="paymentType" value="簽單" checked>
-                            <label for="credit">💳 簽單</label>
-                        </div>
-                        <div class="option-group">
-                            <input type="radio" id="cash" name="paymentType" value="現金">
-                            <label for="cash">💰 現金</label>
-                        </div>
+                <div class="form-group" id="airportField">
+                    <label class="form-label">機場選擇 *</label>
+                    <div class="airport-options">
+                        <label class="airport-option">
+                            <input type="radio" name="airport" value="桃園機場" checked>
+                            <div class="airport-card">
+                                <div class="airport-name">桃園機場</div>
+                            </div>
+                        </label>
+                        <label class="airport-option">
+                            <input type="radio" name="airport" value="松山機場">
+                            <div class="airport-card">
+                                <div class="airport-name">松山機場</div>
+                            </div>
+                        </label>
                     </div>
                 </div>
 
-                <input type="hidden" name="amount" value="">
+                <div class="form-group" id="flightField">
+                    <label class="form-label">航班資訊</label>
+                    <input type="text" class="form-input" id="flight" placeholder="請輸入航班號碼（選填）">
+                </div>
 
-                <button type="submit" class="submit-btn" id="submitBtn">
-                    📋 立即預約
-                </button>
-            </form>
-            
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>正在處理您的預約...</p>
+                <div class="form-group" id="pickupField">
+                    <label class="form-label">上車地點 *</label>
+                    <input type="text" class="form-input" id="pickup" placeholder="請輸入上車地點" required>
+                </div>
+
+                <div class="form-group" id="dropoffField">
+                    <label class="form-label">下車地點 *</label>
+                    <input type="text" class="form-input" id="dropoff" placeholder="請輸入下車地點" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">備註</label>
+                    <textarea class="form-textarea" id="remarks" placeholder="請說明行程計畫、特殊需求或其他備註（選填）"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">費用支付方式 *</label>
+                    <div class="payment-options">
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="簽單" required>
+                            <div class="payment-card">
+                                <div class="payment-name">公司簽單</div>
+                            </div>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="現金" required>
+                            <div class="payment-card">
+                                <div class="payment-name">現金付款</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-outline" onclick="prevPage()">上一步</button>
+                    <button class="btn btn-primary" onclick="nextPage()">下一步</button>
+                </div>
+            </div>
+
+            <!-- 第三頁：確認預約 -->
+            <div class="page" data-page="3">
+                <div class="summary-card">
+                    <div class="summary-title">預約資訊確認</div>
+                    <div id="summaryContent">
+                        <!-- 動態生成預約摘要 -->
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-outline" onclick="prevPage()">修改資料</button>
+                    <button class="btn btn-primary" onclick="submitBooking()">確認預約</button>
+                </div>
+            </div>
+
+            <!-- 第四頁：完成 -->
+            <div class="page" data-page="4">
+                <div class="success-icon">✓</div>
+                <div class="success-message">
+                    <div class="success-title">預約成功！</div>
+                    <div class="success-desc">您的預約已成功提交，我們將盡快與您聯繫確認詳情。</div>
+                </div>
+                <div class="booking-id">
+                    <div class="booking-id-label">查詢請提供手機號碼</div>
+                    <div class="booking-id-value" id="bookingIdDisplay"></div>
+                </div>
+                <button class="btn btn-primary" onclick="newBooking()">新增預約</button>
+                <button class="btn btn-outline" onclick="goToQuery()" style="margin-top: 12px;">查詢預約</button>
             </div>
         </div>
     </div>
 
     <script>
-        // API 設定 - 您的 Google Apps Script Web App URL
-        const API_URL = 'https://script.google.com/macros/s/AKfycbz1bFmUzvXmTYKtjTyjqpDDntOXsxBmsadRl7V-UG3TsuIqVFnX06ECejjV80fGu7RYNg/exec';
-        
-        // 取得表單元素
-        const form = document.getElementById('bookingForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const loading = document.getElementById('loading');
-        const resultMessage = document.getElementById('resultMessage');
-        
-        // 即時驗證
-        form.addEventListener('input', function(e) {
-            validateField(e.target);
-        });
-        
-        // 欄位驗證函數
-        function validateField(field) {
-            const errorElement = document.getElementById(field.name + '-error');
-            let isValid = true;
-            let errorMessage = '';
-            
-            // 重設樣式
-            field.style.borderColor = '#e0e0e0';
-            if (errorElement) errorElement.style.display = 'none';
-            
-            // 必填檢查
-            if (field.required && !field.value.trim()) {
-                isValid = false;
-                errorMessage = '此欄位為必填';
-            }
-            
-            // 特定欄位驗證
-            switch (field.name) {
-                case 'phone':
-                    if (field.value && !isValidPhone(field.value)) {
-                        isValid = false;
-                        errorMessage = '請輸入有效的手機號碼 (例：0912345678)';
-                    }
-                    break;
-                case 'date':
-                    if (field.value && new Date(field.value) < new Date().setHours(0,0,0,0)) {
-                        isValid = false;
-                        errorMessage = '日期不能是過去時間';
-                    }
-                    break;
-                case 'flight':
-                    if (field.value && !isValidFlight(field.value)) {
-                        isValid = false;
-                        errorMessage = '請輸入有效的航班號（如：BR189）';
-                    }
-                    break;
-                case 'companyName':
-                    if (field.value && field.value.length < 2) {
-                        isValid = false;
-                        errorMessage = '公司名稱至少需要2個字元';
-                    }
-                    break;
-                case 'name':
-                    if (field.value && field.value.length < 2) {
-                        isValid = false;
-                        errorMessage = '姓名至少需要2個字元';
-                    }
-                    break;
-            }
-            
-            // 顯示錯誤
-            if (!isValid && errorElement) {
-                field.style.borderColor = '#e74c3c';
-                errorElement.textContent = errorMessage;
-                errorElement.style.display = 'block';
-            }
-            
-            return isValid;
-        }
-        
-        // 手機號碼驗證
-        function isValidPhone(phone) {
-            const phoneRegex = /^09\d{8}$/;
-            return phoneRegex.test(phone.replace(/\s+/g, ''));
-        }
-        
-        // 航班號驗證
-        function isValidFlight(flight) {
-            const flightRegex = /^[A-Z]{2,3}\d{3,4}$/i;
-            return flightRegex.test(flight.replace(/\s+/g, ''));
-        }
-        
-        // 表單提交處理
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            // 全表單驗證
-            let isFormValid = true;
-            const formData = new FormData(form);
-            
-            const requiredFields = ['serviceType', 'companyName', 'department', 'phone', 'name', 'date', 'time', 'flight', 'pickupLocation', 'dropoffLocation', 'paymentType'];
-            
-            for (const fieldName of requiredFields) {
-                const field = document.querySelector(`[name="${fieldName}"]`);
-                if (field && !validateField(field)) {
-                    isFormValid = false;
-                }
-            }
-            
-            if (!isFormValid) {
-                showMessage('請檢查並修正表單中的錯誤', 'error');
-                return;
-            }
-            
-            // 顯示載入狀態
-            submitBtn.disabled = true;
-            loading.style.display = 'block';
-            form.style.display = 'none';
-            resultMessage.style.display = 'none';
-            
-            try {
-                // 準備參數
-                const params = new URLSearchParams();
-                params.append('action', 'create');
-                
-                for (let [key, value] of formData.entries()) {
-                    params.append(key, value);
-                }
-                
-                // 發送請求
-                const response = await fetch(API_URL + '?' + params.toString(), {
-                    method: 'GET'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // 成功處理
-                    const serviceType = formData.get('serviceType');
-                    const name = formData.get('name');
-                    const date = formData.get('date');
-                    const time = formData.get('time');
-                    const flight = formData.get('flight');
-                    
-                    showMessage(
-                        `✅ 預約成功！<br><br>` +
-                        `<strong>預約資訊</strong><br>` +
-                        `服務：${serviceType}<br>` +
-                        `姓名：${name}<br>` +
-                        `日期：${date} ${time}<br>` +
-                        `航班：${flight}<br><br>` +
-                        `我們將盡快與您聯繫確認。`,
-                        'success'
-                    );
-                    form.reset();
-                    setMinDate(); // 重設最小日期
-                } else {
-                    throw new Error(result.error || '預約失敗');
-                }
-                
-            } catch (error) {
-                console.error('預約錯誤:', error);
-                showMessage(
-                    `❌ 預約失敗，請稍後再試或直接聯繫我們。<br>` +
-                    `錯誤：${error.message}`,
-                    'error'
-                );
-            } finally {
-                // 恢復表單狀態
-                loading.style.display = 'none';
-                form.style.display = 'block';
-                submitBtn.disabled = false;
-            }
-        });
-        
-        // 顯示訊息
-        function showMessage(message, type) {
-            resultMessage.innerHTML = message;
-            resultMessage.className = `result-message ${type}`;
-            resultMessage.style.display = 'block';
-            resultMessage.scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        // 設定最小日期為今天
-        function setMinDate() {
-            const today = new Date();
-            const dateString = today.toISOString().split('T')[0];
-            document.getElementById('date').min = dateString;
-        }
-        
-        // 航班號自動大寫
-        document.getElementById('flight').addEventListener('input', function(e) {
-            e.target.value = e.target.value.toUpperCase();
-        });
-        
-        // 頁面載入時初始化
+        // GitHub Pages 專用配置
+        const CONFIG = {
+            API_URL: 'https://script.google.com/macros/s/AKfycbzwNqJPQPF0Dardri9fuEBpCap1ma-g4bhe61NYb7bgycv6aMz2672E_bMaFFfhkwxl3g/exec',
+            DEMO_MODE: false // 使用實際 API
+        };
+
+        let currentPage = 1;
+        let selectedService = '';
+        let formData = {};
+        let phoneQueryTimeout = null;
+
+        // 初始化
         document.addEventListener('DOMContentLoaded', function() {
+            setupServiceSelection();
+            setupPhoneInput();
             setMinDate();
-            console.log('道格機場接送預約系統 v2.0 已載入');
-        });
-        
-        // 手機號碼格式化
-        document.getElementById('phone').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, ''); // 只保留數字
-            if (value.length > 10) {
-                value = value.slice(0, 10);
-            }
-            e.target.value = value;
-        });
-        
-        // 防止表單重複提交
-        let isSubmitting = false;
-        form.addEventListener('submit', function(e) {
-            if (isSubmitting) {
-                e.preventDefault();
-                return false;
-            }
-            isSubmitting = true;
             
-            setTimeout(() => {
-                isSubmitting = false;
-            }, 3000);
+            // 確保所有欄位初始狀態正確
+            const airportField = document.getElementById('airportField');
+            const flightField = document.getElementById('flightField');
+            if (airportField) airportField.style.display = 'none';
+            if (flightField) flightField.style.display = 'none';
         });
-    </script>
-</body>
-</html>
+
+        // 設置服務選擇
+        function setupServiceSelection() {
+            document.querySelectorAll('.service-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    console.log('Service selected:', this.dataset.service);
+                    
+                    // 移除其他選中狀態
+                    document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
+                    
+                    // 設置當前選中
+                    this.classList.add('selected');
+                    selectedService = this.dataset.service;
+                    
+                    // 啟用下一步按鈕
+                    const nextBtn = document.getElementById('nextBtn1');
+                    if (nextBtn) {
+                        nextBtn.disabled = false;
+                    }
+                    
+                    // 更新服務欄位顯示
+                    updateServiceFields();
+                });
+            });
+        }
+
+        // 設置手機號碼輸入功能
+        function setupPhoneInput() {
+            const phoneInput = document.getElementById('phone');
+            const phoneError = document.getElementById('phoneError');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const userHistory = document.getElementById('userHistory');
+
+            phoneInput.addEventListener('blur', function() {
+                const phoneNumber = this.value.trim();
+                
+                // 清除之前的狀態
+                phoneError.classList.add('hidden');
+                userHistory.classList.add('hidden');
+                
+                if (phoneNumber) {
+                    if (validatePhoneNumber(phoneNumber)) {
+                        // 清除之前的timeout
+                        if (phoneQueryTimeout) {
+                            clearTimeout(phoneQueryTimeout);
+                        }
+                        
+                        // 設置新的查詢timeout (300ms debounce)
+                        phoneQuery
