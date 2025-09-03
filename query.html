@@ -671,20 +671,334 @@
             }
         }
 
-        <script>
-        // 設定
-        const CONFIG = {
-            API_URL: 'https://script.google.com/macros/s/AKfycbzwNqJPQPF0Dardri9fuEBpCap1ma-g4bhe61NYb7bgycv6aMz2672E_bMaFFfhkwxl3g/exec',
-            DEMO_MODE: false
-        };
+        // 顯示預約列表
+        function displayBookings(bookings) {
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (!bookings || bookings.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">📭</div>
+                        <div class="no-results-title">未找到預約記錄</div>
+                        <div class="no-results-desc">
+                            請確認手機號碼是否正確，或
+                            <a href="index.html" style="color: #2c3e50;">建立新預約</a>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
 
-        let currentBookings = [];
-        let editingBooking = null;
+            const bookingsHtml = bookings.map(booking => {
+                const statusClass = getStatusClass(booking.status);
+                const statusText = getStatusText(booking.status);
+                
+                return `
+                    <div class="booking-card">
+                        <div class="booking-header">
+                            <div class="booking-service">${booking.service}</div>
+                            <div class="booking-status ${statusClass}">${statusText}</div>
+                        </div>
+                        
+                        <div class="booking-info">
+                            <div class="info-item">
+                                <div class="info-label">公司名稱</div>
+                                <div class="info-value">${booking.company}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">聯絡人</div>
+                                <div class="info-value">${booking.name}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">預約日期</div>
+                                <div class="info-value">${formatDate(booking.date)}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">預約時間</div>
+                                <div class="info-value">${booking.time}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">上車地點</div>
+                                <div class="info-value">${booking.pickup}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">下車地點</div>
+                                <div class="info-value">${booking.dropoff}</div>
+                            </div>
+                            ${booking.airport ? `
+                            <div class="info-item">
+                                <div class="info-label">機場/航班</div>
+                                <div class="info-value">${booking.airport}</div>
+                            </div>
+                            ` : ''}
+                            ${booking.remarks ? `
+                            <div class="info-item" style="grid-column: 1 / -1;">
+                                <div class="info-label">備註</div>
+                                <div class="info-value">${booking.remarks}</div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="booking-actions">
+                            ${booking.status === 'active' ? `
+                                <button class="btn btn-edit" onclick="editBooking(${booking.rowIndex})">
+                                    ✏️ 修改
+                                </button>
+                                <button class="btn btn-delete" onclick="cancelBooking(${booking.rowIndex})">
+                                    ❌ 取消
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
-    </script>
-</body>
-</html>
-        // [由於字數限制，需要分段提供]
+            resultsContainer.innerHTML = `
+                <div class="alert alert-success">
+                    ✅ 找到 ${bookings.length} 筆預約記錄
+                </div>
+                <div class="booking-list">
+                    ${bookingsHtml}
+                </div>
+            `;
+        }
+
+        // 編輯預約
+        function editBooking(rowIndex) {
+            const booking = currentBookings.find(b => b.rowIndex === rowIndex);
+            if (!booking) {
+                showAlert('找不到指定的預約記錄', 'error');
+                return;
+            }
+
+            editingBooking = booking;
+            
+            // 切換到管理頁籤
+            switchTab('manage');
+            
+            // 填入表單資料
+            document.getElementById('editService').value = booking.service;
+            document.getElementById('editCompany').value = booking.company;
+            document.getElementById('editDepartment').value = booking.department || '';
+            document.getElementById('editName').value = booking.name;
+            document.getElementById('editDate').value = booking.date;
+            document.getElementById('editTime').value = booking.time;
+            document.getElementById('editAirport').value = booking.airport || '';
+            document.getElementById('editPickup').value = booking.pickup;
+            document.getElementById('editDropoff').value = booking.dropoff;
+            document.getElementById('editRemarks').value = booking.remarks || '';
+            document.getElementById('editPayment').value = booking.payment;
+            
+            // 顯示編輯表單
+            document.getElementById('manageContent').innerHTML = `
+                <div class="alert alert-warning">
+                    ⚠️ 正在修改預約：${booking.service} - ${formatDate(booking.date)} ${booking.time}
+                </div>
+            `;
+            document.getElementById('editForm').classList.add('active');
+        }
+
+        // 取消預約
+        async function cancelBooking(rowIndex) {
+            const booking = currentBookings.find(b => b.rowIndex === rowIndex);
+            if (!booking) {
+                showAlert('找不到指定的預約記錄', 'error');
+                return;
+            }
+
+            if (!confirm(`確定要取消以下預約嗎？\n\n${booking.service}\n${formatDate(booking.date)} ${booking.time}\n${booking.pickup} → ${booking.dropoff}`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'deleteBooking',
+                        rowIndex: rowIndex
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('預約已成功取消', 'success');
+                    // 重新查詢以更新列表
+                    searchBookings();
+                } else {
+                    throw new Error(result.message || '取消失敗');
+                }
+
+            } catch (error) {
+                console.error('取消預約錯誤:', error);
+                showAlert(`取消失敗：${error.message}`, 'error');
+            }
+        }
+
+        // 處理編輯表單提交
+        document.getElementById('editBookingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!editingBooking) {
+                showAlert('無效的編輯操作', 'error');
+                return;
+            }
+
+            const formData = {
+                action: 'updateBooking',
+                rowIndex: editingBooking.rowIndex,
+                服務項目: document.getElementById('editService').value,
+                公司名稱: document.getElementById('editCompany').value,
+                部門: document.getElementById('editDepartment').value,
+                姓名: document.getElementById('editName').value,
+                日期: document.getElementById('editDate').value,
+                時間: document.getElementById('editTime').value,
+                '機場/航班': document.getElementById('editAirport').value,
+                上車點: document.getElementById('editPickup').value,
+                下車點: document.getElementById('editDropoff').value,
+                備註: document.getElementById('editRemarks').value,
+                費用支付: document.getElementById('editPayment').value
+            };
+
+            try {
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('預約修改成功', 'success');
+                    cancelEdit();
+                    // 重新查詢以更新列表
+                    searchBookings();
+                } else {
+                    throw new Error(result.message || '修改失敗');
+                }
+
+            } catch (error) {
+                console.error('修改預約錯誤:', error);
+                showAlert(`修改失敗：${error.message}`, 'error');
+            }
+        });
+
+        // 取消編輯
+        function cancelEdit() {
+            editingBooking = null;
+            document.getElementById('editForm').classList.remove('active');
+            document.getElementById('manageContent').innerHTML = `
+                <div class="no-results">
+                    <div class="no-results-icon">📋</div>
+                    <div class="no-results-title">選擇要管理的預約</div>
+                    <div class="no-results-desc">請先在「查詢預約」頁籤中搜尋您的預約記錄</div>
+                </div>
+            `;
+        }
+
+        // 輔助函數
+        function validatePhoneNumber(phone) {
+            // 台灣手機格式: 09xxxxxxxx
+            if (/^09\d{8}$/.test(phone)) {
+                return true;
+            }
+            
+            // 國際格式: +國碼 或 00國碼
+            if (/^(\+|00)\d{1,3}\d{6,14}$/.test(phone)) {
+                return true;
+            }
+            
+            return false;
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'active':
+                    return 'status-active';
+                case 'cancelled':
+                    return 'status-cancelled';
+                case 'completed':
+                    return 'status-completed';
+                default:
+                    return 'status-active';
+            }
+        }
+
+        function getStatusText(status) {
+            switch (status) {
+                case 'active':
+                    return '進行中';
+                case 'cancelled':
+                    return '已取消';
+                case 'completed':
+                    return '已完成';
+                default:
+                    return '進行中';
+            }
+        }
+
+        function formatDate(dateStr) {
+            try {
+                if (dateStr instanceof Date) {
+                    return dateStr.toLocaleDateString('zh-TW');
+                }
+                
+                if (typeof dateStr === 'string') {
+                    let date;
+                    if (dateStr.includes('/')) {
+                        date = new Date(dateStr);
+                    } else if (dateStr.includes('-')) {
+                        date = new Date(dateStr);
+                    } else {
+                        date = new Date(dateStr);
+                    }
+                    
+                    if (isNaN(date.getTime())) {
+                        return dateStr;
+                    }
+                    
+                    return date.toLocaleDateString('zh-TW');
+                }
+                
+                return dateStr;
+            } catch (error) {
+                console.warn('日期格式化錯誤:', error);
+                return dateStr;
+            }
+        }
+
+        function showAlert(message, type = 'error') {
+            // 移除現有的alert
+            const existingAlert = document.querySelector('.alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            // 創建新的alert
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            
+            const icon = type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '❌';
+            alert.innerHTML = `${icon} ${message}`;
+
+            // 插入到適當位置
+            const container = document.querySelector('.content');
+            const backLink = container.querySelector('.back-link');
+            container.insertBefore(alert, backLink.nextSibling);
+
+            // 5秒後自動移除
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
     </script>
 </body>
 </html>
