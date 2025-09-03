@@ -1,501 +1,690 @@
-// 機場接送預約系統 - Google Apps Script 安全強化版
-// ===== 安全設定區域 =====
-const SECURITY_CONFIG = {
-  // 允許的來源網域
-  ALLOWED_ORIGINS: [
-    'https://flyregit842.github.io/doug-shuttle-service',
-    'https://flyregit842.github.io/doug-shuttle-service/',
-    'https://flyregit842.github.io/doug-shuttle-service/index.html',
-    'https://flyregit842.github.io/doug-shuttle-service/query.html',
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    'https://localhost'
-  ],
-  
-  // API調用限制
-  RATE_LIMITS: {
-    MAX_REQUESTS_PER_HOUR: 50,        // 每小時最大請求數
-    MAX_BOOKINGS_PER_PHONE: 5,       // 每個手機號每日最大預約數
-    MIN_INTERVAL_SECONDS: 10         // 最小請求間隔（秒）
-  },
-  
-  // 手機號碼白名單（可選）
-  PHONE_WHITELIST_ENABLED: false,
-  PHONE_WHITELIST: [
-    // '09xxxxxxxx' // 加入信任的手機號碼
-  ]
-};
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>預約查詢 - 機場接送預約系統</title>
+    <meta name="description" content="查詢、修改、取消機場接送預約">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-// ===== 配置區域 =====
-const SPREADSHEET_ID = '1J8wuDVtj2U54O-6VGXmGz1x3JGld4cWYiyYN5bED1gQ';
-const MAIN_SHEET_NAME = 'Sheet1';
-const SECURITY_LOG_SHEET = 'SecurityLog';
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
 
-// ===== 安全檢查函數 =====
-function securityCheck(e, action) {
-  const timestamp = new Date();
-  const clientIP = getClientIP(e);
-  const userAgent = e.headers?.['User-Agent'] || 'Unknown';
-  const referer = e.headers?.Referer || '';
-  
-  console.log('=== 安全檢查 ===');
-  console.log('來源IP:', clientIP);
-  console.log('User Agent:', userAgent);
-  console.log('Referer:', referer);
-  console.log('Action:', action);
-  
-  // 1. 檢查來源網域
-  if (!isAllowedOrigin(referer)) {
-    logSecurityEvent('BLOCKED_ORIGIN', { referer, clientIP, userAgent });
-    throw new Error('未授權的訪問來源');
-  }
-  
-  // 2. 檢查機器人特徵
-  if (isLikelyBot(userAgent)) {
-    logSecurityEvent('SUSPECTED_BOT', { userAgent, clientIP });
-    throw new Error('疑似機器人訪問');
-  }
-  
-  // 3. 檢查請求頻率
-  if (!checkRateLimit(clientIP)) {
-    logSecurityEvent('RATE_LIMITED', { clientIP, userAgent });
-    throw new Error('請求過於頻繁，請稍後再試');
-  }
-  
-  return true;
-}
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
 
-function isAllowedOrigin(referer) {
-  if (!referer) return false;
-  
-  // 檢查是否來自您的GitHub Pages網域（放寬檢查）
-  if (referer.includes('flyregit842.github.io/doug-shuttle-service')) {
-    return true;
-  }
-  
-  // 本地開發環境
-  if (referer.includes('localhost') || referer.includes('127.0.0.1')) {
-    return true;
-  }
-  
-  return false;
-}
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 40px 24px;
+            text-align: center;
+        }
 
-function isLikelyBot(userAgent) {
-  const botPatterns = [
-    /bot/i, /crawler/i, /spider/i, /scraper/i,
-    /curl/i, /wget/i, /python/i, /java/i
-  ];
-  
-  return botPatterns.some(pattern => pattern.test(userAgent));
-}
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
 
-function checkRateLimit(clientIP) {
-  const now = new Date().getTime();
-  const cacheKey = `rate_limit_${clientIP}`;
-  
-  try {
-    const cache = CacheService.getScriptCache();
-    const lastRequest = cache.get(cacheKey);
-    
-    if (lastRequest) {
-      const timeDiff = (now - parseInt(lastRequest)) / 1000;
-      if (timeDiff < SECURITY_CONFIG.RATE_LIMITS.MIN_INTERVAL_SECONDS) {
-        return false;
-      }
-    }
-    
-    cache.put(cacheKey, now.toString(), 3600); // 1小時過期
-    return true;
-  } catch (error) {
-    console.warn('Rate limit check failed:', error);
-    return true; // 如果檢查失敗，允許通過
-  }
-}
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
 
-function getClientIP(e) {
-  // Google Apps Script 無法直接獲取真實IP，但可以記錄
-  return e.headers?.['X-Forwarded-For'] || 
-         e.headers?.['X-Real-IP'] || 
-         'Unknown';
-}
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
 
-function logSecurityEvent(eventType, details) {
-  try {
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    let securitySheet = spreadsheet.getSheetByName(SECURITY_LOG_SHEET);
-    
-    // 如果安全日誌表不存在，創建它
-    if (!securitySheet) {
-      securitySheet = spreadsheet.insertSheet(SECURITY_LOG_SHEET);
-      securitySheet.getRange(1, 1, 1, 5).setValues([
-        ['時間', '事件類型', '詳情', 'IP', 'User Agent']
-      ]);
-    }
-    
-    securitySheet.appendRow([
-      new Date().toLocaleString('zh-TW'),
-      eventType,
-      JSON.stringify(details),
-      details.clientIP || 'Unknown',
-      details.userAgent || 'Unknown'
-    ]);
-  } catch (error) {
-    console.error('記錄安全事件失敗:', error);
-  }
-}
+        .nav-tab {
+            flex: 1;
+            padding: 16px;
+            text-align: center;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
 
-// ===== 強化版主要處理函數 =====
-function doPost(e) {
-  try {
-    console.log('=== 收到POST請求 ===');
-    
-    // 安全檢查
-    securityCheck(e, 'POST');
-    
-    if (!e.postData || !e.postData.contents) {
-      throw new Error('無效的請求資料');
-    }
-    
-    const requestData = JSON.parse(e.postData.contents);
-    console.log('解析後的資料:', requestData);
-    
-    // 額外的資料驗證
-    validateRequestData(requestData);
-    
-    let result;
-    switch (requestData.action) {
-      case 'createBooking':
-        result = createBookingSecure(requestData);
-        break;
-      case 'getBookingsByPhone':
-        result = getBookingsByPhone(requestData.phone);
-        break;
-      case 'getUserDataByPhone':
-        result = getUserDataByPhone(requestData.phone);
-        break;
-      default:
-        throw new Error('未知的action: ' + requestData.action);
-    }
-    
-    return result;
-    
-  } catch (error) {
-    console.error('請求處理錯誤:', error);
-    
-    // 記錄錯誤（不包含敏感資訊）
-    logSecurityEvent('REQUEST_ERROR', {
-      error: error.message,
-      clientIP: getClientIP(e),
-      userAgent: e.headers?.['User-Agent'] || 'Unknown'
-    });
-    
-    return createResponse({
-      success: false,
-      message: error.message
-    });
-  }
-}
+        .nav-tab.active {
+            background: white;
+            color: #2c3e50;
+            border-bottom: 3px solid #2c3e50;
+        }
 
-function doGet(e) {
-  try {
-    securityCheck(e, 'GET');
-    
-    return createResponse({
-      success: true,
-      message: '機場接送預約系統 API 正常運作',
-      timestamp: new Date().toISOString(),
-      version: '1.1-secure'
-    });
-  } catch (error) {
-    return createResponse({
-      success: false,
-      message: error.message
-    });
-  }
-}
+        .content {
+            padding: 32px 24px;
+        }
 
-// ===== 資料驗證函數 =====
-function validateRequestData(data) {
-  if (data.action === 'createBooking') {
-    // 手機號碼格式驗證
-    const phone = data['手機號碼'];
-    if (!phone || !isValidPhoneNumber(phone)) {
-      throw new Error('無效的手機號碼格式');
-    }
-    
-    // 檢查手機號碼白名單（如果啟用）
-    if (SECURITY_CONFIG.PHONE_WHITELIST_ENABLED) {
-      if (!SECURITY_CONFIG.PHONE_WHITELIST.includes(phone)) {
-        throw new Error('手機號碼未在授權清單中');
-      }
-    }
-    
-    // 必填欄位檢查
-    const required = ['服務項目', '公司名稱', '姓名', '日期', '時間', '手機號碼'];
-    for (const field of required) {
-      if (!data[field] || data[field].toString().trim() === '') {
-        throw new Error(`缺少必填欄位: ${field}`);
-      }
-    }
-    
-    // 日期驗證（不能是過去的日期）
-    const bookingDate = new Date(data['日期']);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (bookingDate < today) {
-      throw new Error('預約日期不能是過去的日期');
-    }
-  }
-}
+        .tab-pane {
+            display: none;
+        }
 
-function isValidPhoneNumber(phone) {
-  // 台灣手機格式: 09xxxxxxxx
-  if (/^09\d{8}$/.test(phone)) {
-    return true;
-  }
-  
-  // 國際格式: +國碼 或 00國碼
-  if (/^(\+|00)\d{1,3}\d{6,14}$/.test(phone)) {
-    return true;
-  }
-  
-  return false;
-}
+        .tab-pane.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
 
-// ===== 強化版預約建立 =====
-function createBookingSecure(data) {
-  try {
-    console.log('=== 建立新預約（安全版） ===');
-    
-    // 檢查每日預約限制
-    const phone = data['手機號碼'];
-    if (!checkDailyBookingLimit(phone)) {
-      throw new Error('今日預約次數已達上限，請明日再試');
-    }
-    
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = spreadsheet.getSheetByName(MAIN_SHEET_NAME);
-    
-    if (!sheet) {
-      throw new Error('找不到工作表: ' + MAIN_SHEET_NAME);
-    }
-    
-    // 清理和驗證資料
-    const rowData = [
-      sanitizeInput(data['服務項目']),
-      sanitizeInput(data['公司名稱']),
-      sanitizeInput(data['部門'] || ''),
-      sanitizeInput(phone),
-      sanitizeInput(data['姓名']),
-      data['日期'],
-      data['時間'],
-      sanitizeInput(data['機場/航班'] || ''),
-      sanitizeInput(data['上車點'] || ''),
-      sanitizeInput(data['下車點'] || ''),
-      sanitizeInput(data['備註'] || ''),
-      sanitizeInput(data['費用支付'] || ''),
-      new Date().toLocaleString('zh-TW', {timeZone: 'Asia/Taipei'}),
-      'active'
-    ];
-    
-    console.log('準備寫入的資料:', rowData);
-    sheet.appendRow(rowData);
-    
-    // 記錄成功的預約
-    logSecurityEvent('BOOKING_CREATED', {
-      phone: phone,
-      service: data['服務項目'],
-      company: data['公司名稱']
-    });
-    
-    console.log('預約建立成功');
-    
-    return createResponse({
-      success: true,
-      message: '預約建立成功',
-      data: {
-        phone: phone,
-        service: data['服務項目'],
-        date: data['日期'],
-        time: data['時間']
-      }
-    });
-    
-  } catch (error) {
-    console.error('建立預約錯誤:', error);
-    return createResponse({
-      success: false,
-      message: '建立預約失敗: ' + error.toString()
-    });
-  }
-}
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-// ===== 輔助函數 =====
-function sanitizeInput(input) {
-  if (!input) return '';
-  
-  return input.toString()
-    .replace(/[<>]/g, '') // 移除HTML標籤
-    .replace(/javascript:/gi, '') // 移除JavaScript
-    .replace(/on\w+=/gi, '') // 移除事件處理器
-    .trim()
-    .substring(0, 500); // 限制長度
-}
+        .search-form {
+            background: #f8f9fa;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 32px;
+            border-left: 4px solid #2c3e50;
+        }
 
-function checkDailyBookingLimit(phone) {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const cacheKey = `daily_bookings_${phone}_${today}`;
-    const cache = CacheService.getScriptCache();
-    
-    let bookingCount = parseInt(cache.get(cacheKey) || '0');
-    
-    if (bookingCount >= SECURITY_CONFIG.RATE_LIMITS.MAX_BOOKINGS_PER_PHONE) {
-      return false;
-    }
-    
-    // 增加計數
-    cache.put(cacheKey, (bookingCount + 1).toString(), 86400); // 24小時
-    return true;
-  } catch (error) {
-    console.warn('Daily booking limit check failed:', error);
-    return true;
-  }
-}
+        .form-group {
+            margin-bottom: 24px;
+        }
 
-// ===== 其他原有函數保持不變 =====
-function getUserDataByPhone(phone) {
-  try {
-    console.log('=== 查詢用戶資料 ===');
-    console.log('手機號碼:', phone);
-    
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = spreadsheet.getSheetByName(MAIN_SHEET_NAME);
-    
-    if (!sheet) {
-      throw new Error('找不到工作表: ' + MAIN_SHEET_NAME);
-    }
-    
-    const data = sheet.getDataRange().getValues();
-    const userRecords = [];
-    
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      if (row[3] === phone) {
-        userRecords.push({
-          company: row[1],
-          department: row[2],
-          name: row[4],
-          date: row[5],
-          time: row[6],
-          service: row[0],
-          pickup: row[8],
-          dropoff: row[9]
+        .form-label {
+            display: block;
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 17px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2c3e50;
+            box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
+        }
+
+        .btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #2c3e50;
+            color: white;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-primary:hover {
+            background: #34495e;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(44, 62, 80, 0.3);
+        }
+
+        .btn-edit {
+            background: #17a2b8;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .btn-edit:hover {
+            background: #138496;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .btn-cancel:hover {
+            background: #545b62;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e9ecef;
+            border-top: 3px solid #2c3e50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .booking-list {
+            display: grid;
+            gap: 16px;
+        }
+
+        .booking-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .booking-card:hover {
+            border-color: #2c3e50;
+            box-shadow: 0 8px 16px rgba(44, 62, 80, 0.1);
+        }
+
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .booking-service {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .booking-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .booking-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 13px;
+            color: #6c757d;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 15px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .booking-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            border-top: 1px solid #e9ecef;
+            padding-top: 16px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .no-results-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .no-results-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .no-results-desc {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .edit-form {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 24px;
+            border-left: 4px solid #17a2b8;
+            display: none;
+        }
+
+        .edit-form.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 17px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 17px;
+            min-height: 100px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .alert {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 24px;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: #34495e;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 16px;
+            }
+
+            .header {
+                padding: 24px 16px;
+            }
+
+            .content {
+                padding: 24px 16px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .booking-info {
+                grid-template-columns: 1fr;
+            }
+
+            .booking-actions {
+                flex-direction: column;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>預約查詢系統</h1>
+            <p>查詢、修改或取消您的預約</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="search">查詢預約</button>
+            <button class="nav-tab" data-tab="manage">管理預約</button>
+        </div>
+
+        <div class="content">
+            <a href="index.html" class="back-link">
+                ← 返回預約頁面
+            </a>
+
+            <!-- 查詢預約頁籤 -->
+            <div class="tab-pane active" id="search-tab">
+                <div class="search-form">
+                    <div class="form-group">
+                        <label class="form-label">手機號碼 *</label>
+                        <input type="tel" class="form-input" id="searchPhone" placeholder="請輸入您的手機號碼">
+                    </div>
+                    <button class="btn btn-primary" onclick="searchBookings()">
+                        查詢預約記錄
+                    </button>
+                </div>
+
+                <div id="searchResults">
+                    <!-- 查詢結果將在這裡顯示 -->
+                </div>
+            </div>
+
+            <!-- 管理預約頁籤 -->
+            <div class="tab-pane" id="manage-tab">
+                <div id="manageContent">
+                    <div class="no-results">
+                        <div class="no-results-icon">📋</div>
+                        <div class="no-results-title">選擇要管理的預約</div>
+                        <div class="no-results-desc">請先在「查詢預約」頁籤中搜尋您的預約記錄</div>
+                    </div>
+                </div>
+
+                <!-- 編輯表單 -->
+                <div class="edit-form" id="editForm">
+                    <h3 style="margin-bottom: 20px; color: #17a2b8;">修改預約資訊</h3>
+                    <form id="editBookingForm">
+                        <div class="form-group">
+                            <label class="form-label">服務項目 *</label>
+                            <select class="form-select" id="editService" required>
+                                <option value="北北基桃送機">北北基桃送機</option>
+                                <option value="北北基桃接機">北北基桃接機</option>
+                                <option value="其他行程接送">其他行程接送</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">公司名稱 *</label>
+                            <input type="text" class="form-input" id="editCompany" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">部門</label>
+                            <input type="text" class="form-input" id="editDepartment">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">聯絡人姓名 *</label>
+                            <input type="text" class="form-input" id="editName" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">預約日期 *</label>
+                                <input type="date" class="form-input" id="editDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">預約時間 *</label>
+                                <input type="time" class="form-input" id="editTime" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">機場/航班資訊</label>
+                            <input type="text" class="form-input" id="editAirport">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">上車地點 *</label>
+                            <input type="text" class="form-input" id="editPickup" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">下車地點 *</label>
+                            <input type="text" class="form-input" id="editDropoff" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">備註</label>
+                            <textarea class="form-textarea" id="editRemarks"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">費用支付方式 *</label>
+                            <select class="form-select" id="editPayment" required>
+                                <option value="簽單">公司簽單</option>
+                                <option value="現金">現金付款</option>
+                            </select>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-cancel" onclick="cancelEdit()">取消</button>
+                            <button type="submit" class="btn btn-primary">儲存修改</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 設定
+        const CONFIG = {
+            API_URL: 'https://script.google.com/macros/s/AKfycbzwNqJPQPF0Dardri9fuEBpCap1ma-g4bhe61NYb7bgycv6aMz2672E_bMaFFfhkwxl3g/exec',
+            DEMO_MODE: false
+        };
+
+        let currentBookings = [];
+        let editingBooking = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            setupTabs();
+            setMinDate();
+            
+            // 檢查URL參數，如果有phone參數則自動查詢
+            const urlParams = new URLSearchParams(window.location.search);
+            const phoneParam = urlParams.get('phone');
+            if (phoneParam) {
+                document.getElementById('searchPhone').value = phoneParam;
+                searchBookings();
+            }
         });
-      }
-    }
-    
-    console.log('找到', userRecords.length, '筆記錄');
-    
-    return createResponse({
-      success: true,
-      data: userRecords
-    });
-    
-  } catch (error) {
-    console.error('查詢用戶資料錯誤:', error);
-    return createResponse({
-      success: false,
-      message: '查詢失敗: ' + error.toString()
-    });
-  }
-}
 
-function getBookingsByPhone(phone) {
-  try {
-    console.log('=== 查詢預約記錄 ===');
-    console.log('手機號碼:', phone);
-    
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = spreadsheet.getSheetByName(MAIN_SHEET_NAME);
-    
-    if (!sheet) {
-      throw new Error('找不到工作表: ' + MAIN_SHEET_NAME);
-    }
-    
-    const data = sheet.getDataRange().getValues();
-    const bookings = [];
-    
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      if (row[3] === phone) {
-        bookings.push({
-          rowIndex: i + 1,
-          service: row[0],
-          company: row[1],
-          department: row[2],
-          phone: row[3],
-          name: row[4],
-          date: row[5],
-          time: row[6],
-          airport: row[7],
-          pickup: row[8],
-          dropoff: row[9],
-          remarks: row[10],
-          payment: row[11],
-          submitTime: row[12],
-          status: row[13] || 'active'
-        });
-      }
-    }
-    
-    console.log('找到', bookings.length, '筆預約記錄');
-    
-    return createResponse({
-      success: true,
-      data: bookings
-    });
-    
-  } catch (error) {
-    console.error('查詢預約記錄錯誤:', error);
-    return createResponse({
-      success: false,
-      message: '查詢失敗: ' + error.toString()
-    });
-  }
-}
+        // 設定頁籤切換
+        function setupTabs() {
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetTab = this.dataset.tab;
+                    switchTab(targetTab);
+                });
+            });
+        }
 
-function createResponse(data) {
-  const output = ContentService.createTextOutput(JSON.stringify(data));
-  output.setMimeType(ContentService.MimeType.JSON);
-  return output;
-}
+        // 切換頁籤
+        function switchTab(tabName) {
+            // 更新頁籤按鈕狀態
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
 
-// ===== 管理函數 =====
-function clearSecurityLog() {
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const securitySheet = spreadsheet.getSheetByName(SECURITY_LOG_SHEET);
-  
-  if (securitySheet) {
-    securitySheet.clear();
-    securitySheet.getRange(1, 1, 1, 5).setValues([
-      ['時間', '事件類型', '詳情', 'IP', 'User Agent']
-    ]);
-  }
-}
+            // 更新頁籤內容
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
 
-function getSecurityStats() {
-  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const securitySheet = spreadsheet.getSheetByName(SECURITY_LOG_SHEET);
-  
-  if (!securitySheet) {
-    return '無安全記錄';
-  }
-  
-  const data = securitySheet.getDataRange().getValues();
-  console.log('安全記錄總數:', data.length - 1);
-  
-  return data;
-}
+        // 設定最小日期
+        function setMinDate() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('editDate');
+            if (dateInput) {
+                dateInput.min = today;
+            }
+        }
+
+        // 查詢預約
+        async function searchBookings() {
+            const phone = document.getElementById('searchPhone').value.trim();
+            
+            if (!phone) {
+                showAlert('請輸入手機號碼', 'error');
+                return;
+            }
+
+            if (!validatePhoneNumber(phone)) {
+                showAlert('請輸入有效的手機號碼格式', 'error');
+                return;
+            }
+
+            const resultsContainer = document.getElementById('searchResults');
+            
+            // 顯示載入中
+            resultsContainer.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>正在查詢預約記錄...</div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'getBookingsByPhone',
+                        phone: phone
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentBookings = result.data;
+                    displayBookings(currentBookings);
+                } else {
+                    throw new Error(result.message || '查詢失敗');
+                }
+
+            } catch (error) {
+                console.error('查詢錯誤:', error);
+                resultsContainer.innerHTML = `
+                    <div class="alert alert-error">
+                        ❌ 查詢失敗：${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        <script>
+        // 設定
+        const CONFIG = {
+            API_URL: 'https://script.google.com/macros/s/AKfycbzwNqJPQPF0Dardri9fuEBpCap1ma-g4bhe61NYb7bgycv6aMz2672E_bMaFFfhkwxl3g/exec',
+            DEMO_MODE: false
+        };
+
+        let currentBookings = [];
+        let editingBooking = null;
+
+    </script>
+</body>
+</html>
+        // [由於字數限制，需要分段提供]
+    </script>
+</body>
+</html>
