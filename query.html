@@ -462,7 +462,13 @@
                         <input type="tel" class="form-input" id="searchPhone" placeholder="請輸入您的手機號碼">
                     </div>
                     <button class="btn btn-primary" onclick="searchBookings()">
-                        查詢預約記錄
+                        console.log('測試 API 連線...');
+                        try {
+                            const testResponse = await fetch(CONFIG.API_URL + '?test=1');
+                            console.log('GET 測試成功');
+                        } catch (error) {
+                            console.log('GET 測試失敗:', error);
+                        }
                     </button>
                 </div>
 
@@ -1002,4 +1008,5 @@
     </script>
 </body>
 </html>
+
 
