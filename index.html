@@ -765,7 +765,7 @@
     <script>
         // GitHub Pages 專用配置
         const CONFIG = {
-            API_URL: 'https://script.google.com/macros/s/AKfycbyetLC2UZ2pUFmytaLuQLHiFcxaCN71fPZPsbIyhduaJi71WaPWIeoHDk8gEmIEb6JO/exec',
+            API_URL: 'https://script.google.com/macros/s/AKfycbwQzOgr7KNE_dDdTnQ7soPjrtGtdigalhA-eFjKntGUHtBSKu-P4JwLKSvSP4FHXS5pNw/exec',
             DEMO_MODE: false // 使用實際 API
         };
 
@@ -834,5 +834,371 @@
                         }
                         
                         // 設置新的查詢timeout (300ms debounce)
+                        phoneQueryTimeout = setTimeout(() => {
+                            queryUserData(phoneNumber);
+                        }, 300);
+                    } else {
+                        phoneError.classList.remove('hidden');
+                    }
+                }
+            });
+        }
 
-                        phoneQuery
+        // 查詢用戶歷史資料
+        async function queryUserData(phone) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const userHistory = document.getElementById('userHistory');
+            const historyList = document.getElementById('historyList');
+
+            try {
+                loadingIndicator.classList.remove('hidden');
+                
+                const requestData = {
+                    action: 'getUserDataByPhone',
+                    phone: phone
+                };
+
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('查詢結果:', result);
+
+                if (result.success && result.data && result.data.length > 0) {
+                    // 顯示歷史資料
+                    historyList.innerHTML = '';
+                    result.data.forEach((record, index) => {
+                        const historyItem = document.createElement('div');
+                        historyItem.className = 'history-item';
+                        historyItem.innerHTML = `
+                            <div class="history-info">
+                                <div class="history-service">${record.service}</div>
+                                <div class="history-date">${record.company}</div>
+                            </div>
+                        `;
+                        
+                        historyItem.addEventListener('click', function() {
+                            fillFormWithHistory(record);
+                        });
+                        
+                        historyList.appendChild(historyItem);
+                    });
+                    
+                    userHistory.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error('查詢用戶資料錯誤:', error);
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        // 填入歷史資料
+        function fillFormWithHistory(record) {
+            document.getElementById('company').value = record.company || '';
+            document.getElementById('department').value = record.department || '';
+            document.getElementById('name').value = record.name || '';
+            
+            // 隱藏歷史資料區塊
+            document.getElementById('userHistory').classList.add('hidden');
+        }
+
+        // 驗證手機號碼
+        function validatePhoneNumber(phone) {
+            // 台灣手機格式: 09xxxxxxxx
+            if (/^09\d{8}$/.test(phone)) {
+                return true;
+            }
+            
+            // 國際格式: +國碼 或 00國碼
+            if (/^(\+|00)\d{1,3}\d{6,14}$/.test(phone)) {
+                return true;
+            }
+            
+            return false;
+        }
+
+        // 設置最小日期為今天
+        function setMinDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').min = today;
+        }
+
+        // 更新服務欄位顯示
+        function updateServiceFields() {
+            const airportField = document.getElementById('airportField');
+            const flightField = document.getElementById('flightField');
+            const pickupField = document.getElementById('pickupField');
+            const dropoffField = document.getElementById('dropoffField');
+            
+            if (selectedService === '北北基桃送機') {
+                airportField.style.display = 'block';
+                flightField.style.display = 'block';
+                // 預設下車地點為機場
+                document.getElementById('dropoff').value = getSelectedAirport();
+            } else if (selectedService === '北北基桃接機') {
+                airportField.style.display = 'block';
+                flightField.style.display = 'block';
+                // 預設上車地點為機場
+                document.getElementById('pickup').value = getSelectedAirport();
+            } else {
+                airportField.style.display = 'none';
+                flightField.style.display = 'none';
+                // 清空機場相關欄位
+                document.getElementById('pickup').value = '';
+                document.getElementById('dropoff').value = '';
+            }
+        }
+
+        // 頁面導航
+        function goToPage(page) {
+            // 隱藏所有頁面
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.progress-step').forEach(s => s.classList.remove('active'));
+            
+            // 顯示目標頁面
+            document.querySelector(`[data-page="${page}"]`).classList.add('active');
+            
+            // 更新進度條
+            for (let i = 1; i <= page; i++) {
+                document.querySelector(`[data-step="${i}"]`).classList.add('active');
+            }
+            
+            currentPage = page;
+        }
+
+        // 下一頁
+        function nextPage() {
+            if (currentPage === 1) {
+                if (!selectedService) {
+                    alert('請選擇服務項目');
+                    return;
+                }
+            } else if (currentPage === 2) {
+                if (!validateForm()) {
+                    return;
+                }
+                generateSummary();
+            }
+            
+            if (currentPage < 4) {
+                goToPage(currentPage + 1);
+            }
+        }
+
+        // 上一頁
+        function prevPage() {
+            if (currentPage > 1) {
+                goToPage(currentPage - 1);
+            }
+        }
+
+        // 表單驗證
+        function validateForm() {
+            const requiredFields = ['phone', 'company', 'name', 'date', 'time', 'pickup', 'dropoff'];
+            let isValid = true;
+
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (!field.value.trim()) {
+                    field.style.borderColor = '#dc3545';
+                    isValid = false;
+                } else {
+                    field.style.borderColor = '#e9ecef';
+                }
+            });
+
+            // 檢查付款方式
+            const paymentSelected = document.querySelector('input[name="payment"]:checked');
+            if (!paymentSelected) {
+                alert('請選擇費用支付方式');
+                isValid = false;
+            }
+
+            // 檢查手機號碼格式
+            if (!validatePhoneNumber(document.getElementById('phone').value)) {
+                alert('請輸入有效的手機號碼');
+                isValid = false;
+            }
+
+            if (!isValid) {
+                alert('請填寫所有必填欄位');
+            }
+
+            return isValid;
+        }
+
+        // 生成預約摘要
+        function generateSummary() {
+            const summaryContent = document.getElementById('summaryContent');
+            const airport = getSelectedAirport();
+            const flight = document.getElementById('flight').value;
+            const airportInfo = flight ? `${airport} / ${flight}` : airport;
+
+            summaryContent.innerHTML = `
+                <div class="summary-item">
+                    <div class="summary-label">服務項目</div>
+                    <div class="summary-value">${selectedService}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">公司名稱</div>
+                    <div class="summary-value">${document.getElementById('company').value}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">聯絡人</div>
+                    <div class="summary-value">${document.getElementById('name').value}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">手機號碼</div>
+                    <div class="summary-value">${document.getElementById('phone').value}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">預約時間</div>
+                    <div class="summary-value">${document.getElementById('date').value} ${document.getElementById('time').value}</div>
+                </div>
+                ${(selectedService !== '其他行程接送') ? `
+                <div class="summary-item">
+                    <div class="summary-label">機場資訊</div>
+                    <div class="summary-value">${airportInfo}</div>
+                </div>` : ''}
+                <div class="summary-item">
+                    <div class="summary-label">上車地點</div>
+                    <div class="summary-value">${document.getElementById('pickup').value}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">下車地點</div>
+                    <div class="summary-value">${document.getElementById('dropoff').value}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">付款方式</div>
+                    <div class="summary-value">${getSelectedPayment()}</div>
+                </div>
+            `;
+        }
+
+        // 提交預約
+        async function submitBooking() {
+            try {
+                const requestData = {
+                    action: 'createBooking',
+                    '服務項目': selectedService,
+                    '公司名稱': document.getElementById('company').value,
+                    '部門': document.getElementById('department').value,
+                    '手機號碼': document.getElementById('phone').value,
+                    '姓名': document.getElementById('name').value,
+                    '日期': document.getElementById('date').value,
+                    '時間': document.getElementById('time').value,
+                    '機場/航班': getSelectedAirport() + (document.getElementById('flight').value ? ' / ' + document.getElementById('flight').value : ''),
+                    '上車點': document.getElementById('pickup').value,
+                    '下車點': document.getElementById('dropoff').value,
+                    '備註': document.getElementById('remarks').value,
+                    '費用支付': getSelectedPayment()
+                };
+
+                console.log('發送請求:', requestData);
+
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('API 回應:', result);
+
+                if (result.success) {
+                    // 成功處理
+                    document.getElementById('bookingIdDisplay').textContent = result.data.phone;
+                    goToPage(4);
+                } else {
+                    throw new Error(result.message || '預約失敗');
+                }
+
+            } catch (error) {
+                console.error('提交預約錯誤:', error);
+                alert('預約提交失敗: ' + error.message);
+            }
+        }
+
+        // 輔助函數
+        function getSelectedAirport() {
+            const selectedAirport = document.querySelector('input[name="airport"]:checked');
+            return selectedAirport ? selectedAirport.value : '桃園機場';
+        }
+
+        function getSelectedPayment() {
+            const selectedPayment = document.querySelector('input[name="payment"]:checked');
+            return selectedPayment ? selectedPayment.value : '';
+        }
+
+        function goToQuery() {
+            alert('查詢功能正在開發中，請使用手機號碼在預約表單中查看歷史資料');
+        }
+
+        function newBooking() {
+            // 重置所有表單
+            document.querySelectorAll('.form-input, .form-textarea').forEach(input => {
+                input.value = '';
+            });
+            
+            // 重置選項
+            document.querySelectorAll('.service-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // 重置機場和付款選項
+            document.querySelector('input[name="airport"][value="桃園機場"]').checked = true;
+            document.querySelectorAll('input[name="payment"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            // 重置變數
+            currentPage = 1;
+            selectedService = '';
+            formData = {};
+            
+            // 回到第一頁
+            goToPage(1);
+            
+            // 禁用下一步按鈕
+            const nextBtn = document.getElementById('nextBtn1');
+            if (nextBtn) {
+                nextBtn.disabled = true;
+            }
+            
+            // 隱藏服務相關欄位
+            const airportField = document.getElementById('airportField');
+            const flightField = document.getElementById('flightField');
+            if (airportField) airportField.style.display = 'none';
+            if (flightField) flightField.style.display = 'none';
+        }
+
+        // 監聽機場選擇變化
+        document.addEventListener('change', function(e) {
+            if (e.target.name === 'airport') {
+                if (selectedService === '北北基桃送機') {
+                    document.getElementById('dropoff').value = getSelectedAirport();
+                } else if (selectedService === '北北基桃接機') {
+                    document.getElementById('pickup').value = getSelectedAirport();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
