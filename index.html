@@ -1088,6 +1088,7 @@
 
         // 提交預約
 // 修改後的提交函數 - 避免 CORS 預檢請求
+// 簡化版本的前端請求函數
 function submitBooking() {
     const requestData = {
         action: 'createBooking',
@@ -1107,12 +1108,15 @@ function submitBooking() {
 
     console.log('發送請求:', requestData);
 
-    // 方案1: 使用 application/x-www-form-urlencoded 避免預檢請求
-    const formData = new FormData();
+    // 使用 URLSearchParams 來避免 CORS 預檢請求
+    const formData = new URLSearchParams();
     formData.append('data', JSON.stringify(requestData));
 
     fetch(CONFIG.API_URL, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
         body: formData
     })
     .then(function(response) {
@@ -1137,7 +1141,6 @@ function submitBooking() {
     });
 }
 
-// 同步修改查詢函數
 function queryUserData(phone) {
     const loadingIndicator = document.getElementById('loadingIndicator');
     const userHistory = document.getElementById('userHistory');
@@ -1150,11 +1153,14 @@ function queryUserData(phone) {
         phone: phone
     };
 
-    const formData = new FormData();
+    const formData = new URLSearchParams();
     formData.append('data', JSON.stringify(requestData));
 
     fetch(CONFIG.API_URL, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
         body: formData
     })
     .then(function(response) {
@@ -1194,7 +1200,6 @@ function queryUserData(phone) {
         loadingIndicator.classList.add('hidden');
     });
 }
-
         // 輔助函數
         function getSelectedAirport() {
             const selectedAirport = document.querySelector('input[name="airport"]:checked');
@@ -1261,4 +1266,5 @@ function queryUserData(phone) {
     </script>
 </body>
 </html>
+
 
