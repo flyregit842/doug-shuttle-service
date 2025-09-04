@@ -765,7 +765,7 @@
     <script>
         // GitHub Pages 專用配置
         const CONFIG = {
-            API_URL: 'https://script.google.com/macros/s/AKfycbwQzOgr7KNE_dDdTnQ7soPjrtGtdigalhA-eFjKntGUHtBSKu-P4JwLKSvSP4FHXS5pNw/exec',
+            API_URL: 'https://script.google.com/macros/s/AKfycbwfUoilCkyZrQWzkJp2PXidzGCEK9MIdfySAvsoKMd1jECLmcXCJoId7goYw3MLRur-GQ/exec',
             DEMO_MODE: false // 使用實際 API
         };
 
@@ -1087,54 +1087,113 @@
         }
 
         // 提交預約
-        async function submitBooking() {
-            try {
-                const requestData = {
-                    action: 'createBooking',
-                    '服務項目': selectedService,
-                    '公司名稱': document.getElementById('company').value,
-                    '部門': document.getElementById('department').value,
-                    '手機號碼': document.getElementById('phone').value,
-                    '姓名': document.getElementById('name').value,
-                    '日期': document.getElementById('date').value,
-                    '時間': document.getElementById('time').value,
-                    '機場/航班': getSelectedAirport() + (document.getElementById('flight').value ? ' / ' + document.getElementById('flight').value : ''),
-                    '上車點': document.getElementById('pickup').value,
-                    '下車點': document.getElementById('dropoff').value,
-                    '備註': document.getElementById('remarks').value,
-                    '費用支付': getSelectedPayment()
-                };
+// 修改後的提交函數 - 避免 CORS 預檢請求
+function submitBooking() {
+    const requestData = {
+        action: 'createBooking',
+        '服務項目': selectedService,
+        '公司名稱': document.getElementById('company').value,
+        '部門': document.getElementById('department').value,
+        '手機號碼': document.getElementById('phone').value,
+        '姓名': document.getElementById('name').value,
+        '日期': document.getElementById('date').value,
+        '時間': document.getElementById('time').value,
+        '機場/航班': getSelectedAirport() + (document.getElementById('flight').value ? ' / ' + document.getElementById('flight').value : ''),
+        '上車點': document.getElementById('pickup').value,
+        '下車點': document.getElementById('dropoff').value,
+        '備註': document.getElementById('remarks').value,
+        '費用支付': getSelectedPayment()
+    };
 
-                console.log('發送請求:', requestData);
+    console.log('發送請求:', requestData);
 
-                const response = await fetch(CONFIG.API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestData)
-                });
+    // 方案1: 使用 application/x-www-form-urlencoded 避免預檢請求
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(requestData));
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                console.log('API 回應:', result);
-
-                if (result.success) {
-                    // 成功處理
-                    document.getElementById('bookingIdDisplay').textContent = result.data.phone;
-                    goToPage(4);
-                } else {
-                    throw new Error(result.message || '預約失敗');
-                }
-
-            } catch (error) {
-                console.error('提交預約錯誤:', error);
-                alert('預約提交失敗: ' + error.message);
-            }
+    fetch(CONFIG.API_URL, {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            throw new Error('HTTP error! status: ' + response.status);
         }
+        return response.json();
+    })
+    .then(function(result) {
+        console.log('API 回應:', result);
+        
+        if (result.success) {
+            document.getElementById('bookingIdDisplay').textContent = result.data.phone;
+            goToPage(4);
+        } else {
+            throw new Error(result.message || '預約失敗');
+        }
+    })
+    .catch(function(error) {
+        console.error('提交預約錯誤:', error);
+        alert('預約提交失敗: ' + error.message);
+    });
+}
+
+// 同步修改查詢函數
+function queryUserData(phone) {
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const userHistory = document.getElementById('userHistory');
+    const historyList = document.getElementById('historyList');
+
+    loadingIndicator.classList.remove('hidden');
+    
+    const requestData = {
+        action: 'getUserDataByPhone',
+        phone: phone
+    };
+
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(requestData));
+
+    fetch(CONFIG.API_URL, {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            throw new Error('HTTP error! status: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(function(result) {
+        console.log('查詢結果:', result);
+
+        if (result.success && result.data && result.data.length > 0) {
+            historyList.innerHTML = '';
+            result.data.forEach(function(record, index) {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = 
+                    '<div class="history-info">' +
+                        '<div class="history-service">' + record.service + '</div>' +
+                        '<div class="history-date">' + record.company + '</div>' +
+                    '</div>';
+                
+                historyItem.addEventListener('click', function() {
+                    fillFormWithHistory(record);
+                });
+                
+                historyList.appendChild(historyItem);
+            });
+            
+            userHistory.classList.remove('hidden');
+        }
+    })
+    .catch(function(error) {
+        console.error('查詢用戶資料錯誤:', error);
+    })
+    .finally(function() {
+        loadingIndicator.classList.add('hidden');
+    });
+}
 
         // 輔助函數
         function getSelectedAirport() {
@@ -1202,3 +1261,4 @@
     </script>
 </body>
 </html>
+
