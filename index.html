@@ -50,6 +50,20 @@
             color: #6c757d;
         }
 
+        .service-indicator {
+            background: #2c3e50;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 16px;
+            display: none;
+        }
+
+        .service-indicator.show {
+            display: block;
+        }
+
         .progress-bar {
             display: flex;
             justify-content: space-between;
@@ -127,16 +141,6 @@
             transform: translateX(0);
         }
 
-        .page.slide-out-left {
-            transform: translateX(-100%);
-            opacity: 0;
-        }
-
-        .page.slide-in-right {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-
         .service-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -151,6 +155,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             background: white;
+            position: relative;
         }
 
         .service-card:hover {
@@ -163,6 +168,24 @@
             border-color: #2c3e50;
             background: #f8f9fa;
             box-shadow: 0 8px 16px rgba(44, 62, 80, 0.15);
+            transform: scale(1.02);
+        }
+
+        .service-card.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #28a745;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
         }
 
         .service-title {
@@ -206,27 +229,15 @@
             box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
         }
 
-        .form-input.loading {
-            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%232c3e50' fill-rule='evenodd'%3E%3Ccircle cx='10' cy='10' r='1'%3E%3Canimate attributeName='r' begin='0s' dur='1.8s' values='1; 4; 1; 1' calcMode='spline' keyTimes='0; .5; .75; 1' keySplines='0.165, 0.84, 0.44, 1; 0.3, 0.61, 0.355, 1; 0.3, 0.61, 0.355, 1' repeatCount='indefinite'/%3E%3C/circle%3E%3C/g%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: calc(100% - 16px) center;
-            background-size: 20px;
+        .form-input.auto-filled {
+            background-color: #e8f5e8;
+            border-color: #28a745;
         }
 
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
-        }
-
-        .form-select {
-            width: 100%;
-            padding: 18px;
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            font-size: 17px;
-            background: white;
-            cursor: pointer;
         }
 
         .form-textarea {
@@ -516,6 +527,17 @@
             color: white;
         }
 
+        .btn-warning {
+            background: transparent;
+            border: 2px solid #ffc107;
+            color: #856404;
+        }
+
+        .btn-warning:hover {
+            background: #ffc107;
+            color: #856404;
+        }
+
         .btn-group {
             display: grid;
             grid-template-columns: 1fr 2fr;
@@ -530,11 +552,27 @@
             margin-top: 32px;
         }
 
+        .btn-group-double {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
         .btn-group-triple {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 12px;
             margin-top: 32px;
+        }
+
+        .action-bar {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding: 16px 24px;
+            border-top: 1px solid #e9ecef;
+            margin: 0 -24px -32px -24px;
         }
 
         .summary-card {
@@ -726,6 +764,9 @@
             <p>專業商務接送服務</p>
         </div>
 
+        <!-- 服務類型顯示器 -->
+        <div class="service-indicator" id="serviceIndicator"></div>
+
         <div class="progress-bar">
             <div class="progress-step active" data-step="1">
                 <div class="step-number">1</div>
@@ -762,9 +803,12 @@
                         <div class="service-desc">高鐵、包車、商務等各種接送服務</div>
                     </div>
                 </div>
-                <div class="btn-group">
-                    <button class="btn btn-danger" onclick="showExitDialog()">離開</button>
-                    <button class="btn btn-outline" onclick="goToQuery()">查詢預約</button>
+                
+                <div class="action-bar">
+                    <div class="btn-group-double">
+                        <button class="btn btn-outline" onclick="goToQuery()">查詢預約</button>
+                        <button class="btn btn-danger" onclick="showExitDialog()">離開</button>
+                    </div>
                 </div>
             </div>
 
@@ -883,9 +927,12 @@
                     </div>
                 </div>
 
-                <div class="btn-group">
-                    <button class="btn btn-outline" onclick="prevPage()">上一步</button>
-                    <button class="btn btn-primary" onclick="nextPage()">下一步</button>
+                <div class="action-bar">
+                    <div class="btn-group-triple">
+                        <button class="btn btn-warning" onclick="restartBooking()">重新開始</button>
+                        <button class="btn btn-outline" onclick="prevPage()">上一步</button>
+                        <button class="btn btn-primary" onclick="nextPage()">下一步</button>
+                    </div>
                 </div>
             </div>
 
@@ -897,13 +944,17 @@
                         <!-- 動態生成預約摘要 -->
                     </div>
                 </div>
-                <div class="btn-group">
-                    <button class="btn btn-outline" onclick="prevPage()">修改資料</button>
-                    <button class="btn btn-primary" onclick="submitBooking()">確認預約</button>
+                
+                <div class="action-bar">
+                    <div class="btn-group-triple">
+                        <button class="btn btn-warning" onclick="restartBooking()">重新開始</button>
+                        <button class="btn btn-outline" onclick="prevPage()">修改資料</button>
+                        <button class="btn btn-primary" onclick="submitBooking()">確認預約</button>
+                    </div>
                 </div>
             </div>
 
-<!-- 第四頁：完成 -->
+            <!-- 第四頁：完成 -->
             <div class="page" data-page="4">
                 <div class="success-icon">✓</div>
                 <div class="success-message">
@@ -914,10 +965,13 @@
                     <div class="booking-id-label">查詢請提供手機號碼</div>
                     <div class="booking-id-value" id="bookingIdDisplay"></div>
                 </div>
-                <div class="btn-group-triple">
-                    <button class="btn btn-outline" onclick="goToQuery()">查詢預約</button>
-                    <button class="btn btn-primary" onclick="newBooking()">新增預約</button>
-                    <button class="btn btn-danger" onclick="showExitDialog()">離開</button>
+                
+                <div class="action-bar">
+                    <div class="btn-group-triple">
+                        <button class="btn btn-outline" onclick="goToQuery()">查詢預約</button>
+                        <button class="btn btn-primary" onclick="newBooking()">新增預約</button>
+                        <button class="btn btn-danger" onclick="showExitDialog()">離開</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -934,3 +988,727 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // GitHub Pages 專用配置
+        const CONFIG = {
+            API_URL: 'https://script.google.com/macros/s/AKfycbwQzOgr7KNE_dDdTnQ7soPjrtGtdigalhA-eFjKntGUHtBSKu-P4JwLKSvSP4FHXS5pNw/exec',
+            DEMO_MODE: false
+        };
+
+        let currentPage = 1;
+        let selectedService = '';
+        let formData = {};
+        let phoneQueryTimeout = null;
+        let userDataCache = {}; // 快取用戶資料
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            setupServiceSelection();
+            setupPhoneInput();
+            setupTimePicker();
+            setMinDate();
+            
+            // 確保所有欄位初始狀態正確
+            const airportField = document.getElementById('airportField');
+            const flightField = document.getElementById('flightField');
+            if (airportField) airportField.style.display = 'none';
+            if (flightField) flightField.style.display = 'none';
+            
+            // 設置點擊外部關閉時間選擇器
+            document.addEventListener('click', function(e) {
+                const timePicker = document.getElementById('timePicker');
+                const timeDisplay = document.getElementById('timeDisplay');
+                if (!timePicker.contains(e.target) && !timeDisplay.contains(e.target)) {
+                    timePicker.classList.remove('show');
+                }
+            });
+        });
+
+        // 設置服務選擇 - 修復點擊問題
+        function setupServiceSelection() {
+            document.querySelectorAll('.service-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log('Service selected:', this.dataset.service);
+                    
+                    // 移除其他選中狀態
+                    document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
+                    
+                    // 設置當前選中
+                    this.classList.add('selected');
+                    selectedService = this.dataset.service;
+                    
+                    // 更新服務顯示器
+                    updateServiceIndicator();
+                    
+                    // 更新服務欄位顯示
+                    updateServiceFields();
+                    
+                    // 延遲自動進入下一頁
+                    setTimeout(() => {
+                        nextPage();
+                    }, 800);
+                });
+            });
+        }
+
+        // 更新服務類型顯示器
+        function updateServiceIndicator() {
+            const serviceIndicator = document.getElementById('serviceIndicator');
+            if (selectedService) {
+                serviceIndicator.textContent = `服務類型：${selectedService}`;
+                serviceIndicator.classList.add('show');
+            } else {
+                serviceIndicator.classList.remove('show');
+            }
+        }
+
+        // 設置時間選擇器
+        function setupTimePicker() {
+            const hourSelect = document.getElementById('hourSelect');
+            const minuteSelect = document.getElementById('minuteSelect');
+            
+            // 生成小時選項 (00-23)
+            for (let i = 0; i <= 23; i++) {
+                const option = document.createElement('option');
+                option.value = i.toString().padStart(2, '0');
+                option.textContent = i.toString().padStart(2, '0');
+                hourSelect.appendChild(option);
+            }
+            
+            // 生成分鐘選項 (每5分鐘)
+            for (let i = 0; i < 60; i += 5) {
+                const option = document.createElement('option');
+                option.value = i.toString().padStart(2, '0');
+                option.textContent = i.toString().padStart(2, '0');
+                minuteSelect.appendChild(option);
+            }
+        }
+
+        // 切換時間選擇器顯示
+        function toggleTimePicker() {
+            const timePicker = document.getElementById('timePicker');
+            timePicker.classList.toggle('show');
+        }
+
+        // 設置選擇的時間
+        function setTime() {
+            const hourSelect = document.getElementById('hourSelect');
+            const minuteSelect = document.getElementById('minuteSelect');
+            const timeValue = document.getElementById('timeValue');
+            const timePicker = document.getElementById('timePicker');
+            
+            if (hourSelect.value && minuteSelect.value) {
+                const timeString = `${hourSelect.value}:${minuteSelect.value}`;
+                timeValue.textContent = timeString;
+                
+                // 創建隱藏的time input來存儲值
+                let hiddenTimeInput = document.getElementById('hiddenTimeInput');
+                if (!hiddenTimeInput) {
+                    hiddenTimeInput = document.createElement('input');
+                    hiddenTimeInput.type = 'hidden';
+                    hiddenTimeInput.id = 'hiddenTimeInput';
+                    hiddenTimeInput.name = 'time';
+                    document.querySelector('.time-input').appendChild(hiddenTimeInput);
+                }
+                hiddenTimeInput.value = timeString;
+                
+                timePicker.classList.remove('show');
+            } else {
+                alert('請選擇完整的時間');
+            }
+        }
+
+        // 設置手機號碼輸入功能 - 修復帶入問題
+        function setupPhoneInput() {
+            const phoneInput = document.getElementById('phone');
+            const phoneError = document.getElementById('phoneError');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const userHistory = document.getElementById('userHistory');
+
+            phoneInput.addEventListener('blur', function() {
+                const phoneNumber = this.value.trim();
+                
+                // 清除之前的狀態
+                phoneError.classList.add('hidden');
+                userHistory.classList.add('hidden');
+                
+                if (phoneNumber) {
+                    if (validatePhoneNumber(phoneNumber)) {
+                        // 清除之前的timeout
+                        if (phoneQueryTimeout) {
+                            clearTimeout(phoneQueryTimeout);
+                        }
+                        
+                        // 設置新的查詢timeout (300ms debounce)
+                        phoneQueryTimeout = setTimeout(() => {
+                            queryUserData(phoneNumber);
+                        }, 300);
+                    } else {
+                        phoneError.classList.remove('hidden');
+                    }
+                }
+            });
+
+            // 監聽輸入變化
+            phoneInput.addEventListener('input', function() {
+                const phoneNumber = this.value.trim();
+                if (phoneNumber.length >= 10) {
+                    phoneInput.dispatchEvent(new Event('blur'));
+                }
+            });
+        }
+
+        // 查詢用戶歷史資料 - 修復API調用
+        function queryUserData(phone) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const userHistory = document.getElementById('userHistory');
+            const historyList = document.getElementById('historyList');
+
+            loadingIndicator.classList.remove('hidden');
+            
+            const requestData = {
+                action: 'getUserDataByPhone',
+                phone: phone
+            };
+
+            console.log('查詢用戶資料:', requestData);
+
+            const formData = new URLSearchParams();
+            formData.append('data', JSON.stringify(requestData));
+
+            fetch(CONFIG.API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData
+            })
+            .then(function(response) {
+                console.log('API回應狀態:', response.status);
+                if (!response.ok) {
+                    throw new Error('HTTP error! status: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(function(result) {
+                console.log('查詢結果:', result);
+
+                if (result.success && result.data && result.data.length > 0) {
+                    // 快取用戶資料
+                    userDataCache = result.data[0];
+                    
+                    historyList.innerHTML = '';
+                    result.data.forEach(function(record, index) {
+                        const historyItem = document.createElement('div');
+                        historyItem.className = 'history-item';
+                        historyItem.innerHTML = 
+                            '<div class="history-info">' +
+                                '<div class="history-service">' + (record.service || '未知服務') + '</div>' +
+                                '<div class="history-date">' + (record.company || '未知公司') + '</div>' +
+                            '</div>';
+                        
+                        historyItem.addEventListener('click', function() {
+                            fillFormWithHistory(record);
+                        });
+                        
+                        historyList.appendChild(historyItem);
+                    });
+                    
+                    userHistory.classList.remove('hidden');
+                    
+                    // 自動填入最新的用戶資料
+                    if (result.data.length > 0) {
+                        autoFillUserData(result.data[0]);
+                    }
+                } else {
+                    console.log('無歷史資料或查詢失敗');
+                }
+            })
+            .catch(function(error) {
+                console.error('查詢用戶資料錯誤:', error);
+            })
+            .finally(function() {
+                loadingIndicator.classList.add('hidden');
+            });
+        }
+
+        // 自動填入用戶資料
+        function autoFillUserData(record) {
+            if (record.company) {
+                const companyInput = document.getElementById('company');
+                companyInput.value = record.company;
+                companyInput.classList.add('auto-filled');
+            }
+            
+            if (record.department) {
+                const departmentInput = document.getElementById('department');
+                departmentInput.value = record.department;
+                departmentInput.classList.add('auto-filled');
+            }
+            
+            if (record.name) {
+                const nameInput = document.getElementById('name');
+                nameInput.value = record.name;
+                nameInput.classList.add('auto-filled');
+            }
+        }
+
+        // 填入歷史資料
+        function fillFormWithHistory(record) {
+            autoFillUserData(record);
+            
+            // 隱藏歷史資料區塊
+            document.getElementById('userHistory').classList.add('hidden');
+        }
+
+        // 驗證手機號碼
+        function validatePhoneNumber(phone) {
+            // 台灣手機格式: 09xxxxxxxx
+            if (/^09\d{8}$/.test(phone)) {
+                return true;
+            }
+            
+            // 國際格式: +國碼 或 00國碼
+            if (/^(\+|00)\d{1,3}\d{6,14}$/.test(phone)) {
+                return true;
+            }
+            
+            return false;
+        }
+
+        // 設置最小日期為今天
+        function setMinDate() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('date');
+            dateInput.min = today;
+            
+            // 監聽日期變化，無需點擊完成
+            dateInput.addEventListener('change', function() {
+                console.log('日期已選擇:', this.value);
+            });
+        }
+
+        // 更新服務欄位顯示
+        function updateServiceFields() {
+            const airportField = document.getElementById('airportField');
+            const flightField = document.getElementById('flightField');
+            
+            if (selectedService === '北北基桃送機') {
+                airportField.style.display = 'block';
+                flightField.style.display = 'block';
+                // 預設下車地點為機場
+                setTimeout(() => {
+                    document.getElementById('dropoff').value = getSelectedAirport();
+                }, 100);
+            } else if (selectedService === '北北基桃接機') {
+                airportField.style.display = 'block';
+                flightField.style.display = 'block';
+                // 預設上車地點為機場
+                setTimeout(() => {
+                    document.getElementById('pickup').value = getSelectedAirport();
+                }, 100);
+            } else {
+                airportField.style.display = 'none';
+                flightField.style.display = 'none';
+                // 清空機場相關欄位
+                document.getElementById('pickup').value = '';
+                document.getElementById('dropoff').value = '';
+            }
+        }
+
+        // 頁面導航 - 增加動畫效果
+        function goToPage(page) {
+            const currentPageElement = document.querySelector('.page.active');
+            const targetPageElement = document.querySelector(`[data-page="${page}"]`);
+            
+            if (currentPageElement && targetPageElement) {
+                // 添加淡出動畫
+                currentPageElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                currentPageElement.style.opacity = '0';
+                currentPageElement.style.transform = page > currentPage ? 'translateX(-30px)' : 'translateX(30px)';
+                
+                setTimeout(() => {
+                    // 隱藏當前頁面
+                    currentPageElement.classList.remove('active');
+                    currentPageElement.style.opacity = '';
+                    currentPageElement.style.transform = '';
+                    
+                    // 準備目標頁面
+                    targetPageElement.style.opacity = '0';
+                    targetPageElement.style.transform = page > currentPage ? 'translateX(30px)' : 'translateX(-30px)';
+                    targetPageElement.classList.add('active');
+                    
+                    // 添加淡入動畫
+                    setTimeout(() => {
+                        targetPageElement.style.transition = 'opacity 0.3s ease-in, transform 0.3s ease-in';
+                        targetPageElement.style.opacity = '1';
+                        targetPageElement.style.transform = 'translateX(0)';
+                        
+                        setTimeout(() => {
+                            targetPageElement.style.transition = '';
+                        }, 300);
+                    }, 50);
+                }, 300);
+            }
+            
+            // 更新進度條
+            document.querySelectorAll('.progress-step').forEach(s => s.classList.remove('active'));
+            for (let i = 1; i <= page; i++) {
+                document.querySelector(`[data-step="${i}"]`).classList.add('active');
+            }
+            
+            currentPage = page;
+            
+            // 更新服務類型顯示器
+            updateServiceIndicator();
+        }
+
+        // 下一頁
+        function nextPage() {
+            if (currentPage === 1) {
+                if (!selectedService) {
+                    alert('請選擇服務項目');
+                    return;
+                }
+            } else if (currentPage === 2) {
+                if (!validateForm()) {
+                    return;
+                }
+                generateSummary();
+            }
+            
+            if (currentPage < 4) {
+                goToPage(currentPage + 1);
+            }
+        }
+
+        // 上一頁
+        function prevPage() {
+            if (currentPage > 1) {
+                goToPage(currentPage - 1);
+            }
+        }
+
+        // 重新開始預約
+        function restartBooking() {
+            if (confirm('確定要重新開始嗎？所有填寫的資料將會清除。')) {
+                // 重置所有表單
+                document.querySelectorAll('.form-input, .form-textarea').forEach(input => {
+                    input.value = '';
+                    input.classList.remove('auto-filled');
+                });
+                
+                // 重置選項
+                document.querySelectorAll('.service-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                // 重置機場和付款選項
+                document.querySelector('input[name="airport"][value="桃園機場"]').checked = true;
+                document.querySelectorAll('input[name="payment"]').forEach(radio => {
+                    radio.checked = false;
+                });
+                
+                // 重置時間選擇器
+                document.getElementById('timeValue').textContent = '請選擇時間';
+                const hiddenTimeInput = document.getElementById('hiddenTimeInput');
+                if (hiddenTimeInput) {
+                    hiddenTimeInput.value = '';
+                }
+                document.getElementById('hourSelect').value = '';
+                document.getElementById('minuteSelect').value = '';
+                
+                // 重置變數
+                selectedService = '';
+                userDataCache = {};
+                
+                // 回到第一頁
+                goToPage(1);
+                
+                // 隱藏服務相關欄位
+                const airportField = document.getElementById('airportField');
+                const flightField = document.getElementById('flightField');
+                if (airportField) airportField.style.display = 'none';
+                if (flightField) flightField.style.display = 'none';
+            }
+        }
+
+        // 表單驗證
+        function validateForm() {
+            const requiredFields = ['phone', 'company', 'name', 'date', 'pickup', 'dropoff'];
+            let isValid = true;
+
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (!field.value.trim()) {
+                    field.style.borderColor = '#dc3545';
+                    isValid = false;
+                } else {
+                    field.style.borderColor = '#e9ecef';
+                }
+            });
+
+            // 檢查時間
+            const hiddenTimeInput = document.getElementById('hiddenTimeInput');
+            if (!hiddenTimeInput || !hiddenTimeInput.value) {
+                document.getElementById('timeDisplay').style.borderColor = '#dc3545';
+                isValid = false;
+            } else {
+                document.getElementById('timeDisplay').style.borderColor = '#e9ecef';
+            }
+
+            // 檢查付款方式
+            const paymentSelected = document.querySelector('input[name="payment"]:checked');
+            if (!paymentSelected) {
+                alert('請選擇費用支付方式');
+                isValid = false;
+            }
+
+            // 檢查手機號碼格式
+            if (!validatePhoneNumber(document.getElementById('phone').value)) {
+                alert('請輸入有效的手機號碼');
+                isValid = false;
+            }
+
+            if (!isValid) {
+                alert('請填寫所有必填欄位');
+            }
+
+            return isValid;
+        }
+
+        // 生成預約摘要
+        function generateSummary() {
+            const summaryContent = document.getElementById('summaryContent');
+            const airport = getSelectedAirport();
+            const flight = document.getElementById('flight').value;
+            const airportInfo = flight ? `${airport} / ${flight}` : airport;
+            const hiddenTimeInput = document.getElementById('hiddenTimeInput');
+            const timeValue = hiddenTimeInput ? hiddenTimeInput.value : '';
+
+            summaryContent.innerHTML = `
+                <div class="summary-item">
+                    <div class="summary-label">服務項目</div>
+                    <div class="summary-value">${selectedService}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">公司名稱</div>
+                    <div class="summary-value">${document.getElementById('company').value}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">聯絡人</div>
+                    <div class="summary-value">${document.getElementById('name').value}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">手機號碼</div>
+                    <div class="summary-value">${document.getElementById('phone').value}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">預約時間</div>
+                    <div class="summary-value">${document.getElementById('date').value} ${timeValue}</div>
+                </div>
+                ${(selectedService !== '其他行程接送') ? `
+                <div class="summary-item">
+                    <div class="summary-label">機場資訊</div>
+                    <div class="summary-value">${airportInfo}</div>
+                </div>` : ''}
+                <div class="summary-item">
+                    <div class="summary-label">上車地點</div>
+                    <div class="summary-value">${document.getElementById('pickup').value}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">下車地點</div>
+                    <div class="summary-value">${document.getElementById('dropoff').value}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">付款方式</div>
+                    <div class="summary-value">${getSelectedPayment()}</div>
+                </div>
+            `;
+        }
+
+        // 提交預約
+        function submitBooking() {
+            const hiddenTimeInput = document.getElementById('hiddenTimeInput');
+            const timeValue = hiddenTimeInput ? hiddenTimeInput.value : '';
+            
+            const requestData = {
+                action: 'createBooking',
+                '服務項目': selectedService,
+                '公司名稱': document.getElementById('company').value,
+                '部門': document.getElementById('department').value,
+                '手機號碼': document.getElementById('phone').value,
+                '姓名': document.getElementById('name').value,
+                '日期': document.getElementById('date').value,
+                '時間': timeValue,
+                '機場/航班': getSelectedAirport() + (document.getElementById('flight').value ? ' / ' + document.getElementById('flight').value : ''),
+                '上車點': document.getElementById('pickup').value,
+                '下車點': document.getElementById('dropoff').value,
+                '備註': document.getElementById('remarks').value,
+                '費用支付': getSelectedPayment()
+            };
+
+            console.log('發送請求:', requestData);
+
+            const formData = new URLSearchParams();
+            formData.append('data', JSON.stringify(requestData));
+
+            fetch(CONFIG.API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('HTTP error! status: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(function(result) {
+                console.log('API 回應:', result);
+
+                if (result.success) {
+                    document.getElementById('bookingIdDisplay').textContent = result.data.phone;
+                    goToPage(4);
+                } else {
+                    throw new Error(result.message || '預約失敗');
+                }
+            })
+            .catch(function(error) {
+                console.error('提交預約錯誤:', error);
+                alert('預約提交失敗: ' + error.message);
+            });
+        }
+
+        // 輔助函數
+        function getSelectedAirport() {
+            const selectedAirport = document.querySelector('input[name="airport"]:checked');
+            return selectedAirport ? selectedAirport.value : '桃園機場';
+        }
+
+        function getSelectedPayment() {
+            const selectedPayment = document.querySelector('input[name="payment"]:checked');
+            return selectedPayment ? selectedPayment.value : '';
+        }
+
+        function goToQuery() {
+            alert('查詢功能正在開發中，請使用手機號碼在預約表單中查看歷史資料');
+        }
+
+        // 新增預約 - 保留個資但重置其他欄位
+        function newBooking() {
+            // 保存個資
+            const savedData = {
+                phone: document.getElementById('phone').value,
+                company: document.getElementById('company').value,
+                department: document.getElementById('department').value,
+                name: document.getElementById('name').value
+            };
+            
+            // 重置所有表單
+            document.querySelectorAll('.form-input, .form-textarea').forEach(input => {
+                if (!['phone', 'company', 'department', 'name'].includes(input.id)) {
+                    input.value = '';
+                }
+                input.classList.remove('auto-filled');
+            });
+            
+            // 恢復個資並標記為自動填入
+            if (savedData.phone) {
+                document.getElementById('phone').value = savedData.phone;
+                document.getElementById('phone').classList.add('auto-filled');
+            }
+            if (savedData.company) {
+                document.getElementById('company').value = savedData.company;
+                document.getElementById('company').classList.add('auto-filled');
+            }
+            if (savedData.department) {
+                document.getElementById('department').value = savedData.department;
+                document.getElementById('department').classList.add('auto-filled');
+            }
+            if (savedData.name) {
+                document.getElementById('name').value = savedData.name;
+                document.getElementById('name').classList.add('auto-filled');
+            }
+            
+            // 重置選項
+            document.querySelectorAll('.service-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // 重置機場和付款選項
+            document.querySelector('input[name="airport"][value="桃園機場"]').checked = true;
+            document.querySelectorAll('input[name="payment"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            // 重置時間選擇器
+            document.getElementById('timeValue').textContent = '請選擇時間';
+            const hiddenTimeInput = document.getElementById('hiddenTimeInput');
+            if (hiddenTimeInput) {
+                hiddenTimeInput.value = '';
+            }
+            document.getElementById('hourSelect').value = '';
+            document.getElementById('minuteSelect').value = '';
+            
+            // 重置變數
+            selectedService = '';
+            
+            // 回到第一頁
+            goToPage(1);
+            
+            // 隱藏服務相關欄位
+            const airportField = document.getElementById('airportField');
+            const flightField = document.getElementById('flightField');
+            if (airportField) airportField.style.display = 'none';
+            if (flightField) flightField.style.display = 'none';
+        }
+
+        // 顯示離開對話框
+        function showExitDialog() {
+            const exitOverlay = document.getElementById('exitOverlay');
+            exitOverlay.classList.add('show');
+        }
+
+        // 隱藏離開對話框
+        function hideExitDialog() {
+            const exitOverlay = document.getElementById('exitOverlay');
+            exitOverlay.classList.remove('show');
+        }
+
+        // 離開系統
+        function exitSystem() {
+            window.close();
+            // 如果無法關閉視窗，則跳轉到空白頁面
+            setTimeout(() => {
+                window.location.href = 'about:blank';
+            }, 100);
+        }
+
+        // 監聽機場選擇變化
+        document.addEventListener('change', function(e) {
+            if (e.target.name === 'airport') {
+                if (selectedService === '北北基桃送機') {
+                    document.getElementById('dropoff').value = getSelectedAirport();
+                } else if (selectedService === '北北基桃接機') {
+                    document.getElementById('pickup').value = getSelectedAirport();
+                }
+            }
+        });
+
+        // ESC鍵關閉時間選擇器
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.getElementById('timePicker').classList.remove('show');
+                hideExitDialog();
+            }
+        });
+    </script>
+</body>
+</html>
