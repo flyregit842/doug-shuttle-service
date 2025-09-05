@@ -667,12 +667,19 @@
         // 取消預約
         async function cancelBooking() {
             try {
+                // 使用 URLSearchParams 避免 CORS 問題
+                const formData = new URLSearchParams();
+                formData.append('action', 'cancelBooking');
+                formData.append('phone', currentBookingData.phone);
+                formData.append('date', currentBookingData.date);
+                formData.append('time', currentBookingData.time);
+
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `action=cancelBooking&phone=${encodeURIComponent(currentBookingData.phone)}&date=${encodeURIComponent(currentBookingData.date)}&time=${encodeURIComponent(currentBookingData.time)}`
+                    body: formData
                 });
 
                 const result = await response.json();
