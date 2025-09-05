@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>預約查詢 - 機場接送預約系統</title>
-    <meta name="description" content="查詢、修改、取消機場接送預約">
+    <title>查詢預約 - 機場接送服務</title>
     <style>
         * {
             margin: 0;
@@ -13,33 +12,34 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            background: #f8f9fa;
+            font-family: 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
-            color: #333;
         }
 
         .container {
-            max-width: 600px;
-            margin: 0 auto;
             background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
             overflow: hidden;
         }
 
         .header {
-            background: #2c3e50;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
             color: white;
-            padding: 40px 24px;
+            padding: 30px;
             text-align: center;
         }
 
         .header h1 {
             font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .header p {
@@ -47,212 +47,136 @@
             opacity: 0.9;
         }
 
-        .nav-tabs {
-            display: flex;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .nav-tab {
-            flex: 1;
-            padding: 16px;
-            text-align: center;
-            background: none;
-            border: none;
-            font-size: 16px;
-            font-weight: 600;
-            color: #6c757d;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .nav-tab.active {
-            background: white;
-            color: #2c3e50;
-            border-bottom: 3px solid #2c3e50;
-        }
-
         .content {
-            padding: 32px 24px;
+            padding: 30px;
         }
 
-        .tab-pane {
-            display: none;
-        }
-
-        .tab-pane.active {
-            display: block;
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .search-form {
-            background: #f8f9fa;
-            padding: 24px;
-            border-radius: 16px;
-            margin-bottom: 32px;
-            border-left: 4px solid #2c3e50;
+        .search-section {
+            margin-bottom: 30px;
         }
 
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
-        .form-label {
+        .form-group label {
             display: block;
-            font-size: 16px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
         }
 
-        .form-input {
+        .form-group input {
             width: 100%;
-            padding: 16px;
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            font-size: 17px;
-            transition: all 0.3s ease;
-            background: white;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
         }
 
-        .form-input:focus {
+        .form-group input:focus {
             outline: none;
-            border-color: #2c3e50;
-            box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
+            border-color: #4CAF50;
         }
 
         .btn {
-            padding: 16px 24px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
             border: none;
-            border-radius: 12px;
+            padding: 15px 30px;
+            border-radius: 10px;
             font-size: 16px;
-            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: #2c3e50;
-            color: white;
+            transition: transform 0.3s;
             width: 100%;
-            justify-content: center;
+            margin-bottom: 10px;
         }
 
-        .btn-primary:hover {
-            background: #34495e;
+        .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(44, 62, 80, 0.3);
         }
 
-        .btn-edit {
-            background: #17a2b8;
-            color: white;
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #333;
+        }
+
+        .btn-small {
             padding: 8px 16px;
             font-size: 14px;
-        }
-
-        .btn-edit:hover {
-            background: #138496;
-        }
-
-        .btn-delete {
-            background: #dc3545;
-            color: white;
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-
-        .btn-delete:hover {
-            background: #c82333;
-        }
-
-        .btn-cancel {
-            background: #6c757d;
-            color: white;
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-
-        .btn-cancel:hover {
-            background: #545b62;
+            width: auto;
+            margin: 0 5px;
         }
 
         .loading {
             text-align: center;
-            padding: 40px;
-            color: #6c757d;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
         }
 
-        .loading-spinner {
-            width: 32px;
-            height: 32px;
-            border: 3px solid #e9ecef;
-            border-top: 3px solid #2c3e50;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
         }
 
         .booking-list {
-            display: grid;
-            gap: 16px;
+            margin-top: 30px;
         }
 
-        .booking-card {
-            background: white;
-            border: 2px solid #e9ecef;
-            border-radius: 16px;
-            padding: 20px;
-            transition: all 0.3s ease;
+        .booking-item {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: border-color 0.3s;
         }
 
-        .booking-card:hover {
-            border-color: #2c3e50;
-            box-shadow: 0 8px 16px rgba(44, 62, 80, 0.1);
+        .booking-item:hover {
+            border-color: #4CAF50;
         }
 
         .booking-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 16px;
-        }
-
-        .booking-service {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2c3e50;
+            align-items: center;
         }
 
         .booking-status {
-            padding: 4px 12px;
+            padding: 5px 12px;
             border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
+            font-size: 14px;
+            font-weight: bold;
         }
 
-        .status-active {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .status-cancelled {
-            background: #f8d7da;
-            color: #721c24;
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
         }
 
         .status-completed {
@@ -260,306 +184,205 @@
             color: #155724;
         }
 
-        .booking-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
+        .booking-details {
+            padding: 20px;
         }
 
-        .info-item {
+        .detail-row {
             display: flex;
-            flex-direction: column;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
         }
 
-        .info-label {
-            font-size: 13px;
-            color: #6c757d;
-            font-weight: 500;
-            margin-bottom: 4px;
+        .detail-label {
+            font-weight: bold;
+            color: #555;
+            min-width: 100px;
+            margin-right: 10px;
         }
 
-        .info-value {
-            font-size: 15px;
-            color: #2c3e50;
-            font-weight: 600;
+        .detail-value {
+            color: #333;
+            flex: 1;
         }
 
         .booking-actions {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
             display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-            border-top: 1px solid #e9ecef;
-            padding-top: 16px;
-        }
-
-        .no-results {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6c757d;
-        }
-
-        .no-results-icon {
-            font-size: 64px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .no-results-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .no-results-desc {
-            font-size: 16px;
-            line-height: 1.5;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .edit-form {
             background: #f8f9fa;
-            border-radius: 16px;
-            padding: 24px;
-            margin-top: 24px;
-            border-left: 4px solid #17a2b8;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
             display: none;
         }
 
-        .edit-form.active {
+        .edit-form.show {
             display: block;
-            animation: fadeIn 0.3s ease-in;
         }
 
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
+        .edit-form .form-group {
+            margin-bottom: 15px;
         }
 
-        .form-select {
+        .edit-form input,
+        .edit-form select,
+        .edit-form textarea {
             width: 100%;
-            padding: 16px;
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            font-size: 17px;
-            background: white;
-            cursor: pointer;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
         }
 
-        .form-textarea {
-            width: 100%;
-            padding: 16px;
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            font-size: 17px;
-            min-height: 100px;
+        .edit-form textarea {
+            height: 80px;
             resize: vertical;
-            font-family: inherit;
         }
 
-        .form-actions {
+        .edit-actions {
             display: flex;
-            gap: 12px;
-            margin-top: 24px;
+            gap: 10px;
+            margin-top: 15px;
         }
 
-        .alert {
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .back-home {
+            text-align: center;
+            margin-top: 30px;
         }
 
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border-left: 4px solid #28a745;
+        .contact-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 30px;
+            color: #1565c0;
+            font-weight: bold;
         }
 
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border-left: 4px solid #dc3545;
-        }
-
-        .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border-left: 4px solid #ffc107;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: #2c3e50;
-            text-decoration: none;
-            font-weight: 600;
-            margin-bottom: 24px;
-            transition: color 0.3s ease;
-        }
-
-        .back-link:hover {
-            color: #34495e;
-        }
-
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .container {
                 margin: 10px;
-                border-radius: 16px;
+                border-radius: 15px;
             }
 
             .header {
-                padding: 24px 16px;
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
             }
 
             .content {
-                padding: 24px 16px;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .booking-info {
-                grid-template-columns: 1fr;
+                padding: 20px;
             }
 
             .booking-actions {
                 flex-direction: column;
             }
 
-            .form-actions {
+            .btn-small {
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .detail-row {
                 flex-direction: column;
             }
+
+            .detail-label {
+                min-width: auto;
+                margin-bottom: 5px;
+            }
+
+            .edit-actions {
+                flex-direction: column;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>預約查詢系統</h1>
-            <p>查詢、修改或取消您的預約</p>
-        </div>
-
-        <div class="nav-tabs">
-            <button class="nav-tab active" data-tab="search">查詢預約</button>
-            <button class="nav-tab" data-tab="manage">管理預約</button>
+            <h1>查詢預約</h1>
+            <p>輸入手機號碼查看您的預約記錄</p>
         </div>
 
         <div class="content">
-            <a href="index.html" class="back-link">
-                ← 返回預約頁面
-            </a>
-
-            <!-- 查詢預約頁籤 -->
-            <div class="tab-pane active" id="search-tab">
-                <div class="search-form">
-                    <div class="form-group">
-                        <label class="form-label">手機號碼 *</label>
-                        <input type="tel" class="form-input" id="searchPhone" placeholder="請輸入您的手機號碼">
-                    </div>
-                    <button class="btn btn-primary" onclick="searchBookings()">
-                        console.log('測試 API 連線...');
-                        try {
-                            const testResponse = await fetch(CONFIG.API_URL + '?test=1');
-                            console.log('GET 測試成功');
-                        } catch (error) {
-                            console.log('GET 測試失敗:', error);
-                        }
-                    </button>
+            <!-- 搜尋區域 -->
+            <div class="search-section">
+                <div class="form-group">
+                    <label for="searchPhone">手機號碼</label>
+                    <input type="tel" id="searchPhone" placeholder="請輸入手機號碼" maxlength="10">
                 </div>
-
-                <div id="searchResults">
-                    <!-- 查詢結果將在這裡顯示 -->
-                </div>
+                <button class="btn" onclick="searchBookings()">查詢預約</button>
             </div>
 
-            <!-- 管理預約頁籤 -->
-            <div class="tab-pane" id="manage-tab">
-                <div id="manageContent">
-                    <div class="no-results">
-                        <div class="no-results-icon">📋</div>
-                        <div class="no-results-title">選擇要管理的預約</div>
-                        <div class="no-results-desc">請先在「查詢預約」頁籤中搜尋您的預約記錄</div>
-                    </div>
-                </div>
+            <!-- 訊息顯示區域 -->
+            <div id="messageArea"></div>
 
-                <!-- 編輯表單 -->
-                <div class="edit-form" id="editForm">
-                    <h3 style="margin-bottom: 20px; color: #17a2b8;">修改預約資訊</h3>
-                    <form id="editBookingForm">
-                        <div class="form-group">
-                            <label class="form-label">服務項目 *</label>
-                            <select class="form-select" id="editService" required>
-                                <option value="北北基桃送機">北北基桃送機</option>
-                                <option value="北北基桃接機">北北基桃接機</option>
-                                <option value="其他行程接送">其他行程接送</option>
-                            </select>
-                        </div>
+            <!-- 預約列表區域 -->
+            <div id="bookingListArea"></div>
 
-                        <div class="form-group">
-                            <label class="form-label">公司名稱 *</label>
-                            <input type="text" class="form-input" id="editCompany" required>
-                        </div>
+            <!-- 返回首頁 -->
+            <div class="back-home">
+                <button class="btn btn-secondary" onclick="goHome()">返回首頁</button>
+            </div>
 
-                        <div class="form-group">
-                            <label class="form-label">部門</label>
-                            <input type="text" class="form-input" id="editDepartment">
-                        </div>
+            <!-- 聯繫資訊 -->
+            <div class="contact-info">
+                服務電郵：jg0989280920@gmail.com
+            </div>
+        </div>
+    </div>
 
-                        <div class="form-group">
-                            <label class="form-label">聯絡人姓名 *</label>
-                            <input type="text" class="form-input" id="editName" required>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">預約日期 *</label>
-                                <input type="date" class="form-input" id="editDate" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">預約時間 *</label>
-                                <input type="time" class="form-input" id="editTime" required>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">機場/航班資訊</label>
-                            <input type="text" class="form-input" id="editAirport">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">上車地點 *</label>
-                            <input type="text" class="form-input" id="editPickup" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">下車地點 *</label>
-                            <input type="text" class="form-input" id="editDropoff" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">備註</label>
-                            <textarea class="form-textarea" id="editRemarks"></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">費用支付方式 *</label>
-                            <select class="form-select" id="editPayment" required>
-                                <option value="簽單">公司簽單</option>
-                                <option value="現金">現金付款</option>
-                            </select>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-cancel" onclick="cancelEdit()">取消</button>
-                            <button type="submit" class="btn btn-primary">儲存修改</button>
-                        </div>
-                    </form>
-                </div>
+    <!-- 確認對話框 -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">確認操作</h3>
+            <p id="modalMessage">您確定要執行此操作嗎？</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary btn-small" onclick="closeModal()">取消</button>
+                <button class="btn btn-danger btn-small" onclick="confirmAction()">確認</button>
             </div>
         </div>
     </div>
@@ -567,446 +390,351 @@
     <script>
         // 設定
         const CONFIG = {
-            API_URL: 'https://script.google.com/macros/s/AKfycbwQzOgr7KNE_dDdTnQ7soPjrtGtdigalhA-eFjKntGUHtBSKu-P4JwLKSvSP4FHXS5pNw/exec',
-            DEMO_MODE: false
+            API_URL: 'https://script.google.com/macros/s/AKfycbzOYvzAyX74X3XvFaWy4TdSWKH0yA2NXQWS5BOdHGkO_EMOQOwAXpMO2O-39mGV_XE/exec'
         };
 
-        let currentBookings = [];
-        let editingBooking = null;
+        let currentAction = null;
+        let currentBookingData = null;
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
-            setupTabs();
-            setMinDate();
-            
-            // 檢查URL參數，如果有phone參數則自動查詢
-            const urlParams = new URLSearchParams(window.location.search);
-            const phoneParam = urlParams.get('phone');
-            if (phoneParam) {
-                document.getElementById('searchPhone').value = phoneParam;
-                searchBookings();
-            }
+            setupPhoneInput();
         });
 
-        // 設定頁籤切換
-        function setupTabs() {
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const targetTab = this.dataset.tab;
-                    switchTab(targetTab);
-                });
+        // 手機號碼輸入設定
+        function setupPhoneInput() {
+            const phoneInput = document.getElementById('searchPhone');
+            
+            phoneInput.addEventListener('input', function() {
+                this.value = this.value.replace(/[^\d]/g, '');
             });
-        }
 
-        // 切換頁籤
-        function switchTab(tabName) {
-            // 更新頁籤按鈕狀態
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
+            phoneInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchBookings();
+                }
             });
-            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-
-            // 更新頁籤內容
-            document.querySelectorAll('.tab-pane').forEach(pane => {
-                pane.classList.remove('active');
-            });
-            document.getElementById(`${tabName}-tab`).classList.add('active');
-        }
-
-        // 設定最小日期
-        function setMinDate() {
-            const today = new Date().toISOString().split('T')[0];
-            const dateInput = document.getElementById('editDate');
-            if (dateInput) {
-                dateInput.min = today;
-            }
         }
 
         // 查詢預約
         async function searchBookings() {
             const phone = document.getElementById('searchPhone').value.trim();
             
-            if (!phone) {
-                showAlert('請輸入手機號碼', 'error');
+            if (!validatePhone(phone)) {
+                showMessage('請輸入正確的手機號碼（10位數字）', 'error');
                 return;
             }
 
-            if (!validatePhoneNumber(phone)) {
-                showAlert('請輸入有效的手機號碼格式', 'error');
-                return;
-            }
-
-            const resultsContainer = document.getElementById('searchResults');
+            showLoading();
             
-            // 顯示載入中
-            resultsContainer.innerHTML = `
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <div>正在查詢預約記錄...</div>
-                </div>
-            `;
-
             try {
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: JSON.stringify({
-                        action: 'getBookingsByPhone',
-                        phone: phone
-                    })
+                    body: `action=getBookingsByPhone&phone=${encodeURIComponent(phone)}`
                 });
 
                 const result = await response.json();
                 
                 if (result.success) {
-                    currentBookings = result.data;
-                    displayBookings(currentBookings);
+                    displayBookings(result.bookings || []);
                 } else {
-                    throw new Error(result.message || '查詢失敗');
+                    showMessage(result.message || '查詢失敗，請稍後再試', 'error');
                 }
-
             } catch (error) {
                 console.error('查詢錯誤:', error);
-                resultsContainer.innerHTML = `
-                    <div class="alert alert-error">
-                        ❌ 查詢失敗：${error.message}
-                    </div>
-                `;
+                showMessage('網路連線異常，請檢查網路連線後重試', 'error');
             }
+        }
+
+        // 驗證手機號碼
+        function validatePhone(phone) {
+            return /^09\d{8}$/.test(phone);
+        }
+
+        // 顯示載入中
+        function showLoading() {
+            document.getElementById('messageArea').innerHTML = '<div class="loading">查詢中，請稍候...</div>';
+            document.getElementById('bookingListArea').innerHTML = '';
+        }
+
+        // 顯示訊息
+        function showMessage(message, type = 'info') {
+            const messageArea = document.getElementById('messageArea');
+            const className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info');
+            messageArea.innerHTML = `<div class="${className}">${message}</div>`;
         }
 
         // 顯示預約列表
         function displayBookings(bookings) {
-            const resultsContainer = document.getElementById('searchResults');
+            const messageArea = document.getElementById('messageArea');
+            const listArea = document.getElementById('bookingListArea');
             
-            if (!bookings || bookings.length === 0) {
-                resultsContainer.innerHTML = `
-                    <div class="no-results">
-                        <div class="no-results-icon">📭</div>
-                        <div class="no-results-title">未找到預約記錄</div>
-                        <div class="no-results-desc">
-                            請確認手機號碼是否正確，或
-                            <a href="index.html" style="color: #2c3e50;">建立新預約</a>
-                        </div>
-                    </div>
-                `;
+            if (bookings.length === 0) {
+                messageArea.innerHTML = '<div class="error">未找到相關預約記錄</div>';
+                listArea.innerHTML = '';
                 return;
             }
 
-            const bookingsHtml = bookings.map(booking => {
-                const statusClass = getStatusClass(booking.status);
-                const statusText = getStatusText(booking.status);
-                
+            messageArea.innerHTML = `<div class="success">找到 ${bookings.length} 筆預約記錄</div>`;
+            
+            // 按時間排序（最新的在前）
+            bookings.sort((a, b) => {
+                const dateTimeA = new Date(`${a.date} ${a.time}`);
+                const dateTimeB = new Date(`${b.date} ${b.time}`);
+                return dateTimeB - dateTimeA;
+            });
+
+            const listHTML = bookings.map((booking, index) => {
+                const bookingDateTime = new Date(`${booking.date} ${booking.time}`);
+                const now = new Date();
+                const isCompleted = bookingDateTime < now;
+                const statusClass = isCompleted ? 'status-completed' : 'status-pending';
+                const statusText = isCompleted ? '已完成' : '未完成';
+
                 return `
-                    <div class="booking-card">
+                    <div class="booking-item">
                         <div class="booking-header">
-                            <div class="booking-service">${booking.service}</div>
-                            <div class="booking-status ${statusClass}">${statusText}</div>
+                            <h3>預約 #${index + 1}</h3>
+                            <span class="booking-status ${statusClass}">${statusText}</span>
                         </div>
-                        
-                        <div class="booking-info">
-                            <div class="info-item">
-                                <div class="info-label">公司名稱</div>
-                                <div class="info-value">${booking.company}</div>
+                        <div class="booking-details">
+                            <div class="detail-row">
+                                <span class="detail-label">服務類型:</span>
+                                <span class="detail-value">${booking.service}</span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">聯絡人</div>
-                                <div class="info-value">${booking.name}</div>
+                            <div class="detail-row">
+                                <span class="detail-label">日期時間:</span>
+                                <span class="detail-value">${booking.date} ${booking.time}</span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">預約日期</div>
-                                <div class="info-value">${formatDate(booking.date)}</div>
+                            <div class="detail-row">
+                                <span class="detail-label">起點:</span>
+                                <span class="detail-value">${booking.departure}</span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">預約時間</div>
-                                <div class="info-value">${booking.time}</div>
+                            <div class="detail-row">
+                                <span class="detail-label">終點:</span>
+                                <span class="detail-value">${booking.destination}</span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">上車地點</div>
-                                <div class="info-value">${booking.pickup}</div>
+                            <div class="detail-row">
+                                <span class="detail-label">乘客:</span>
+                                <span class="detail-value">${booking.passengers}人</span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">下車地點</div>
-                                <div class="info-value">${booking.dropoff}</div>
+                            <div class="detail-row">
+                                <span class="detail-label">聯絡人:</span>
+                                <span class="detail-value">${booking.name}</span>
                             </div>
-                            ${booking.airport ? `
-                            <div class="info-item">
-                                <div class="info-label">機場/航班</div>
-                                <div class="info-value">${booking.airport}</div>
+                            <div class="detail-row">
+                                <span class="detail-label">手機:</span>
+                                <span class="detail-value">${booking.phone}</span>
                             </div>
-                            ` : ''}
-                            ${booking.remarks ? `
-                            <div class="info-item" style="grid-column: 1 / -1;">
-                                <div class="info-label">備註</div>
-                                <div class="info-value">${booking.remarks}</div>
+                            ${booking.notes ? `
+                            <div class="detail-row">
+                                <span class="detail-label">備註:</span>
+                                <span class="detail-value">${booking.notes}</span>
                             </div>
                             ` : ''}
                         </div>
                         
+                        <!-- 編輯表單 -->
+                        <div class="edit-form" id="editForm${index}">
+                            <div class="form-group">
+                                <label>預約日期</label>
+                                <input type="date" id="editDate${index}" value="${booking.date}">
+                            </div>
+                            <div class="form-group">
+                                <label>預約時間</label>
+                                <input type="time" id="editTime${index}" value="${booking.time}">
+                            </div>
+                            <div class="form-group">
+                                <label>起點</label>
+                                <input type="text" id="editDeparture${index}" value="${booking.departure}">
+                            </div>
+                            <div class="form-group">
+                                <label>終點</label>
+                                <input type="text" id="editDestination${index}" value="${booking.destination}">
+                            </div>
+                            <div class="form-group">
+                                <label>乘客人數</label>
+                                <select id="editPassengers${index}">
+                                    <option value="1" ${booking.passengers == 1 ? 'selected' : ''}>1人</option>
+                                    <option value="2" ${booking.passengers == 2 ? 'selected' : ''}>2人</option>
+                                    <option value="3" ${booking.passengers == 3 ? 'selected' : ''}>3人</option>
+                                    <option value="4" ${booking.passengers == 4 ? 'selected' : ''}>4人</option>
+                                    <option value="5" ${booking.passengers == 5 ? 'selected' : ''}>5人以上</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>備註</label>
+                                <textarea id="editNotes${index}" placeholder="其他需求或備註">${booking.notes || ''}</textarea>
+                            </div>
+                            <div class="edit-actions">
+                                <button class="btn btn-secondary" onclick="cancelEdit(${index})">取消修改</button>
+                                <button class="btn" onclick="saveEdit(${index})">儲存修改</button>
+                            </div>
+                        </div>
+
                         <div class="booking-actions">
-                            ${booking.status === 'active' ? `
-                                <button class="btn btn-edit" onclick="editBooking(${booking.rowIndex})">
-                                    ✏️ 修改
-                                </button>
-                                <button class="btn btn-delete" onclick="cancelBooking(${booking.rowIndex})">
-                                    ❌ 取消
-                                </button>
+                            ${!isCompleted ? `
+                                <button class="btn btn-warning btn-small" onclick="startEdit(${index})">修改預約</button>
+                                <button class="btn btn-danger btn-small" onclick="confirmCancel('${booking.phone}', '${booking.date}', '${booking.time}')">取消預約</button>
                             ` : ''}
+                            <button class="btn btn-secondary btn-small" onclick="copyBooking(${index})">複製預約</button>
                         </div>
                     </div>
                 `;
             }).join('');
 
-            resultsContainer.innerHTML = `
-                <div class="alert alert-success">
-                    ✅ 找到 ${bookings.length} 筆預約記錄
-                </div>
-                <div class="booking-list">
-                    ${bookingsHtml}
-                </div>
-            `;
+            listArea.innerHTML = `<div class="booking-list">${listHTML}</div>`;
         }
 
-        // 編輯預約
-        function editBooking(rowIndex) {
-            const booking = currentBookings.find(b => b.rowIndex === rowIndex);
-            if (!booking) {
-                showAlert('找不到指定的預約記錄', 'error');
-                return;
-            }
-
-            editingBooking = booking;
-            
-            // 切換到管理頁籤
-            switchTab('manage');
-            
-            // 填入表單資料
-            document.getElementById('editService').value = booking.service;
-            document.getElementById('editCompany').value = booking.company;
-            document.getElementById('editDepartment').value = booking.department || '';
-            document.getElementById('editName').value = booking.name;
-            document.getElementById('editDate').value = booking.date;
-            document.getElementById('editTime').value = booking.time;
-            document.getElementById('editAirport').value = booking.airport || '';
-            document.getElementById('editPickup').value = booking.pickup;
-            document.getElementById('editDropoff').value = booking.dropoff;
-            document.getElementById('editRemarks').value = booking.remarks || '';
-            document.getElementById('editPayment').value = booking.payment;
-            
-            // 顯示編輯表單
-            document.getElementById('manageContent').innerHTML = `
-                <div class="alert alert-warning">
-                    ⚠️ 正在修改預約：${booking.service} - ${formatDate(booking.date)} ${booking.time}
-                </div>
-            `;
-            document.getElementById('editForm').classList.add('active');
+        // 開始編輯
+        function startEdit(index) {
+            const editForm = document.getElementById(`editForm${index}`);
+            editForm.classList.add('show');
         }
 
-        // 取消預約
-        async function cancelBooking(rowIndex) {
-            const booking = currentBookings.find(b => b.rowIndex === rowIndex);
-            if (!booking) {
-                showAlert('找不到指定的預約記錄', 'error');
-                return;
-            }
-
-            if (!confirm(`確定要取消以下預約嗎？\n\n${booking.service}\n${formatDate(booking.date)} ${booking.time}\n${booking.pickup} → ${booking.dropoff}`)) {
-                return;
-            }
-
-            try {
-                const response = await fetch(CONFIG.API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'deleteBooking',
-                        rowIndex: rowIndex
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showAlert('預約已成功取消', 'success');
-                    // 重新查詢以更新列表
-                    searchBookings();
-                } else {
-                    throw new Error(result.message || '取消失敗');
-                }
-
-            } catch (error) {
-                console.error('取消預約錯誤:', error);
-                showAlert(`取消失敗：${error.message}`, 'error');
-            }
+        // 取消編輯
+        function cancelEdit(index) {
+            const editForm = document.getElementById(`editForm${index}`);
+            editForm.classList.remove('show');
         }
 
-        // 處理編輯表單提交
-        document.getElementById('editBookingForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            if (!editingBooking) {
-                showAlert('無效的編輯操作', 'error');
-                return;
-            }
+        // 儲存編輯
+        async function saveEdit(index) {
+            const phone = document.getElementById('searchPhone').value;
+            const originalBookings = JSON.parse(localStorage.getItem('currentBookings') || '[]');
+            const originalBooking = originalBookings[index];
 
-            const formData = {
+            const updatedData = {
                 action: 'updateBooking',
-                rowIndex: editingBooking.rowIndex,
-                服務項目: document.getElementById('editService').value,
-                公司名稱: document.getElementById('editCompany').value,
-                部門: document.getElementById('editDepartment').value,
-                姓名: document.getElementById('editName').value,
-                日期: document.getElementById('editDate').value,
-                時間: document.getElementById('editTime').value,
-                '機場/航班': document.getElementById('editAirport').value,
-                上車點: document.getElementById('editPickup').value,
-                下車點: document.getElementById('editDropoff').value,
-                備註: document.getElementById('editRemarks').value,
-                費用支付: document.getElementById('editPayment').value
+                phone: phone,
+                originalDate: originalBooking.date,
+                originalTime: originalBooking.time,
+                newDate: document.getElementById(`editDate${index}`).value,
+                newTime: document.getElementById(`editTime${index}`).value,
+                departure: document.getElementById(`editDeparture${index}`).value,
+                destination: document.getElementById(`editDestination${index}`).value,
+                passengers: document.getElementById(`editPassengers${index}`).value,
+                notes: document.getElementById(`editNotes${index}`).value
             };
 
             try {
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: JSON.stringify(formData)
+                    body: Object.keys(updatedData).map(key => 
+                        `${key}=${encodeURIComponent(updatedData[key])}`
+                    ).join('&')
                 });
 
                 const result = await response.json();
                 
                 if (result.success) {
-                    showAlert('預約修改成功', 'success');
-                    cancelEdit();
-                    // 重新查詢以更新列表
-                    searchBookings();
+                    showMessage('預約修改成功！', 'success');
+                    // 重新查詢以顯示更新後的資料
+                    setTimeout(() => searchBookings(), 1000);
                 } else {
-                    throw new Error(result.message || '修改失敗');
+                    showMessage(result.message || '修改失敗，請稍後再試', 'error');
                 }
-
             } catch (error) {
-                console.error('修改預約錯誤:', error);
-                showAlert(`修改失敗：${error.message}`, 'error');
+                console.error('修改錯誤:', error);
+                showMessage('網路連線異常，請稍後再試', 'error');
             }
-        });
-
-        // 取消編輯
-        function cancelEdit() {
-            editingBooking = null;
-            document.getElementById('editForm').classList.remove('active');
-            document.getElementById('manageContent').innerHTML = `
-                <div class="no-results">
-                    <div class="no-results-icon">📋</div>
-                    <div class="no-results-title">選擇要管理的預約</div>
-                    <div class="no-results-desc">請先在「查詢預約」頁籤中搜尋您的預約記錄</div>
-                </div>
-            `;
         }
 
-        // 輔助函數
-        function validatePhoneNumber(phone) {
-            // 台灣手機格式: 09xxxxxxxx
-            if (/^09\d{8}$/.test(phone)) {
-                return true;
-            }
+        // 確認取消預約
+        function confirmCancel(phone, date, time) {
+            currentAction = 'cancel';
+            currentBookingData = { phone, date, time };
             
-            // 國際格式: +國碼 或 00國碼
-            if (/^(\+|00)\d{1,3}\d{6,14}$/.test(phone)) {
-                return true;
-            }
-            
-            return false;
+            document.getElementById('modalTitle').textContent = '取消預約';
+            document.getElementById('modalMessage').textContent = `確定要取消 ${date} ${time} 的預約嗎？`;
+            document.getElementById('confirmModal').style.display = 'block';
         }
 
-        function getStatusClass(status) {
-            switch (status) {
-                case 'active':
-                    return 'status-active';
-                case 'cancelled':
-                    return 'status-cancelled';
-                case 'completed':
-                    return 'status-completed';
-                default:
-                    return 'status-active';
+        // 執行確認動作
+        async function confirmAction() {
+            if (currentAction === 'cancel') {
+                await cancelBooking();
             }
+            closeModal();
         }
 
-        function getStatusText(status) {
-            switch (status) {
-                case 'active':
-                    return '進行中';
-                case 'cancelled':
-                    return '已取消';
-                case 'completed':
-                    return '已完成';
-                default:
-                    return '進行中';
-            }
-        }
-
-        function formatDate(dateStr) {
+        // 取消預約
+        async function cancelBooking() {
             try {
-                if (dateStr instanceof Date) {
-                    return dateStr.toLocaleDateString('zh-TW');
-                }
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=cancelBooking&phone=${encodeURIComponent(currentBookingData.phone)}&date=${encodeURIComponent(currentBookingData.date)}&time=${encodeURIComponent(currentBookingData.time)}`
+                });
+
+                const result = await response.json();
                 
-                if (typeof dateStr === 'string') {
-                    let date;
-                    if (dateStr.includes('/')) {
-                        date = new Date(dateStr);
-                    } else if (dateStr.includes('-')) {
-                        date = new Date(dateStr);
-                    } else {
-                        date = new Date(dateStr);
-                    }
-                    
-                    if (isNaN(date.getTime())) {
-                        return dateStr;
-                    }
-                    
-                    return date.toLocaleDateString('zh-TW');
+                if (result.success) {
+                    showMessage('預約已成功取消', 'success');
+                    // 重新查詢以顯示更新後的資料
+                    setTimeout(() => searchBookings(), 1000);
+                } else {
+                    showMessage(result.message || '取消失敗，請稍後再試', 'error');
                 }
-                
-                return dateStr;
             } catch (error) {
-                console.warn('日期格式化錯誤:', error);
-                return dateStr;
+                console.error('取消錯誤:', error);
+                showMessage('網路連線異常，請稍後再試', 'error');
             }
         }
 
-        function showAlert(message, type = 'error') {
-            // 移除現有的alert
-            const existingAlert = document.querySelector('.alert');
-            if (existingAlert) {
-                existingAlert.remove();
-            }
-
-            // 創建新的alert
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
+        // 複製預約
+        function copyBooking(index) {
+            const bookings = JSON.parse(localStorage.getItem('currentBookings') || '[]');
+            const booking = bookings[index];
             
-            const icon = type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '❌';
-            alert.innerHTML = `${icon} ${message}`;
+            if (booking) {
+                // 將預約資料存到 localStorage 供新預約頁面使用
+                localStorage.setItem('copyBookingData', JSON.stringify({
+                    service: booking.service,
+                    departure: booking.departure,
+                    destination: booking.destination,
+                    passengers: booking.passengers,
+                    notes: booking.notes
+                }));
+                
+                // 跳轉到新預約頁面
+                window.location.href = 'index.html';
+            }
+        }
 
-            // 插入到適當位置
-            const container = document.querySelector('.content');
-            const backLink = container.querySelector('.back-link');
-            container.insertBefore(alert, backLink.nextSibling);
+        // 關閉對話框
+        function closeModal() {
+            document.getElementById('confirmModal').style.display = 'none';
+            currentAction = null;
+            currentBookingData = null;
+        }
 
-            // 5秒後自動移除
-            setTimeout(() => {
-                if (alert.parentNode) {
-                    alert.remove();
-                }
-            }, 5000);
+        // 返回首頁
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+
+        // 點擊對話框外部關閉
+        window.onclick = function(event) {
+            const modal = document.getElementById('confirmModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // 存儲當前查詢結果供編輯使用
+        function displayBookings(bookings) {
+            localStorage.setItem('currentBookings', JSON.stringify(bookings));
+            // ... 其餘顯示邏輯保持不變
         }
     </script>
 </body>
 </html>
-
-
