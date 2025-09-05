@@ -428,12 +428,17 @@
             showLoading();
             
             try {
+                // 使用 URLSearchParams 避免 CORS 問題
+                const formData = new URLSearchParams();
+                formData.append('action', 'getBookingsByPhone');
+                formData.append('phone', phone);
+
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `action=getBookingsByPhone&phone=${encodeURIComponent(phone)}`
+                    body: formData
                 });
 
                 const result = await response.json();
@@ -587,6 +592,9 @@
             }).join('');
 
             listArea.innerHTML = `<div class="booking-list">${listHTML}</div>`;
+            
+            // 存儲當前查詢結果供編輯使用
+            localStorage.setItem('currentBookings', JSON.stringify(bookings));
         }
 
         // 開始編輯
@@ -621,14 +629,18 @@
             };
 
             try {
+                // 使用 URLSearchParams 避免 CORS 問題
+                const formData = new URLSearchParams();
+                Object.keys(updatedData).forEach(key => {
+                    formData.append(key, updatedData[key]);
+                });
+
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: Object.keys(updatedData).map(key => 
-                        `${key}=${encodeURIComponent(updatedData[key])}`
-                    ).join('&')
+                    body: formData
                 });
 
                 const result = await response.json();
@@ -736,13 +748,6 @@
                 closeModal();
             }
         }
-
-        // 存儲當前查詢結果供編輯使用
-        function displayBookings(bookings) {
-            localStorage.setItem('currentBookings', JSON.stringify(bookings));
-            // ... 其餘顯示邏輯保持不變
-        }
     </script>
 </body>
 </html>
-
