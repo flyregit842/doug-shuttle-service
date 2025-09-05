@@ -190,20 +190,35 @@
 
         .detail-row {
             display: flex;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             flex-wrap: wrap;
+            min-height: 24px;
         }
 
         .detail-label {
             font-weight: bold;
             color: #555;
-            min-width: 100px;
+            min-width: 120px;
             margin-right: 10px;
+            text-align: right;
+            padding-right: 10px;
         }
 
         .detail-value {
             color: #333;
             flex: 1;
+            font-size: 16px;
+        }
+
+        .datetime-highlight {
+            color: #2196F3;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .schedule-highlight {
+            color: #FF9800;
+            font-weight: bold;
         }
 
         .booking-actions {
@@ -300,6 +315,8 @@
             .detail-label {
                 min-width: auto;
                 margin-bottom: 5px;
+                text-align: left;
+                padding-right: 0;
             }
 
             .edit-actions {
@@ -348,7 +365,6 @@
         </div>
 
         <div class="content">
-            <!-- 搜尋區域 -->
             <div class="search-section">
                 <div class="form-group">
                     <label for="searchPhone">手機號碼</label>
@@ -357,25 +373,19 @@
                 <button class="btn" onclick="searchBookings()">查詢預約</button>
             </div>
 
-            <!-- 訊息顯示區域 -->
             <div id="messageArea"></div>
-
-            <!-- 預約列表區域 -->
             <div id="bookingListArea"></div>
 
-            <!-- 返回首頁 -->
             <div class="back-home">
                 <button class="btn btn-secondary" onclick="goHome()">返回首頁</button>
             </div>
 
-            <!-- 聯繫資訊 -->
             <div class="contact-info">
                 服務電郵：jg0989280920@gmail.com
             </div>
         </div>
     </div>
 
-    <!-- 確認對話框 -->
     <div id="confirmModal" class="modal">
         <div class="modal-content">
             <h3 id="modalTitle">確認操作</h3>
@@ -388,7 +398,6 @@
     </div>
 
     <script>
-        // 設定
         const CONFIG = {
             API_URL: 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec'
         };
@@ -396,12 +405,10 @@
         let currentAction = null;
         let currentBookingData = null;
 
-        // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             setupPhoneInput();
         });
 
-        // 手機號碼輸入設定
         function setupPhoneInput() {
             const phoneInput = document.getElementById('searchPhone');
             
@@ -416,7 +423,6 @@
             });
         }
 
-        // 查詢預約
         async function searchBookings() {
             const phone = document.getElementById('searchPhone').value.trim();
             
@@ -428,7 +434,6 @@
             showLoading();
             
             try {
-                // 使用 URLSearchParams 避免 CORS 問題
                 const formData = new URLSearchParams();
                 formData.append('action', 'getBookingsByPhone');
                 formData.append('phone', phone);
@@ -454,25 +459,21 @@
             }
         }
 
-        // 驗證手機號碼
         function validatePhone(phone) {
             return /^09\d{8}$/.test(phone);
         }
 
-        // 顯示載入中
         function showLoading() {
             document.getElementById('messageArea').innerHTML = '<div class="loading">查詢中，請稍候...</div>';
             document.getElementById('bookingListArea').innerHTML = '';
         }
 
-        // 顯示訊息
         function showMessage(message, type = 'info') {
             const messageArea = document.getElementById('messageArea');
             const className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info');
             messageArea.innerHTML = `<div class="${className}">${message}</div>`;
         }
 
-        // 顯示預約列表
         function displayBookings(bookings) {
             const messageArea = document.getElementById('messageArea');
             const listArea = document.getElementById('bookingListArea');
@@ -485,7 +486,6 @@
 
             messageArea.innerHTML = `<div class="success">找到 ${bookings.length} 筆預約記錄</div>`;
             
-            // 按時間排序（最新的在前）
             bookings.sort((a, b) => {
                 const dateTimeA = new Date(`${a.date} ${a.time}`);
                 const dateTimeB = new Date(`${b.date} ${b.time}`);
@@ -507,42 +507,39 @@
                         </div>
                         <div class="booking-details">
                             <div class="detail-row">
-                                <span class="detail-label">服務類型:</span>
+                                <span class="detail-label">日期時間:</span>
+                                <span class="detail-value datetime-highlight">${booking.dateTime || booking.date + ' ' + booking.time}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">服務項目:</span>
                                 <span class="detail-value">${booking.service}</span>
                             </div>
                             <div class="detail-row">
-                                <span class="detail-label">日期時間:</span>
-                                <span class="detail-value">${booking.date} ${booking.time}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">起點:</span>
-                                <span class="detail-value">${booking.departure}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">終點:</span>
-                                <span class="detail-value">${booking.destination}</span>
+                                <span class="detail-label">期務時間:</span>
+                                <span class="detail-value schedule-highlight">${booking.scheduleTime || booking.date + ' ' + booking.time}</span>
                             </div>
                             <div class="detail-row">
                                 <span class="detail-label">乘客:</span>
-                                <span class="detail-value">${booking.passengers}人</span>
+                                <span class="detail-value">${booking.passengers}</span>
                             </div>
                             <div class="detail-row">
-                                <span class="detail-label">聯絡人:</span>
-                                <span class="detail-value">${booking.name}</span>
+                                <span class="detail-label">航班編號:</span>
+                                <span class="detail-value">${booking.flight || ''}</span>
                             </div>
                             <div class="detail-row">
-                                <span class="detail-label">手機:</span>
-                                <span class="detail-value">${booking.phone}</span>
+                                <span class="detail-label">上車點:</span>
+                                <span class="detail-value">${booking.departure}</span>
                             </div>
-                            ${booking.notes ? `
+                            <div class="detail-row">
+                                <span class="detail-label">下車點:</span>
+                                <span class="detail-value">${booking.destination}</span>
+                            </div>
                             <div class="detail-row">
                                 <span class="detail-label">備註:</span>
-                                <span class="detail-value">${booking.notes}</span>
+                                <span class="detail-value">${booking.notes || ''}</span>
                             </div>
-                            ` : ''}
                         </div>
                         
-                        <!-- 編輯表單 -->
                         <div class="edit-form" id="editForm${index}">
                             <div class="form-group">
                                 <label>預約日期</label>
@@ -553,22 +550,16 @@
                                 <input type="time" id="editTime${index}" value="${booking.time}">
                             </div>
                             <div class="form-group">
-                                <label>起點</label>
+                                <label>航班編號</label>
+                                <input type="text" id="editFlight${index}" value="${booking.flight || ''}" placeholder="例如: CZ3087">
+                            </div>
+                            <div class="form-group">
+                                <label>上車點</label>
                                 <input type="text" id="editDeparture${index}" value="${booking.departure}">
                             </div>
                             <div class="form-group">
-                                <label>終點</label>
+                                <label>下車點</label>
                                 <input type="text" id="editDestination${index}" value="${booking.destination}">
-                            </div>
-                            <div class="form-group">
-                                <label>乘客人數</label>
-                                <select id="editPassengers${index}">
-                                    <option value="1" ${booking.passengers == 1 ? 'selected' : ''}>1人</option>
-                                    <option value="2" ${booking.passengers == 2 ? 'selected' : ''}>2人</option>
-                                    <option value="3" ${booking.passengers == 3 ? 'selected' : ''}>3人</option>
-                                    <option value="4" ${booking.passengers == 4 ? 'selected' : ''}>4人</option>
-                                    <option value="5" ${booking.passengers == 5 ? 'selected' : ''}>5人以上</option>
-                                </select>
                             </div>
                             <div class="form-group">
                                 <label>備註</label>
@@ -592,24 +583,19 @@
             }).join('');
 
             listArea.innerHTML = `<div class="booking-list">${listHTML}</div>`;
-            
-            // 存儲當前查詢結果供編輯使用
             localStorage.setItem('currentBookings', JSON.stringify(bookings));
         }
 
-        // 開始編輯
         function startEdit(index) {
             const editForm = document.getElementById(`editForm${index}`);
             editForm.classList.add('show');
         }
 
-        // 取消編輯
         function cancelEdit(index) {
             const editForm = document.getElementById(`editForm${index}`);
             editForm.classList.remove('show');
         }
 
-        // 儲存編輯
         async function saveEdit(index) {
             const phone = document.getElementById('searchPhone').value;
             const originalBookings = JSON.parse(localStorage.getItem('currentBookings') || '[]');
@@ -622,14 +608,13 @@
                 originalTime: originalBooking.time,
                 newDate: document.getElementById(`editDate${index}`).value,
                 newTime: document.getElementById(`editTime${index}`).value,
+                flight: document.getElementById(`editFlight${index}`).value,
                 departure: document.getElementById(`editDeparture${index}`).value,
                 destination: document.getElementById(`editDestination${index}`).value,
-                passengers: document.getElementById(`editPassengers${index}`).value,
                 notes: document.getElementById(`editNotes${index}`).value
             };
 
             try {
-                // 使用 URLSearchParams 避免 CORS 問題
                 const formData = new URLSearchParams();
                 Object.keys(updatedData).forEach(key => {
                     formData.append(key, updatedData[key]);
@@ -647,7 +632,6 @@
                 
                 if (result.success) {
                     showMessage('預約修改成功！', 'success');
-                    // 重新查詢以顯示更新後的資料
                     setTimeout(() => searchBookings(), 1000);
                 } else {
                     showMessage(result.message || '修改失敗，請稍後再試', 'error');
@@ -658,7 +642,6 @@
             }
         }
 
-        // 確認取消預約
         function confirmCancel(phone, date, time) {
             currentAction = 'cancel';
             currentBookingData = { phone, date, time };
@@ -668,7 +651,6 @@
             document.getElementById('confirmModal').style.display = 'block';
         }
 
-        // 執行確認動作
         async function confirmAction() {
             if (currentAction === 'cancel') {
                 await cancelBooking();
@@ -676,10 +658,8 @@
             closeModal();
         }
 
-        // 取消預約
         async function cancelBooking() {
             try {
-                // 使用 URLSearchParams 避免 CORS 問題
                 const formData = new URLSearchParams();
                 formData.append('action', 'cancelBooking');
                 formData.append('phone', currentBookingData.phone);
@@ -698,7 +678,6 @@
                 
                 if (result.success) {
                     showMessage('預約已成功取消', 'success');
-                    // 重新查詢以顯示更新後的資料
                     setTimeout(() => searchBookings(), 1000);
                 } else {
                     showMessage(result.message || '取消失敗，請稍後再試', 'error');
@@ -709,39 +688,33 @@
             }
         }
 
-        // 複製預約
         function copyBooking(index) {
             const bookings = JSON.parse(localStorage.getItem('currentBookings') || '[]');
             const booking = bookings[index];
             
             if (booking) {
-                // 將預約資料存到 localStorage 供新預約頁面使用
                 localStorage.setItem('copyBookingData', JSON.stringify({
-                    service: booking.service,
+                    service: booking.serviceRaw || booking.service,
+                    flight: booking.flight,
                     departure: booking.departure,
                     destination: booking.destination,
-                    passengers: booking.passengers,
                     notes: booking.notes
                 }));
                 
-                // 跳轉到新預約頁面
                 window.location.href = 'index.html';
             }
         }
 
-        // 關閉對話框
         function closeModal() {
             document.getElementById('confirmModal').style.display = 'none';
             currentAction = null;
             currentBookingData = null;
         }
 
-        // 返回首頁
         function goHome() {
             window.location.href = 'index.html';
         }
 
-        // 點擊對話框外部關閉
         window.onclick = function(event) {
             const modal = document.getElementById('confirmModal');
             if (event.target === modal) {
