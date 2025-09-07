@@ -2027,13 +2027,18 @@ function setupPhoneAutofill() {
     }
 }
 
-// 載入用戶資料
+// ==========================================
+// 請在您的 index.html 中找到現有的 loadUserData 函數並替換為以下代碼
+// 如果沒有找到，請在 </script> 標籤前加入以下完整代碼
+// ==========================================
+
+// 智能自動帶入功能 - 替換現有的 loadUserData 函數
 async function loadUserData(phone) {
     try {
         console.log('正在查詢手機號碼:', phone);
         
         const formData = new URLSearchParams();
-        formData.append('action', 'getUserDataByPhone');
+        formData.append('action', 'getBookingsByPhone');
         formData.append('phone', phone);
 
         const response = await fetch(API_URL_FOR_AUTO, {
@@ -2048,16 +2053,199 @@ async function loadUserData(phone) {
         
         console.log('查詢結果:', result);
         
-        if (result.success && result.data) {
-            fillUserData(result.data);
-            console.log('✅ 已自動帶入用戶資料');
+        if (result.success && result.bookings && result.bookings.length > 0) {
+            // 獲取當前選擇的服務類型
+            const currentService = getCurrentServiceType();
+            console.log('當前服務類型:', currentService);
+            
+            // 智能選擇要填入的預約記錄
+            const selectedBooking = selectBestBooking(result.bookings, currentService);
+            
+            if (selectedBooking) {
+                fillUserDataSmart(selectedBooking);
+                console.log('✅ 已自動帶入匹配的服務類型資料');
+            } else {
+                // 只填入基本個人資料，不填入服務相關資料
+                fillUserDataBasic(result.bookings[0]);
+                console.log('✅ 已自動帶入基本個人資料，服務相關資料需手動輸入');
+            }
         } else {
-            console.log('未找到用戶資料');
+            console.log('未找到用戶資料，請手動填寫');
         }
         
     } catch (error) {
         console.error('載入用戶資料失敗:', error);
     }
+}
+
+// 獲取當前選擇的服務類型
+function getCurrentServiceType() {
+    // 方法1：從全域變數獲取
+    if (typeof selectedService !== 'undefined' && selectedService) {
+        return selectedService;
+    }
+    
+    // 方法2：從 select 元素獲取
+    const serviceSelect = document.getElementById('service');
+    if (serviceSelect && serviceSelect.value) {
+        return serviceSelect.value;
+    }
+    
+    // 方法3：從選中的 radio button 獲取
+    const selectedRadio = document.querySelector('input[name="service"]:checked');
+    if (selectedRadio) {
+        return selectedRadio.value;
+    }
+    
+    return null;
+}
+
+// 智能選擇最佳預約記錄
+function selectBestBooking(bookings, currentService) {
+    if (!currentService) {
+        return null; // 沒有選擇服務類型時，不填入服務相關資料
+    }
+    
+    // 服務類型映射
+    const serviceMapping = {
+        '北北基桃送機': ['送機', '北北基桃送機'],
+        '北北基桃接機': ['接機', '北北基桃接機'],
+        '其他行程接送': ['其他', '其他行程接送']
+    };
+    
+    const targetTypes = serviceMapping[currentService] || [currentService];
+    
+    // 找到最新的匹配服務類型記錄
+    for (let booking of bookings) {
+        if (targetTypes.includes(booking.service) || targetTypes.includes(booking.serviceRaw)) {
+            console.log('找到匹配的服務類型記錄:', booking.service);
+            return booking;
+        }
+    }
+    
+    console.log('未找到匹配的服務類型記錄');
+    return null; // 沒找到匹配的服務類型
+}
+
+// 智能填入用戶資料 (包含服務相關資料)
+function fillUserDataSmart(booking) {
+    console.log('智能填入資料:', booking);
+    
+    // 填入個人基本資料
+    fillUserDataBasic(booking);
+    
+    // 填入服務相關資料 (排除日期、時間、班機)
+    const departureInput = document.getElementById('pickup') || document.getElementById('departure');
+    if (departureInput && booking.departure) {
+        departureInput.value = booking.departure;
+        console.log('已填入上車點:', booking.departure);
+    }
+
+    const destinationInput = document.getElementById('dropoff') || document.getElementById('destination');
+    if (destinationInput && booking.destination) {
+        destinationInput.value = booking.destination;
+        console.log('已填入下車點:', booking.destination);
+    }
+
+    const notesInput = document.getElementById('remarks') || document.getElementById('notes');
+    if (notesInput && booking.notes) {
+        notesInput.value = booking.notes;
+        console.log('已填入備註:', booking.notes);
+    }
+
+    // 填入付款方式 (radio buttons)
+    const paymentInputs = document.querySelectorAll('input[name="payment"]');
+    if (paymentInputs.length > 0 && booking.payment) {
+        paymentInputs.forEach(input => {
+            if (input.value === booking.payment) {
+                input.checked = true;
+                console.log('已選擇付款方式:', booking.payment);
+            }
+        });
+    }
+}
+
+// 只填入基本個人資料 (不填入服務相關資料)
+function fillUserDataBasic(booking) {
+    console.log('填入基本個人資料:', booking);
+    
+    const nameInput = document.getElementById('name');
+    if (nameInput && booking.name) {
+        nameInput.value = booking.name;
+        console.log('已填入姓名:', booking.name);
+    }
+
+    const companyInput = document.getElementById('company');
+    if (companyInput && booking.company) {
+        companyInput.value = booking.company;
+        console.log('已填入公司:', booking.company);
+    }
+
+    const departmentInput = document.getElementById('department');
+    if (departmentInput && booking.department) {
+        departmentInput.value = booking.department;
+        console.log('已填入部門:', booking.department);
+    }
+
+    const emailInput = document.getElementById('email');
+    if (emailInput && booking.email) {
+        emailInput.value = booking.email;
+        console.log('已填入郵箱:', booking.email);
+    }
+}
+
+// 時間選擇自動完成功能
+function setupTimeAutoComplete() {
+    // 方法1：針對小時和分鐘的 select 元素
+    const hourSelect = document.getElementById('hour');
+    const minuteSelect = document.getElementById('minute');
+    const timeInput = document.getElementById('time');
+    
+    if (hourSelect && minuteSelect) {
+        function checkAndCompleteTime() {
+            const hour = hourSelect.value;
+            const minute = minuteSelect.value;
+            
+            if (hour && minute) {
+                const timeValue = hour + ':' + minute;
+                if (timeInput) {
+                    timeInput.value = timeValue;
+                }
+                console.log('時間自動完成:', timeValue);
+                
+                // 觸發自定義事件，通知其他組件時間已選擇完成
+                const event = new CustomEvent('timeSelected', { detail: { time: timeValue } });
+                document.dispatchEvent(event);
+            }
+        }
+        
+        hourSelect.addEventListener('change', checkAndCompleteTime);
+        minuteSelect.addEventListener('change', checkAndCompleteTime);
+        
+        console.log('時間自動完成功能已設定 (select 模式)');
+    }
+    
+    // 方法2：針對其他可能的時間選擇元素
+    const timePickerElements = document.querySelectorAll('[data-time-picker]');
+    timePickerElements.forEach(element => {
+        element.addEventListener('change', function() {
+            console.log('時間選擇器變更:', this.value);
+        });
+    });
+}
+
+// 確保頁面載入時設定所有功能
+document.addEventListener('DOMContentLoaded', function() {
+    setupPhoneAutofill();
+    setupTimeAutoComplete();
+    console.log('智能自動帶入和時間自動完成功能已啟用');
+});
+
+// 如果頁面已經載入完成
+if (document.readyState !== 'loading') {
+    setupPhoneAutofill();
+    setupTimeAutoComplete();
+    console.log('智能自動帶入和時間自動完成功能已啟用');
 }
 
 // 填入用戶資料
@@ -2097,6 +2285,7 @@ if (document.readyState !== 'loading') {
     </script>
 </body>
 </html>
+
 
 
 
