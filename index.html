@@ -1919,23 +1919,8 @@ function validateForm() {
 // 這會修正所有 queryUserData 錯誤並確保功能正常
 // ==========================================
 
-// 修正舊函數調用錯誤
-function queryUserData() {
-    // 空函數，避免錯誤，功能已被新的自動帶入系統取代
-    console.log('queryUserData 已被取代，使用新的自動帶入功能');
-}
-
-// 確保 API URL 正確設定
-if (typeof API_URL === 'undefined') {
-    var API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
-}
-
-// 確保 CONFIG 物件存在
-if (typeof CONFIG === 'undefined') {
-    var CONFIG = {
-        API_URL: 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec'
-    };
-}
+// 簡單修正 queryUserData 錯誤
+function queryUserData() {}
 
 // 移除可能的錯誤調用
 if (typeof setTimeout !== 'undefined') {
@@ -2018,6 +2003,7 @@ console.log('index.html 修正完成 - 所有錯誤已修正，Gmail 通知系�
     </script>
 </body>
 </html>
+
 
 
 
