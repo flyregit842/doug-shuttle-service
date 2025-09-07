@@ -1441,80 +1441,6 @@ function validateForm() {
             });
         }
 
-        // 查詢用戶歷史資料 - 修復API調用
-        function queryUserData(phone) {
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            const userHistory = document.getElementById('userHistory');
-            const historyList = document.getElementById('historyList');
-
-            loadingIndicator.classList.remove('hidden');
-            
-            const requestData = {
-                action: 'getUserDataByPhone',
-                phone: phone
-            };
-
-            console.log('查詢用戶資料:', requestData);
-
-            const formData = new URLSearchParams();
-            formData.append('data', JSON.stringify(requestData));
-
-            fetch(CONFIG.API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: formData
-            })
-            .then(function(response) {
-                console.log('API回應狀態:', response.status);
-                if (!response.ok) {
-                    throw new Error('HTTP error! status: ' + response.status);
-                }
-                return response.json();
-            })
-            .then(function(result) {
-                console.log('查詢結果:', result);
-
-                if (result.success && result.data && result.data.length > 0) {
-                    // 快取用戶資料
-                    userDataCache = result.data[0];
-                    
-                    historyList.innerHTML = '';
-                    result.data.forEach(function(record, index) {
-                        const historyItem = document.createElement('div');
-                        historyItem.className = 'history-item';
-                        historyItem.innerHTML = 
-                            '<div class="history-info">' +
-                                '<div class="history-service">' + (record.service || '未知服務') + '</div>' +
-                                '<div class="history-date">' + (record.company || '未知公司') + '</div>' +
-                            '</div>';
-                        
-                        historyItem.addEventListener('click', function() {
-                            fillFormWithHistory(record);
-                        });
-                        
-                        historyList.appendChild(historyItem);
-                    });
-                    
-                    userHistory.classList.remove('hidden');
-                    
-                    // 自動填入最新的用戶資料
-                    if (result.data.length > 0) {
-                        autoFillUserData(result.data[0]);
-                    }
-                } else {
-                    console.log('無歷史資料或查詢失敗');
-                }
-            })
-            .catch(function(error) {
-                console.error('查詢用戶資料錯誤:', error);
-            })
-            .finally(function() {
-                loadingIndicator.classList.add('hidden');
-            });
-        }
-
         // 自動填入用戶資料
         function autoFillUserData(record) {
             if (record.company) {
@@ -1991,6 +1917,7 @@ function validateForm() {
     </script>
 </body>
 </html>
+
 
 
 
