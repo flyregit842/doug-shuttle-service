@@ -2000,9 +2000,100 @@ if (typeof collectFormData !== 'undefined') {
 }
 
 console.log('index.html 修正完成 - 所有錯誤已修正，Gmail 通知系統已啟用');
+        // 自動帶入功能
+const API_URL_FOR_AUTO = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
+
+// 設定手機號碼自動帶入功能
+function setupPhoneAutofill() {
+    const phoneInput = document.getElementById('phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('blur', function() {
+            const phone = this.value.trim();
+            if (phone && phone.length >= 9) {
+                loadUserData(phone);
+            }
+        });
+        
+        phoneInput.addEventListener('input', function() {
+            const phone = this.value.trim().replace(/\D/g, '');
+            if (phone.length === 10) {
+                loadUserData(phone);
+            }
+        });
+    }
+}
+
+// 載入用戶資料
+async function loadUserData(phone) {
+    try {
+        console.log('正在查詢手機號碼:', phone);
+        
+        const formData = new URLSearchParams();
+        formData.append('action', 'getUserDataByPhone');
+        formData.append('phone', phone);
+
+        const response = await fetch(API_URL_FOR_AUTO, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+        
+        console.log('查詢結果:', result);
+        
+        if (result.success && result.data) {
+            fillUserData(result.data);
+            console.log('✅ 已自動帶入用戶資料');
+        } else {
+            console.log('未找到用戶資料');
+        }
+        
+    } catch (error) {
+        console.error('載入用戶資料失敗:', error);
+    }
+}
+
+// 填入用戶資料
+function fillUserData(userData) {
+    console.log('開始填入用戶資料:', userData);
+    
+    const nameInput = document.getElementById('name');
+    if (nameInput && userData.name) {
+        nameInput.value = userData.name;
+        console.log('已填入姓名:', userData.name);
+    }
+
+    const companyInput = document.getElementById('company');
+    if (companyInput && userData.company) {
+        companyInput.value = userData.company;
+        console.log('已填入公司:', userData.company);
+    }
+
+    const departmentInput = document.getElementById('department');
+    if (departmentInput && userData.department) {
+        departmentInput.value = userData.department;
+        console.log('已填入部門:', userData.department);
+    }
+
+    const emailInput = document.getElementById('email');
+    if (emailInput && userData.email) {
+        emailInput.value = userData.email;
+        console.log('已填入郵箱:', userData.email);
+    }
+}
+
+// 頁面載入時設定功能
+document.addEventListener('DOMContentLoaded', setupPhoneAutofill);
+if (document.readyState !== 'loading') {
+    setupPhoneAutofill();
+}
     </script>
 </body>
 </html>
+
 
 
 
