@@ -2033,6 +2033,22 @@ function setupPhoneAutofill() {
 // ==========================================
 
 // 智能自動帶入功能 - 替換現有的 loadUserData 函數
+// 定義 API URL
+const API_URL_FOR_AUTO = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
+
+// 設定手機號碼事件監聽
+function setupPhoneAutofill() {
+    const phoneInput = document.getElementById('phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('blur', function() {
+            const phone = this.value.trim();
+            if (phone && phone.length >= 9) {
+                loadUserData(phone);
+            }
+        });
+        console.log('手機號碼自動帶入已設定');
+    }
+}                   
 async function loadUserData(phone) {
     try {
         console.log('正在查詢手機號碼:', phone);
@@ -2285,6 +2301,7 @@ if (document.readyState !== 'loading') {
     </script>
 </body>
 </html>
+
 
 
 
