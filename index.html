@@ -379,53 +379,56 @@
         }
 
         // 自動帶入功能（CORS修正版）
-        async function loadUserData(phone) {
-            try {
-                console.log('正在查詢手機號碼:', phone);
-                
-                // 使用 URLSearchParams 格式避免 CORS 預檢請求
-                const formData = new URLSearchParams();
-                formData.append('action', 'getUserDataByPhone');
-                formData.append('phone', phone);
+// 自動帶入功能（錯誤處理強化版）
+async function loadUserData(phone) {
+    try {
+        console.log('正在查詢手機號碼:', phone);
+        
+        const formData = new URLSearchParams();
+        formData.append('action', 'getUserDataByPhone');
+        formData.append('phone', phone);
 
-                const response = await fetch(CONFIG.API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: formData
-                });
+        const response = await fetch(CONFIG.API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData
+        });
 
-                if (!response.ok) {
-                    throw new Error('網路請求失敗');
-                }
-
-                const result = await response.json();
-                console.log('查詢結果:', result);
-                
-                if (result.success && result.data) {
-                    const data = result.data;
-                    
-                    // 自動帶入所有已存在的資料（除日期時間外）
-                    if (data.name) document.getElementById('name').value = data.name;
-                    if (data.email) document.getElementById('email').value = data.email;
-                    if (data.proxyEmail) document.getElementById('proxyEmail').value = data.proxyEmail;
-                    if (data.company) document.getElementById('company').value = data.company;
-                    if (data.department) document.getElementById('department').value = data.department;
-                    if (data.costCenter) document.getElementById('costCenter').value = data.costCenter;
-                    if (data.pickup) document.getElementById('pickup').value = data.pickup;
-                    if (data.dropoff) document.getElementById('dropoff').value = data.dropoff;
-                    if (data.payment) document.getElementById('payment').value = data.payment;
-                    if (data.passengers) document.getElementById('passengers').value = data.passengers;
-                    
-                    console.log('用戶資料自動帶入完成');
-                } else {
-                    console.log('未找到用戶資料');
-                }
-            } catch (error) {
-                console.error('載入用戶資料失敗:', error);
-            }
+        // 強化錯誤處理
+        if (!response.ok) {
+            console.error('HTTP錯誤:', response.status, response.statusText);
+            return;
         }
+
+        const responseText = await response.text();
+        console.log('原始回應:', responseText);
+        
+        const result = JSON.parse(responseText);
+        console.log('解析後結果:', result);
+        
+        if (result.success && result.data) {
+            const data = result.data;
+            
+            // 自動帶入資料
+            if (data.name) document.getElementById('name').value = data.name;
+            if (data.email) document.getElementById('email').value = data.email;
+            if (data.company) document.getElementById('company').value = data.company;
+            if (data.department) document.getElementById('department').value = data.department;
+            if (data.pickup) document.getElementById('pickup').value = data.pickup;
+            if (data.dropoff) document.getElementById('dropoff').value = data.dropoff;
+            if (data.payment) document.getElementById('payment').value = data.payment;
+            
+            console.log('用戶資料自動帶入完成');
+        } else {
+            console.log('API回應:', result.message || '未找到用戶資料');
+        }
+    } catch (error) {
+        console.error('查詢過程詳細錯誤:', error);
+        // 不要顯示錯誤給用戶，靜默處理
+    }
+}
 
         // 時間驗證
         function validateBookingTime(date, time) {
@@ -610,3 +613,4 @@
     </script>
 </body>
 </html>
+
