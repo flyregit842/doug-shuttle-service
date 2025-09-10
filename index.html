@@ -1,3 +1,11 @@
+<!--
+=====================================
+檔案名稱：index.html
+功能：機場接送預約建立頁面
+修改內容：預約成功後的用戶引導邏輯
+適用版本：與安全版 Google Apps Script 兼容
+=====================================
+-->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -369,22 +377,27 @@
             }
         }
 
-        // 自動帶入功能（增強版）
+        // 自動帶入功能（修正版）
         async function loadUserData(phone) {
             try {
-                const formData = new URLSearchParams();
-                formData.append('action', 'getUserDataByPhone');
-                formData.append('phone', phone);
+                console.log('正在查詢手機號碼:', phone);
+                
+                const requestBody = 'action=getUserDataByPhone&phone=' + encodeURIComponent(phone);
 
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: formData
+                    body: requestBody
                 });
 
+                if (!response.ok) {
+                    throw new Error('網路請求失敗');
+                }
+
                 const result = await response.json();
+                console.log('查詢結果:', result);
                 
                 if (result.success && result.data) {
                     const data = result.data;
@@ -400,6 +413,10 @@
                     if (data.dropoff) document.getElementById('dropoff').value = data.dropoff;
                     if (data.payment) document.getElementById('payment').value = data.payment;
                     if (data.passengers) document.getElementById('passengers').value = data.passengers;
+                    
+                    console.log('用戶資料自動帶入完成');
+                } else {
+                    console.log('未找到用戶資料');
                 }
             } catch (error) {
                 console.error('載入用戶資料失敗:', error);
@@ -458,7 +475,7 @@
             });
         }
 
-        // 表單提交
+        // 表單提交功能（含用戶引導）
         function setupFormSubmission() {
             document.getElementById('bookingForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
@@ -527,11 +544,29 @@
                     const result = await response.json();
                     
                     if (result.success) {
-                        alert('預約建立成功！\n\n預約編號：' + (result.bookingId || '系統自動生成') + '\n\n我們將盡快與您聯繫確認詳細資訊。');
-                        this.reset();
-                        selectedService = '';
-                        document.querySelectorAll('.service-option').forEach(opt => opt.classList.remove('selected'));
-                        document.getElementById('flightSection').style.display = 'none';
+                        const bookingInfo = '預約建立成功！\n\n預約編號：' + (result.bookingId || '系統自動生成') + 
+                                          '\n服務類型：' + selectedService +
+                                          '\n預約日期：' + date + ' ' + time +
+                                          '\n\n我們將盡快與您聯繫確認詳細資訊。';
+                        
+                        alert(bookingInfo);
+                        
+                        // 提供用戶選擇
+                        const userChoice = confirm('您想要進行什麼操作？\n\n確定 = 查詢我的預約記錄\n取消 = 繼續預約新行程');
+                        
+                        if (userChoice) {
+                            // 前往查詢頁面
+                            window.location.href = 'query.html';
+                        } else {
+                            // 清空表單準備下一次預約
+                            this.reset();
+                            selectedService = '';
+                            document.querySelectorAll('.service-option').forEach(opt => opt.classList.remove('selected'));
+                            document.getElementById('flightSection').style.display = 'none';
+                            
+                            // 回到頁面頂部
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
                     } else {
                         throw new Error(result.message || '預約建立失敗');
                     }
