@@ -401,7 +401,7 @@
                     <div class="booking-details">
                         <div class="detail-item">
                             <span class="detail-label">預約時間</span>
-                            <span class="detail-value">${booking.date} ${booking.time}</span>
+                            <span class="detail-value">${formatDateTime(booking.date, booking.time)}</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">航班</span>
@@ -465,24 +465,22 @@
             }
             
             try {
-                const formData = new URLSearchParams();
-                formData.append('action', 'cancelBooking');
-                formData.append('bookingId', booking.bookingId);
-                formData.append('phone', booking.phone);
+                const requestBody = 'action=cancelBooking&bookingId=' + encodeURIComponent(booking.bookingId) + 
+                                  '&phone=' + encodeURIComponent(booking.phone);
 
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: formData
+                    body: requestBody
                 });
 
                 const result = await response.json();
                 
                 if (result.success) {
                     alert('預約已成功取消');
-                    searchBookings(); // 重新查詢
+                    searchBookings();
                 } else {
                     throw new Error(result.message || '取消失敗');
                 }
@@ -497,22 +495,27 @@
             e.preventDefault();
             
             try {
-                const formData = new URLSearchParams();
-                formData.append('action', 'updateBooking');
-                formData.append('bookingId', editingBookingId);
-                formData.append('date', document.getElementById('editDate').value);
-                formData.append('time', document.getElementById('editTime').value);
-                formData.append('flight', document.getElementById('editFlight').value);
-                formData.append('departure', document.getElementById('editPickup').value);
-                formData.append('destination', document.getElementById('editDropoff').value);
-                formData.append('notes', document.getElementById('editRemarks').value);
+                const requestData = {
+                    action: 'updateBooking',
+                    bookingId: editingBookingId,
+                    date: document.getElementById('editDate').value,
+                    time: document.getElementById('editTime').value,
+                    flight: document.getElementById('editFlight').value,
+                    departure: document.getElementById('editPickup').value,
+                    destination: document.getElementById('editDropoff').value,
+                    notes: document.getElementById('editRemarks').value
+                };
+
+                const requestBody = Object.keys(requestData)
+                    .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(requestData[key]))
+                    .join('&');
 
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: formData
+                    body: requestBody
                 });
 
                 const result = await response.json();
@@ -520,7 +523,7 @@
                 if (result.success) {
                     alert('預約修改成功');
                     document.getElementById('editModal').style.display = 'none';
-                    searchBookings(); // 重新查詢
+                    searchBookings();
                 } else {
                     throw new Error(result.message || '修改失敗');
                 }
