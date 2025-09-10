@@ -1,4 +1,100 @@
-<!DOCTYPE html>
+// 新增驗證函數 (QA新增)
+        function validatePhoneNumber(phone) {
+            if (!phone) return false;
+            const cleaned = phone.replace(/\D/g, '');
+            return cleaned.length === 10 && cleaned.startsWith('09');
+        }
+        
+        function validateBookingDate(dateString) {
+            if (!dateString) return false;
+            
+            const bookingDate = new Date(dateString);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            return bookingDate instanceof Date && !isNaN(bookingDate) && bookingDate >= today;
+        }
+        
+        // 友善的提示訊息 (QA修正：替換alert)
+        function showToast(message, type = 'info') {
+            // 移除舊的toast
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="toast-icon">${type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️'}</span>
+                    <span class="toast-message">${message}</span>
+                </div>
+            `;
+            
+            // 添加toast樣式
+            const style = document.createElement('style');
+            style.textContent = `
+                .toast {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 10000;
+                    padding: 16px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    animation: slideInRight 0.3s ease-out;
+                    max-width: 400px;
+                }
+                .toast-error {
+                    background: #fee2e2;
+                    border: 1px solid #fecaca;
+                    color: #dc2626;
+                }
+                .toast-success {
+                    background: #dcfce7;
+                    border: 1px solid #bbf7d0;
+                    color: #16a34a;
+                }
+                .toast-info {
+                    background: #dbeafe;
+                    border: 1px solid #bfdbfe;
+                    color: #2563eb;
+                }
+                .toast-content {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @media (max-width: 768px) {
+                    .toast {
+                        top: 10px;
+                        right: 10px;
+                        left: 10px;
+                        max-width: none;
+                    }
+                }
+            `;
+            
+            if (!document.querySelector('style[data-toast-styles]')) {
+                style.setAttribute('data-toast-styles', 'true');
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(toast);
+            
+            // 3秒後自動移除
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'slideInRight 0.3s ease-out reverse';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 3000);
+        }<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
