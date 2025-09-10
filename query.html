@@ -825,19 +825,127 @@
 
         // 使用說明
         function showHelp() {
-            alert(`📋 使用說明
-
-🔍 查詢方式：
-• 輸入手機號碼查詢所有預約中的行程
-• 支援格式：0912345678 或 0912-345-678
-
-📝 修改規則：
-• 前一日18:00前可線上修改或取消
-• 超過時間請聯繫客服：0800-123-456
-
-📱 測試手機號碼：
-• 0912-345-678 (有2筆預約)
-• 0987-654-321 (有1筆預約)
+            showToast(`使用說明已顯示`, 'info');
+            
+            // 創建說明對話框 (QA改進：替換alert)
+            const helpModal = document.createElement('div');
+            helpModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; max-height: 80vh; overflow-y: auto; margin: 20px;">
+                        <h3 style="margin-bottom: 20px; color: #374151;">📋 使用說明</h3>
+                        
+                        <div style="text-align: left; line-height: 1.6; color: #6b7280;">
+                            <p><strong>🔍 查詢方式：</strong><br>
+                            • 輸入手機號碼查詢所有預約中的行程<br>
+                            • 支援格式：0912345678 或 0912-345-678</p>
+                            
+                            <p><strong>📝 修改規則：</strong><br>
+                            • 前一日18:00前可線上修改或取消<br>
+                            • 超過時間請聯繫客服：0800-123-456</p>
+                            
+                            <p><strong>📱 測試手機號碼：</strong><br>
+                            • 0912-345-678 (有2筆預約)<br>
+                            • 0987-654-321 (有1筆預約)<br>
+                            • 其他號碼 (無預約記錄)</p>
+                            
+                            <p><strong>💡 功能說明：</strong><br>
+                            • 📋 僅顯示預約中的行程<br>
+                            • 👁️ 查看詳細資訊<br>
+                            • 📝 線上修改預約<br>
+                            • ❌ 線上取消預約</p>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 25px;">
+                            <button onclick="this.closest('div').parentNode.remove()" 
+                                    style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                知道了
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(helpModal);
+        }
+        
+        // 友善的提示訊息 (QA新增：統一的toast系統)
+        function showToast(message, type = 'info') {
+            // 移除舊的toast
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="toast-icon">${type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️'}</span>
+                    <span class="toast-message">${message}</span>
+                </div>
+            `;
+            
+            // 添加toast樣式 (如果還沒有的話)
+            if (!document.querySelector('style[data-toast-styles]')) {
+                const style = document.createElement('style');
+                style.setAttribute('data-toast-styles', 'true');
+                style.textContent = `
+                    .toast {
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        z-index: 10000;
+                        padding: 16px 20px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                        animation: slideInRight 0.3s ease-out;
+                        max-width: 400px;
+                    }
+                    .toast-error {
+                        background: #fee2e2;
+                        border: 1px solid #fecaca;
+                        color: #dc2626;
+                    }
+                    .toast-success {
+                        background: #dcfce7;
+                        border: 1px solid #bbf7d0;
+                        color: #16a34a;
+                    }
+                    .toast-info {
+                        background: #dbeafe;
+                        border: 1px solid #bfdbfe;
+                        color: #2563eb;
+                    }
+                    .toast-content {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    }
+                    @keyframes slideInRight {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @media (max-width: 768px) {
+                        .toast {
+                            top: 10px;
+                            right: 10px;
+                            left: 10px;
+                            max-width: none;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(toast);
+            
+            // 3秒後自動移除
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'slideInRight 0.3s ease-out reverse';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 3000);
+        }-654-321 (有1筆預約)
 • 其他號碼 (無預約記錄)
 
 💡 功能說明：
