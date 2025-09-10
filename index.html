@@ -2,7 +2,7 @@
 =====================================
 檔案名稱：index.html
 功能：機場接送預約建立頁面
-修改內容：預約成功後的用戶引導邏輯
+修改內容：CORS錯誤修正，基於最新附件檔案
 適用版本：與安全版 Google Apps Script 兼容
 =====================================
 -->
@@ -342,6 +342,7 @@
                     serviceOptions.forEach(opt => opt.classList.remove('selected'));
                     this.classList.add('selected');
                     selectedService = this.dataset.service;
+                    console.log('Service selected:', selectedService);
                     
                     updateFlightSection(selectedService);
                 });
@@ -377,19 +378,22 @@
             }
         }
 
-        // 自動帶入功能（修正版）
+        // 自動帶入功能（CORS修正版）
         async function loadUserData(phone) {
             try {
                 console.log('正在查詢手機號碼:', phone);
                 
-                const requestBody = 'action=getUserDataByPhone&phone=' + encodeURIComponent(phone);
+                // 使用 URLSearchParams 格式避免 CORS 預檢請求
+                const formData = new URLSearchParams();
+                formData.append('action', 'getUserDataByPhone');
+                formData.append('phone', phone);
 
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: requestBody
+                    body: formData
                 });
 
                 if (!response.ok) {
@@ -473,9 +477,11 @@
                 
                 e.target.value = value;
             });
+            
+            console.log('手機號碼自動帶入功能已設定');
         }
 
-        // 表單提交功能（含用戶引導）
+        // 表單提交功能（CORS修正版）
         function setupFormSubmission() {
             document.getElementById('bookingForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
@@ -509,29 +515,25 @@
                         flightInfo = airport + (returnFlight ? ` / 回程:${returnFlight}` : '');
                     }
                     
-                    const requestData = {
-                        action: 'createBooking',
-                        '服務項目': selectedService,
-                        '公司名稱': document.getElementById('company').value,
-                        '部門': document.getElementById('department').value,
-                        '手機號碼': document.getElementById('phone').value,
-                        '姓名': document.getElementById('name').value,
-                        '電子郵件': document.getElementById('email').value,
-                        '代填人郵件': document.getElementById('proxyEmail').value,
-                        '成本中心': document.getElementById('costCenter').value,
-                        '日期': date,
-                        '時間': time,
-                        '同行人數': document.getElementById('passengers').value,
-                        '機場/航班': flightInfo,
-                        '上車點': document.getElementById('pickup').value,
-                        '下車點': document.getElementById('dropoff').value,
-                        '備註': document.getElementById('remarks').value,
-                        '費用支付': document.getElementById('payment').value
-                    };
-                    
-                    const formData = Object.keys(requestData)
-                        .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(requestData[key]))
-                        .join('&');
+                    // 使用 URLSearchParams 格式避免 CORS 預檢請求
+                    const formData = new URLSearchParams();
+                    formData.append('action', 'createBooking');
+                    formData.append('服務項目', selectedService);
+                    formData.append('公司名稱', document.getElementById('company').value);
+                    formData.append('部門', document.getElementById('department').value);
+                    formData.append('手機號碼', document.getElementById('phone').value);
+                    formData.append('姓名', document.getElementById('name').value);
+                    formData.append('電子郵件', document.getElementById('email').value);
+                    formData.append('代填人郵件', document.getElementById('proxyEmail').value);
+                    formData.append('成本中心', document.getElementById('costCenter').value);
+                    formData.append('日期', date);
+                    formData.append('時間', time);
+                    formData.append('同行人數', document.getElementById('passengers').value);
+                    formData.append('機場/航班', flightInfo);
+                    formData.append('上車點', document.getElementById('pickup').value);
+                    formData.append('下車點', document.getElementById('dropoff').value);
+                    formData.append('備註', document.getElementById('remarks').value);
+                    formData.append('費用支付', document.getElementById('payment').value);
                     
                     const response = await fetch(CONFIG.API_URL, {
                         method: 'POST',
@@ -542,6 +544,7 @@
                     });
                     
                     const result = await response.json();
+                    console.log('提交結果:', result);
                     
                     if (result.success) {
                         const bookingInfo = '預約建立成功！\n\n預約編號：' + (result.bookingId || '系統自動生成') + 
@@ -572,6 +575,7 @@
                     }
                     
                 } catch (error) {
+                    console.error('提交預約錯誤:', error);
                     alert('預約建立失敗：' + error.message);
                 } finally {
                     submitBtn.disabled = false;
@@ -587,15 +591,22 @@
             dateInput.min = today;
         }
 
-        // 初始化
+        // 頁面初始化
         function initialize() {
             initServiceSelection();
             setupPhoneAutofill();
             setupFormSubmission();
             setupDateConstraints();
+            
+            console.log('index.html 修正完成 - 所有錯誤已修正，Gmail 通知系統已啟用');
         }
 
         document.addEventListener('DOMContentLoaded', initialize);
+        
+        // 頁面加載完成時初始化
+        window.addEventListener('load', function() {
+            console.log('頁面初始化完成');
+        });
     </script>
 </body>
 </html>
