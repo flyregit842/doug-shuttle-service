@@ -2,7 +2,7 @@
 =====================================
 檔案名稱：query.html
 功能：機場接送預約查詢頁面
-修改內容：與安全版 Google Apps Script 兼容、日期格式優化
+修改內容：CORS錯誤修正，基於最新附件檔案
 適用版本：與安全版 Google Apps Script 兼容
 =====================================
 -->
@@ -274,7 +274,7 @@
             return serviceMap[service] || service;
         }
 
-        // 查詢預約 - 與安全版後端兼容
+        // 查詢預約 - CORS修正版
         async function searchBookings() {
             const phone = document.getElementById('phoneSearch').value.trim();
             if (!phone) {
@@ -293,18 +293,17 @@
             try {
                 console.log('開始查詢，手機號碼：', phone);
                 
-                // 使用 JSON 格式與安全版後端通信
-                const requestData = {
-                    action: 'getBookingsByPhone',
-                    phone: phone
-                };
+                // 使用 URLSearchParams 格式避免 CORS 預檢請求
+                const formData = new URLSearchParams();
+                formData.append('action', 'getBookingsByPhone');
+                formData.append('phone', phone);
 
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: JSON.stringify(requestData)
+                    body: formData
                 });
 
                 console.log('API 回應狀態：', response.status);
