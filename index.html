@@ -2,8 +2,14 @@
 =====================================
 檔案名稱：index.html
 功能：機場接送預約建立頁面
-修改內容：CORS錯誤修正，基於最新附件檔案
-適用版本：與安全版 Google Apps Script 兼容
+修改內容：用戶體驗優化版
+- 載入狀態提示
+- 結束離開選項
+- 機場選項簡化
+- 航班編號提示優化
+- 自動帶入邏輯完善
+- 時間輸入24小時制+5分鐘間隔
+- 即時搜尋優化
 =====================================
 -->
 <!DOCTYPE html>
@@ -41,6 +47,25 @@
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
+        }
+
+        .exit-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s ease;
+        }
+
+        .exit-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .form-container {
@@ -90,6 +115,11 @@
 
         .required {
             color: #ef4444;
+        }
+
+        .optional {
+            color: #6b7280;
+            font-weight: normal;
         }
 
         .form-control {
@@ -166,6 +196,50 @@
             font-weight: 600;
         }
 
+        /* 載入狀態樣式 */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .auto-fill-indicator {
+            display: none;
+            color: #10b981;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
         @media (max-width: 768px) {
             .form-row {
                 flex-direction: column;
@@ -174,12 +248,27 @@
             .form-container {
                 padding: 20px;
             }
+
+            .exit-btn {
+                position: static;
+                margin-top: 10px;
+                display: inline-block;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- 載入狀態覆蓋層 -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div id="loadingText">作業中 請稍後</div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="header">
+            <button class="exit-btn" onclick="exitSystem()">結束離開</button>
             <h1>Doug Shuttle Service</h1>
             <p>專業機場接送服務</p>
         </div>
@@ -213,6 +302,7 @@
                     <div class="form-group">
                         <label class="form-label">手機號碼 <span class="required">*</span></label>
                         <input type="tel" id="phone" name="phone" class="form-control" required>
+                        <div id="autoFillIndicator" class="auto-fill-indicator">✓ 已自動帶入資料</div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">姓名 <span class="required">*</span></label>
@@ -257,7 +347,9 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">時間 <span class="required">*</span></label>
-                        <input type="time" id="time" name="time" class="form-control" required>
+                        <select id="time" name="time" class="form-control" required>
+                            <option value="">請選擇時間</option>
+                        </select>
                     </div>
                 </div>
 
@@ -272,20 +364,24 @@
                         <label class="form-label">目的機場</label>
                         <select id="airport" class="form-control">
                             <option value="">請選擇機場</option>
-                            <option value="桃園機場第一航廈">桃園機場第一航廈</option>
-                            <option value="桃園機場第二航廈">桃園機場第二航廈</option>
+                            <option value="桃園機場">桃園機場</option>
                             <option value="松山機場">松山機場</option>
                             <option value="其他機場">其他機場</option>
                         </select>
                     </div>
                     
                     <div id="flightInput" style="display:none;">
-                        <label class="form-label">航班號 <span class="required">*</span></label>
+                        <label class="form-label">航班編號 <span class="required">*</span></label>
                         <input type="text" id="flightNumber" class="form-control" placeholder="例：CI123">
+                    </div>
+
+                    <div id="sendFlightInput" style="display:none;">
+                        <label class="form-label">航班編號 <span class="optional">(選填)</span></label>
+                        <input type="text" id="sendFlightNumber" class="form-control" placeholder="例：CI123">
                     </div>
                     
                     <div id="returnFlightInput" style="display:none;">
-                        <label class="form-label">回程航班號</label>
+                        <label class="form-label">回程航班編號</label>
                         <input type="text" id="returnFlight" class="form-control" placeholder="例：CI124">
                     </div>
                 </div>
@@ -332,6 +428,40 @@
         };
 
         let selectedService = '';
+        let searchTimeout;
+
+        // 顯示/隱藏載入狀態
+        function showLoading(text = '作業中 請稍後') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // 結束離開功能
+        function exitSystem() {
+            if (confirm('確定要結束並離開系統嗎？\n未保存的資料將會遺失。')) {
+                window.close() || (window.location.href = 'about:blank');
+            }
+        }
+
+        // 生成24小時制時間選項（5分鐘間隔）
+        function populateTimeOptions() {
+            const timeSelect = document.getElementById('time');
+            timeSelect.innerHTML = '<option value="">請選擇時間</option>';
+            
+            for (let hour = 0; hour < 24; hour++) {
+                for (let minute = 0; minute < 60; minute += 5) {
+                    const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                    const option = document.createElement('option');
+                    option.value = timeValue;
+                    option.textContent = timeValue;
+                    timeSelect.appendChild(option);
+                }
+            }
+        }
 
         // 服務選擇功能
         function initServiceSelection() {
@@ -349,21 +479,27 @@
             });
         }
 
-        // 航班資訊顯示邏輯
+        // 航班資訊顯示邏輯（優化版）
         function updateFlightSection(service) {
             const flightSection = document.getElementById('flightSection');
             const airportSelect = document.getElementById('airportSelect');
             const flightInput = document.getElementById('flightInput');
+            const sendFlightInput = document.getElementById('sendFlightInput');
             const returnFlightInput = document.getElementById('returnFlightInput');
             
             // 隱藏所有選項
             airportSelect.style.display = 'none';
             flightInput.style.display = 'none';
+            sendFlightInput.style.display = 'none';
             returnFlightInput.style.display = 'none';
+            
+            // 清除必填屬性
+            document.getElementById('flightNumber').required = false;
             
             if (service === '送機') {
                 flightSection.style.display = 'block';
                 airportSelect.style.display = 'block';
+                sendFlightInput.style.display = 'block';
             } else if (service === '接機') {
                 flightSection.style.display = 'block';
                 flightInput.style.display = 'block';
@@ -374,61 +510,100 @@
                 returnFlightInput.style.display = 'block';
             } else {
                 flightSection.style.display = 'none';
-                document.getElementById('flightNumber').required = false;
             }
         }
 
-        // 自動帶入功能（CORS修正版）
-// 自動帶入功能（錯誤處理強化版）
-async function loadUserData(phone) {
-    try {
-        console.log('正在查詢手機號碼:', phone);
-        
-        const formData = new URLSearchParams();
-        formData.append('action', 'getUserDataByPhone');
-        formData.append('phone', phone);
+        // 自動帶入功能（即時搜尋優化版）
+        async function loadUserData(phone) {
+            try {
+                showLoading('查詢資料中...');
+                console.log('正在查詢手機號碼:', phone);
+                
+                const formData = new URLSearchParams();
+                formData.append('action', 'getUserDataByPhone');
+                formData.append('phone', phone);
 
-        const response = await fetch(CONFIG.API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: formData
-        });
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
 
-        // 強化錯誤處理
-        if (!response.ok) {
-            console.error('HTTP錯誤:', response.status, response.statusText);
-            return;
+                if (!response.ok) {
+                    throw new Error('網路請求失敗');
+                }
+
+                const responseText = await response.text();
+                console.log('原始回應:', responseText);
+                
+                const result = JSON.parse(responseText);
+                console.log('解析後結果:', result);
+                
+                if (result.success && result.data) {
+                    const data = result.data;
+                    
+                    // 自動帶入除日期、時間、航班、備註外的所有資料
+                    if (data.name) document.getElementById('name').value = data.name;
+                    if (data.email) document.getElementById('email').value = data.email;
+                    if (data.proxyEmail) document.getElementById('proxyEmail').value = data.proxyEmail;
+                    if (data.company) document.getElementById('company').value = data.company;
+                    if (data.department) document.getElementById('department').value = data.department;
+                    if (data.costCenter) document.getElementById('costCenter').value = data.costCenter;
+                    if (data.pickup) document.getElementById('pickup').value = data.pickup;
+                    if (data.dropoff) document.getElementById('dropoff').value = data.dropoff;
+                    if (data.payment) document.getElementById('payment').value = data.payment;
+                    if (data.passengers) document.getElementById('passengers').value = data.passengers;
+                    
+                    // 顯示自動帶入指示器
+                    document.getElementById('autoFillIndicator').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('autoFillIndicator').style.display = 'none';
+                    }, 3000);
+                    
+                    console.log('用戶資料自動帶入完成');
+                } else {
+                    console.log('未找到用戶資料');
+                }
+            } catch (error) {
+                console.error('查詢過程錯誤:', error);
+            } finally {
+                hideLoading();
+            }
         }
 
-        const responseText = await response.text();
-        console.log('原始回應:', responseText);
-        
-        const result = JSON.parse(responseText);
-        console.log('解析後結果:', result);
-        
-        if (result.success && result.data) {
-            const data = result.data;
+        // 手機號碼事件設定（即時搜尋）
+        function setupPhoneAutofill() {
+            const phoneInput = document.getElementById('phone');
             
-            // 自動帶入資料
-            if (data.name) document.getElementById('name').value = data.name;
-            if (data.email) document.getElementById('email').value = data.email;
-            if (data.company) document.getElementById('company').value = data.company;
-            if (data.department) document.getElementById('department').value = data.department;
-            if (data.pickup) document.getElementById('pickup').value = data.pickup;
-            if (data.dropoff) document.getElementById('dropoff').value = data.dropoff;
-            if (data.payment) document.getElementById('payment').value = data.payment;
+            phoneInput.addEventListener('input', function(e) {
+                // 格式化手機號碼
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 10) value = value.slice(0, 10);
+                
+                if (value.length >= 4) {
+                    if (value.length <= 7) {
+                        value = value.replace(/(\d{4})(\d+)/, '$1-$2');
+                    } else {
+                        value = value.replace(/(\d{4})(\d{3})(\d+)/, '$1-$2-$3');
+                    }
+                }
+                
+                e.target.value = value;
+                
+                // 即時搜尋邏輯
+                const cleanPhone = value.replace(/\D/g, '');
+                if (cleanPhone.length >= 10) {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        loadUserData(cleanPhone);
+                    }, 500); // 500ms 延遲避免過度查詢
+                }
+            });
             
-            console.log('用戶資料自動帶入完成');
-        } else {
-            console.log('API回應:', result.message || '未找到用戶資料');
+            console.log('手機號碼即時搜尋功能已設定');
         }
-    } catch (error) {
-        console.error('查詢過程詳細錯誤:', error);
-        // 不要顯示錯誤給用戶，靜默處理
-    }
-}
 
         // 時間驗證
         function validateBookingTime(date, time) {
@@ -456,35 +631,7 @@ async function loadUserData(phone) {
             return true;
         }
 
-        // 手機號碼事件設定
-        function setupPhoneAutofill() {
-            const phoneInput = document.getElementById('phone');
-            phoneInput.addEventListener('blur', function() {
-                const phone = this.value.trim().replace(/\D/g, '');
-                if (phone && phone.length >= 9) {
-                    loadUserData(phone);
-                }
-            });
-            
-            phoneInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 10) value = value.slice(0, 10);
-                
-                if (value.length >= 4) {
-                    if (value.length <= 7) {
-                        value = value.replace(/(\d{4})(\d+)/, '$1-$2');
-                    } else {
-                        value = value.replace(/(\d{4})(\d{3})(\d+)/, '$1-$2-$3');
-                    }
-                }
-                
-                e.target.value = value;
-            });
-            
-            console.log('手機號碼自動帶入功能已設定');
-        }
-
-        // 表單提交功能（CORS修正版）
+        // 表單提交功能（載入狀態優化）
         function setupFormSubmission() {
             document.getElementById('bookingForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
@@ -501,15 +648,15 @@ async function loadUserData(phone) {
                     return;
                 }
                 
-                const submitBtn = this.querySelector('.submit-btn');
-                submitBtn.disabled = true;
-                submitBtn.textContent = '提交中...';
+                showLoading('提交預約中...');
                 
                 try {
                     // 收集航班資訊
                     let flightInfo = '';
                     if (selectedService === '送機') {
-                        flightInfo = document.getElementById('airport').value;
+                        const airport = document.getElementById('airport').value;
+                        const sendFlight = document.getElementById('sendFlightNumber').value;
+                        flightInfo = airport + (sendFlight ? ` / 航班:${sendFlight}` : '');
                     } else if (selectedService === '接機') {
                         flightInfo = document.getElementById('flightNumber').value;
                     } else if (selectedService === '往返') {
@@ -518,7 +665,6 @@ async function loadUserData(phone) {
                         flightInfo = airport + (returnFlight ? ` / 回程:${returnFlight}` : '');
                     }
                     
-                    // 使用 URLSearchParams 格式避免 CORS 預檢請求
                     const formData = new URLSearchParams();
                     formData.append('action', 'createBooking');
                     formData.append('服務項目', selectedService);
@@ -561,16 +707,12 @@ async function loadUserData(phone) {
                         const userChoice = confirm('您想要進行什麼操作？\n\n確定 = 查詢我的預約記錄\n取消 = 繼續預約新行程');
                         
                         if (userChoice) {
-                            // 前往查詢頁面
                             window.location.href = 'query.html';
                         } else {
-                            // 清空表單準備下一次預約
                             this.reset();
                             selectedService = '';
                             document.querySelectorAll('.service-option').forEach(opt => opt.classList.remove('selected'));
                             document.getElementById('flightSection').style.display = 'none';
-                            
-                            // 回到頁面頂部
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                         }
                     } else {
@@ -581,8 +723,7 @@ async function loadUserData(phone) {
                     console.error('提交預約錯誤:', error);
                     alert('預約建立失敗：' + error.message);
                 } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = '確認預約';
+                    hideLoading();
                 }
             });
         }
@@ -596,21 +737,16 @@ async function loadUserData(phone) {
 
         // 頁面初始化
         function initialize() {
+            populateTimeOptions();
             initServiceSelection();
             setupPhoneAutofill();
             setupFormSubmission();
             setupDateConstraints();
             
-            console.log('index.html 修正完成 - 所有錯誤已修正，Gmail 通知系統已啟用');
+            console.log('優化版 index.html 初始化完成');
         }
 
         document.addEventListener('DOMContentLoaded', initialize);
-        
-        // 頁面加載完成時初始化
-        window.addEventListener('load', function() {
-            console.log('頁面初始化完成');
-        });
     </script>
 </body>
 </html>
-
