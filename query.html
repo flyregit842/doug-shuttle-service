@@ -1,3 +1,11 @@
+<!--
+=====================================
+檔案名稱：query.html
+功能：機場接送預約查詢頁面
+修改內容：與安全版 Google Apps Script 兼容、日期格式優化
+適用版本：與安全版 Google Apps Script 兼容
+=====================================
+-->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -95,7 +103,7 @@
 
         .booking-header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
         }
@@ -166,56 +174,6 @@
             font-weight: 500;
         }
 
-        .btn-edit {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .btn-cancel {
-            background: #ef4444;
-            color: white;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .close {
-            color: #aaa;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: black;
-        }
-
         .loading {
             text-align: center;
             padding: 40px;
@@ -246,7 +204,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📋 預約查詢</h1>
+            <h1>預約查詢</h1>
             <p>查詢您的預約記錄</p>
         </div>
 
@@ -271,53 +229,33 @@
         </div>
     </div>
 
-    <!-- 編輯預約 Modal -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>編輯預約</h2>
-                <span class="close" id="closeModal">&times;</span>
-            </div>
-            <form id="editForm">
-                <div class="form-group">
-                    <label class="form-label">日期</label>
-                    <input type="date" id="editDate" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">時間</label>
-                    <input type="time" id="editTime" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">航班資訊</label>
-                    <input type="text" id="editFlight" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">上車點</label>
-                    <input type="text" id="editPickup" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">下車點</label>
-                    <input type="text" id="editDropoff" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">備註</label>
-                    <textarea id="editRemarks" class="form-control" rows="3"></textarea>
-                </div>
-                <div style="margin-top: 20px; text-align: right;">
-                    <button type="button" id="cancelEdit" class="action-btn" style="background: #6b7280; color: white; margin-right: 10px;">取消</button>
-                    <button type="submit" class="action-btn" style="background: #10b981; color: white;">保存修改</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
         const CONFIG = {
             API_URL: 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec'
         };
 
         let currentBookings = [];
-        let editingBookingId = null;
+
+        // 格式化日期時間顯示為 yyyy/mm/dd(星期x) hh:mm
+        function formatDateTime(date, time) {
+            if (!date || !time) return '';
+            
+            try {
+                const dateObj = new Date(date + ' ' + time);
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                const hours = String(dateObj.getHours()).padStart(2, '0');
+                const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+                
+                const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+                const weekday = weekdays[dateObj.getDay()];
+                
+                return `${year}/${month}/${day}(星期${weekday}) ${hours}:${minutes}`;
+            } catch (error) {
+                return `${date} ${time}`;
+            }
+        }
 
         // 格式化服務類型
         function formatServiceType(service) {
@@ -329,13 +267,14 @@
                 '其他行程接送': '其他',
                 '送機': '送機',
                 '接機': '接機',
+                '往返': '往返',
                 '其他': '其他'
             };
             
             return serviceMap[service] || service;
         }
 
-        // 查詢預約
+        // 查詢預約 - 與安全版後端兼容
         async function searchBookings() {
             const phone = document.getElementById('phoneSearch').value.trim();
             if (!phone) {
@@ -347,41 +286,53 @@
             const resultsContainer = document.getElementById('resultsContainer');
             const noResults = document.getElementById('noResults');
 
-            // 顯示載入中
             loadingIndicator.style.display = 'block';
             resultsContainer.innerHTML = '';
             noResults.style.display = 'none';
 
             try {
-                const formData = new URLSearchParams();
-                formData.append('action', 'getBookingsByPhone');
-                formData.append('phone', phone);
+                console.log('開始查詢，手機號碼：', phone);
+                
+                // 使用 JSON 格式與安全版後端通信
+                const requestData = {
+                    action: 'getBookingsByPhone',
+                    phone: phone
+                };
 
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Content-Type': 'application/json',
                     },
-                    body: formData
+                    body: JSON.stringify(requestData)
                 });
 
-                const result = await response.json();
+                console.log('API 回應狀態：', response.status);
                 
-                if (result.success && result.bookings && result.bookings.length > 0) {
-                    currentBookings = result.bookings;
-                    displayBookings(result.bookings);
+                if (!response.ok) {
+                    throw new Error(`網路錯誤: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('查詢結果：', result);
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    currentBookings = result.data;
+                    displayBookings(result.data);
+                    console.log('顯示', result.data.length, '筆預約記錄');
                 } else {
+                    console.log('未找到預約記錄');
                     noResults.style.display = 'block';
                 }
             } catch (error) {
-                console.error('查詢失敗:', error);
-                alert('查詢失敗，請稍後再試');
+                console.error('查詢失敗詳細錯誤:', error);
+                alert('查詢失敗：' + error.message + '\n\n請檢查網路連線或稍後再試');
             } finally {
                 loadingIndicator.style.display = 'none';
             }
         }
 
-        // 顯示預約列表 - 精簡版本
+        // 顯示預約列表 - 適配安全版後端資料格式
         function displayBookings(bookings) {
             const container = document.getElementById('resultsContainer');
             container.innerHTML = '';
@@ -405,132 +356,60 @@
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">航班</span>
-                            <span class="detail-value">${booking.flight || '無'}</span>
+                            <span class="detail-value">${booking.airport || '無'}</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">上車點</span>
-                            <span class="detail-value">${booking.departure || ''}</span>
+                            <span class="detail-value">${booking.pickup || ''}</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">下車點</span>
-                            <span class="detail-value">${booking.destination || ''}</span>
+                            <span class="detail-value">${booking.dropoff || ''}</span>
                         </div>
-                        ${booking.notes ? `
+                        ${booking.remarks ? `
                         <div class="detail-item">
                             <span class="detail-label">備註</span>
-                            <span class="detail-value">${booking.notes}</span>
+                            <span class="detail-value">${booking.remarks}</span>
                         </div>
                         ` : ''}
                     </div>
                     
-                    ${booking.status !== 'cancelled' ? `
                     <div class="booking-actions">
-                        <button class="action-btn btn-edit" onclick="editBooking(${index})">
-                            ✏️ 修改
-                        </button>
-                        <button class="action-btn btn-cancel" onclick="cancelBooking(${index})">
-                            ❌ 取消
+                        <button class="action-btn" onclick="showBookingDetails(${index})" style="background: #667eea; color: white;">
+                            📋 詳細資訊
                         </button>
                     </div>
-                    ` : ''}
                 `;
                 
                 container.appendChild(bookingElement);
             });
         }
 
-        // 編輯預約
-        function editBooking(index) {
-            const booking = currentBookings[index];
-            editingBookingId = booking.bookingId;
-            
-            // 填入現有資料
-            document.getElementById('editDate').value = booking.date;
-            document.getElementById('editTime').value = booking.time;
-            document.getElementById('editFlight').value = booking.flight || '';
-            document.getElementById('editPickup').value = booking.departure || '';
-            document.getElementById('editDropoff').value = booking.destination || '';
-            document.getElementById('editRemarks').value = booking.notes || '';
-            
-            // 顯示編輯 Modal
-            document.getElementById('editModal').style.display = 'block';
-        }
-
-        // 取消預約
-        async function cancelBooking(index) {
+        // 顯示完整預約詳情
+        function showBookingDetails(index) {
             const booking = currentBookings[index];
             
-            if (!confirm('確定要取消這個預約嗎？此操作無法復原。')) {
-                return;
-            }
+            const details = `
+📋 預約詳細資訊
+
+預約編號：ROW${booking.rowIndex}
+服務類型：${booking.service}
+公司部門：${booking.company} ${booking.department || ''}
+客戶姓名：${booking.name}
+聯絡電話：${booking.phone}
+
+預約時間：${formatDateTime(booking.date, booking.time)}
+航班資訊：${booking.airport || '無'}
+上車地點：${booking.pickup || ''}
+下車地點：${booking.dropoff || ''}
+付款方式：${booking.payment || ''}
+
+備註：${booking.remarks || '無'}
+預約狀態：${booking.status === 'cancelled' ? '已取消' : '正常'}
+建立時間：${booking.submitTime || ''}
+            `;
             
-            try {
-                const requestBody = 'action=cancelBooking&bookingId=' + encodeURIComponent(booking.bookingId) + 
-                                  '&phone=' + encodeURIComponent(booking.phone);
-
-                const response = await fetch(CONFIG.API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: requestBody
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert('預約已成功取消');
-                    searchBookings();
-                } else {
-                    throw new Error(result.message || '取消失敗');
-                }
-            } catch (error) {
-                console.error('取消預約失敗:', error);
-                alert('取消失敗：' + error.message);
-            }
-        }
-
-        // 保存編輯
-        async function saveBookingChanges(e) {
-            e.preventDefault();
-            
-            try {
-                const requestData = {
-                    action: 'updateBooking',
-                    bookingId: editingBookingId,
-                    date: document.getElementById('editDate').value,
-                    time: document.getElementById('editTime').value,
-                    flight: document.getElementById('editFlight').value,
-                    departure: document.getElementById('editPickup').value,
-                    destination: document.getElementById('editDropoff').value,
-                    notes: document.getElementById('editRemarks').value
-                };
-
-                const requestBody = Object.keys(requestData)
-                    .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(requestData[key]))
-                    .join('&');
-
-                const response = await fetch(CONFIG.API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: requestBody
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert('預約修改成功');
-                    document.getElementById('editModal').style.display = 'none';
-                    searchBookings();
-                } else {
-                    throw new Error(result.message || '修改失敗');
-                }
-            } catch (error) {
-                console.error('修改預約失敗:', error);
-                alert('修改失敗：' + error.message);
-            }
+            alert(details);
         }
 
         // 初始化事件監聽器
@@ -541,25 +420,6 @@
                     searchBookings();
                 }
             });
-            
-            // Modal 控制
-            document.getElementById('closeModal').addEventListener('click', function() {
-                document.getElementById('editModal').style.display = 'none';
-            });
-            
-            document.getElementById('cancelEdit').addEventListener('click', function() {
-                document.getElementById('editModal').style.display = 'none';
-            });
-            
-            document.getElementById('editForm').addEventListener('submit', saveBookingChanges);
-            
-            // 點擊 Modal 外部關閉
-            window.addEventListener('click', function(e) {
-                const modal = document.getElementById('editModal');
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
         }
 
         // 頁面載入時初始化
@@ -567,4 +427,3 @@
     </script>
 </body>
 </html>
-
