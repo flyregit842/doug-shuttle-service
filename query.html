@@ -269,7 +269,7 @@
     <script>
         // 全域變數
         let searchCache = new Map();
-        const CACHE_DURATION = 5 * 60 * 1000; // 5分鐘快取
+        const CACHE_DURATION = 5 * 60 * 1000;
         let retryCount = 0;
         const MAX_RETRY = 1;
         let currentEditBooking = null;
@@ -286,57 +286,42 @@
 
         // 綁定事件
         function bindEvents() {
-            console.log('開始綁定事件...');
-            
             // 查詢按鈕
-            const searchBtn = document.getElementById('search-btn');
-            if (searchBtn) {
-                console.log('✓ 找到查詢按鈕，綁定點擊事件');
-                searchBtn.addEventListener('click', function() {
-                    console.log('🔍 查詢按鈕被點擊');
-                    searchBookings();
-                });
-            }
+            document.getElementById('search-btn').addEventListener('click', searchBookings);
             
             // 手機號碼輸入框
             const phoneInput = document.getElementById('phone-search');
-            if (phoneInput) {
-                console.log('✓ 找到手機輸入框，綁定事件');
-                
-                // Enter鍵查詢
-                phoneInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        console.log('⚡ 按下Enter，開始查詢');
-                        searchBookings();
-                    }
-                });
-
-                // 手機號碼格式化並自動查詢
-                phoneInput.addEventListener('input', function(e) {
-                    let value = e.target.value.replace(/\D/g, '');
-                    if (value.length > 10) value = value.substring(0, 10);
-                    
-                    let formatted = value;
-                    if (value.length >= 8) {
-                        formatted = value.substring(0, 4) + '-' + value.substring(4, 7) + '-' + value.substring(7);
-                    } else if (value.length >= 4) {
-                        formatted = value.substring(0, 4) + '-' + value.substring(4);
-                    }
-                    
-                    if (e.target.value !== formatted) {
-                        e.target.value = formatted;
-                    }
-                    
-                    // 當手機號碼完整時自動開始查詢
-                    if (value.length === 10) {
-                        setTimeout(() => {
-                            searchBookings();
-                        }, 300);
-                    }
-                });
-            }
             
-            console.log('✅ 事件綁定完成');
+            // Enter鍵查詢
+            phoneInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchBookings();
+                }
+            });
+
+            // 手機號碼格式化並自動查詢
+            phoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 10) value = value.substring(0, 10);
+                
+                let formatted = value;
+                if (value.length >= 8) {
+                    formatted = value.substring(0, 4) + '-' + value.substring(4, 7) + '-' + value.substring(7);
+                } else if (value.length >= 4) {
+                    formatted = value.substring(0, 4) + '-' + value.substring(4);
+                }
+                
+                if (e.target.value !== formatted) {
+                    e.target.value = formatted;
+                }
+                
+                // 當手機號碼完整時自動開始查詢
+                if (value.length === 10) {
+                    setTimeout(() => {
+                        searchBookings();
+                    }, 300);
+                }
+            });
         }
 
         // 生成時間選項
@@ -348,7 +333,7 @@
                 for (let minute = 0; minute < 60; minute += 5) {
                     const hourStr = hour.toString().padStart(2, '0');
                     const minuteStr = minute.toString().padStart(2, '0');
-                    const timeValue = `${hourStr}:${minuteStr}`;
+                    const timeValue = hourStr + ':' + minuteStr;
                     
                     const option = document.createElement('option');
                     option.value = timeValue;
@@ -362,9 +347,13 @@
         async function apiCall(action, data, attempt = 1) {
             try {
                 const requestData = {
-                    action: action,
-                    ...data
+                    action: action
                 };
+                
+                // 合併資料
+                for (let key in data) {
+                    requestData[key] = data[key];
+                }
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -375,7 +364,7 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
                 }
 
                 const result = await response.json();
@@ -383,7 +372,7 @@
                 return result;
 
             } catch (error) {
-                console.error(`API調用失敗 (嘗試 ${attempt}):`, error);
+                console.error('API調用失敗 (嘗試 ' + attempt + '):', error);
                 
                 if (attempt <= MAX_RETRY) {
                     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -411,12 +400,7 @@
         // 顯示錯誤訊息
         function showError(message, retryCallback) {
             const errorContainer = document.getElementById('error-container');
-            errorContainer.innerHTML = `
-                <div class="error-message">
-                    <strong>查詢失敗：</strong>${message}
-                    <button class="btn btn-outline retry-btn" onclick="handleRetry()">重新嘗試</button>
-                </div>
-            `;
+            errorContainer.innerHTML = '<div class="error-message"><strong>查詢失敗：</strong>' + message + '<button class="btn btn-outline retry-btn" onclick="handleRetry()">重新嘗試</button></div>';
             errorContainer.style.display = 'block';
             window.currentRetryCallback = retryCallback;
         }
@@ -431,8 +415,6 @@
 
         // 查詢預約
         async function searchBookings() {
-            console.log('🚀 開始查詢流程...');
-            
             const phoneInput = document.getElementById('phone-search');
             const phone = phoneInput.value.replace(/\D/g, '');
             
@@ -450,10 +432,9 @@
             }
 
             // 檢查快取
-            const cacheKey = `search_${phone}`;
+            const cacheKey = 'search_' + phone;
             const cached = searchCache.get(cacheKey);
             if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-                console.log('📋 使用快取資料');
                 displayResults(cached.data);
                 return;
             }
@@ -462,10 +443,7 @@
             showLoading(true);
 
             try {
-                console.log('⏳ 開始API查詢...');
-                
                 const response = await apiCall('getBookingsByPhone', { phone: phone });
-                console.log('📊 查詢結果:', response);
                 
                 if (response.success) {
                     // 保存到快取
@@ -480,7 +458,7 @@
                 }
                 
             } catch (error) {
-                console.error('❌ 查詢錯誤:', error);
+                console.error('查詢錯誤:', error);
                 displayResults([]);
             } finally {
                 showLoading(false);
@@ -503,8 +481,6 @@
 
         // 顯示查詢結果
         function displayResults(results) {
-            console.log('📋 顯示查詢結果:', results.length, '筆記錄');
-            
             const resultsDiv = document.getElementById('results');
             const resultsCount = document.getElementById('results-count');
             const noResults = document.getElementById('no-results');
@@ -517,55 +493,64 @@
                 noResults.style.display = 'block';
                 resultsList.style.display = 'none';
             } else {
-                resultsCount.textContent = `查詢結果 (共${results.length}筆預約中)`;
+                resultsCount.textContent = '查詢結果 (共' + results.length + '筆預約中)';
                 noResults.style.display = 'none';
                 resultsList.style.display = 'block';
                 generateResultsList(results);
             }
         }
 
-        // 生成結果列表（修正顯示格式）
+        // 生成結果列表
         function generateResultsList(results) {
             const resultsList = document.getElementById('results-list');
             
-            resultsList.innerHTML = results.map(booking => {
-                let routeDisplay = `📍 ${booking.pickup}`;
-                if (booking.midstop && booking.midstop.trim()) {
-                    routeDisplay += ` → ${booking.midstop}`;
-                }
-                routeDisplay += ` → ${booking.dropoff}`;
+            let html = '';
+            for (let i = 0; i < results.length; i++) {
+                const booking = results[i];
                 
-                return `
-                    <div class="booking-card" data-booking-id="${booking.rowIndex}">
-                        <div class="booking-header">
-                            <div class="status">🟢 預約中</div>
-                            <small style="color: #666;">${formatDateWithAMPM(booking.submitTime)}</small>
-                        </div>
-                        <div class="booking-info">
-                            <div class="service-line">
-                                ${getServiceIcon(booking.service)} ${booking.service}
-                            </div>
-                            <div class="datetime-line">
-                                ${formatSimpleDate(booking.date)} ${booking.time}
-                            </div>
-                            <div style="color: #666; margin-bottom: 8px;">
-                                ${routeDisplay}
-                            </div>
-                            ${booking.airport ? `<div style="color: #7c3aed; margin-bottom: 8px;">✈️ ${booking.airport}</div>` : ''}
-                            <div style="font-size: 14px; color: #666;">
-                                👤 ${booking.name} (${booking.phone})
-                                ${booking.company ? ` | 🏢 ${booking.company}` : ''}
-                            </div>
-                            ${booking.payment ? `<div style="font-size: 14px; color: #666;">💳 ${booking.payment}</div>` : ''}
-                            ${booking.remarks && booking.remarks.trim() ? `<div style="font-size: 14px; color: #666; margin-top: 5px;">📝 ${booking.remarks}</div>` : ''}
-                        </div>
-                        <div class="booking-actions">
-                            <button class="btn btn-small" onclick="editBooking('${booking.rowIndex}')">📝 修改</button>
-                            <button class="btn btn-small btn-danger" onclick="deleteBooking('${booking.rowIndex}')">🗑️ 刪除</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                let routeDisplay = '📍 ' + booking.pickup;
+                if (booking.midstop && booking.midstop.trim()) {
+                    routeDisplay += ' → ' + booking.midstop;
+                }
+                routeDisplay += ' → ' + booking.dropoff;
+                
+                html += '<div class="booking-card" data-booking-id="' + booking.rowIndex + '">';
+                html += '<div class="booking-header">';
+                html += '<div class="status">🟢 預約中</div>';
+                html += '<small style="color: #666;">' + formatDateWithAMPM(booking.submitTime) + '</small>';
+                html += '</div>';
+                html += '<div class="booking-info">';
+                html += '<div class="service-line">' + getServiceIcon(booking.service) + ' ' + booking.service + '</div>';
+                html += '<div class="datetime-line">' + formatSimpleDate(booking.date) + ' ' + booking.time + '</div>';
+                html += '<div style="color: #666; margin-bottom: 8px;">' + routeDisplay + '</div>';
+                
+                if (booking.airport) {
+                    html += '<div style="color: #7c3aed; margin-bottom: 8px;">✈️ ' + booking.airport + '</div>';
+                }
+                
+                html += '<div style="font-size: 14px; color: #666;">👤 ' + booking.name + ' (' + booking.phone + ')';
+                if (booking.company) {
+                    html += ' | 🏢 ' + booking.company;
+                }
+                html += '</div>';
+                
+                if (booking.payment) {
+                    html += '<div style="font-size: 14px; color: #666;">💳 ' + booking.payment + '</div>';
+                }
+                
+                if (booking.remarks && booking.remarks.trim()) {
+                    html += '<div style="font-size: 14px; color: #666; margin-top: 5px;">📝 ' + booking.remarks + '</div>';
+                }
+                
+                html += '</div>';
+                html += '<div class="booking-actions">';
+                html += '<button class="btn btn-small" onclick="editBooking(\'' + booking.rowIndex + '\')">📝 修改</button>';
+                html += '<button class="btn btn-small btn-danger" onclick="deleteBooking(\'' + booking.rowIndex + '\')">🗑️ 刪除</button>';
+                html += '</div>';
+                html += '</div>';
+            }
+            
+            resultsList.innerHTML = html;
         }
 
         // 輔助函數
@@ -583,7 +568,7 @@
             const day = date.getDate().toString().padStart(2, '0');
             const year = date.getFullYear();
             
-            return `${month}/${day}/${year}`;
+            return month + '/' + day + '/' + year;
         }
 
         // 日期時間格式 mm/dd/yyyy hh:mm AM/PM
@@ -604,21 +589,21 @@
             hours = hours ? hours : 12;
             const displayHours = hours.toString().padStart(2, '0');
             
-            return `${month}/${day}/${year} ${displayHours}:${minutes} ${ampm}`;
+            return month + '/' + day + '/' + year + ' ' + displayHours + ':' + minutes + ' ' + ampm;
         }
 
         // 編輯預約
         async function editBooking(id) {
-            const bookingCard = document.querySelector(`[data-booking-id="${id}"]`);
-            if (!bookingCard) return;
-            
             // 從快取中找到對應的預約資料
-            for (let [cacheKey, cacheData] of searchCache) {
-                const booking = cacheData.data.find(b => b.rowIndex == id);
-                if (booking) {
-                    currentEditBooking = booking;
-                    showEditForm(booking);
-                    return;
+            for (let cacheEntry of searchCache) {
+                const cacheData = cacheEntry[1];
+                for (let j = 0; j < cacheData.data.length; j++) {
+                    const booking = cacheData.data[j];
+                    if (booking.rowIndex == id) {
+                        currentEditBooking = booking;
+                        showEditForm(booking);
+                        return;
+                    }
                 }
             }
             
@@ -663,47 +648,7 @@
                 if (response.success) {
                     showToast('預約修改成功', 'success');
                     cancelEdit();
-                    // 清除快取
-                    searchCache.clear();
-                } else {
-                    throw new Error(response.message || '刪除失敗');
-                }
-                
-            } catch (error) {
-                console.error('刪除錯誤:', error);
-                showToast('刪除失敗，請稍後再試', 'error');
-            }
-        }
-
-        // Toast 提示
-        function showToast(message, type) {
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) existingToast.remove();
-            
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 3000);
-        }
-
-        // 除錯函數
-        function debugSearch() {
-            console.log('=== 除錯資訊 ===');
-            console.log('查詢按鈕:', document.getElementById('search-btn'));
-            console.log('手機輸入框:', document.getElementById('phone-search'));
-            console.log('載入區域:', document.getElementById('loading'));
-            console.log('結果區域:', document.getElementById('results'));
-            console.log('快取內容:', Array.from(searchCache.entries()));
-        }
-
-        console.log('🔧 除錯提示：在控制台輸入 debugSearch() 來檢查狀態');
-    </script>
-</body>
-</html>並重新查詢
+                    // 清除快取並重新查詢
                     searchCache.clear();
                     setTimeout(() => {
                         searchBookings();
@@ -731,7 +676,7 @@
                     showToast('預約刪除成功', 'success');
                     
                     // 立即從頁面移除該預約卡片
-                    const bookingCard = document.querySelector(`[data-booking-id="${id}"]`);
+                    const bookingCard = document.querySelector('[data-booking-id="' + id + '"]');
                     if (bookingCard) {
                         bookingCard.style.transition = 'opacity 0.3s ease';
                         bookingCard.style.opacity = '0';
@@ -740,7 +685,7 @@
                             
                             // 更新計數顯示
                             const remainingCards = document.querySelectorAll('.booking-card').length;
-                            document.getElementById('results-count').textContent = `查詢結果 (共${remainingCards}筆預約中)`;
+                            document.getElementById('results-count').textContent = '查詢結果 (共' + remainingCards + '筆預約中)';
                             
                             // 如果沒有剩餘預約，顯示無結果頁面
                             if (remainingCards === 0) {
@@ -751,3 +696,43 @@
                     }
                     
                     // 清除快取
+                    searchCache.clear();
+                } else {
+                    throw new Error(response.message || '刪除失敗');
+                }
+                
+            } catch (error) {
+                console.error('刪除錯誤:', error);
+                showToast('刪除失敗，請稍後再試', 'error');
+            }
+        }
+
+        // Toast 提示
+        function showToast(message, type) {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-' + type;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 3000);
+        }
+
+        // 除錯函數
+        function debugSearch() {
+            console.log('=== 除錯資訊 ===');
+            console.log('查詢按鈕:', document.getElementById('search-btn'));
+            console.log('手機輸入框:', document.getElementById('phone-search'));
+            console.log('載入區域:', document.getElementById('loading'));
+            console.log('結果區域:', document.getElementById('results'));
+            console.log('快取內容:', Array.from(searchCache.entries()));
+        }
+
+        console.log('除錯提示：在控制台輸入 debugSearch() 來檢查狀態');
+    </script>
+</body>
+</html>
