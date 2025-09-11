@@ -1,3 +1,35 @@
+<!--
+================================================================================
+檔案名稱：query.html - Doug Shuttle Service 機場接送預約查詢頁面
+功能描述：手機號碼查詢預約記錄，支援修改、取消、詳細檢視功能
+技術架構：HTML5 + CSS3 + Vanilla JavaScript
+API整合：Google Apps Script 後端服務
+建立日期：2025年9月12日
+版本：v4.0 - 完整功能版
+開發者：Doug Shuttle Service Team
+
+主要功能：
+- 手機號碼查詢預約記錄
+- 預約資料顯示與管理
+- 修改預約功能 (前一日18:00前)
+- 取消預約功能
+- 快取機制提升查詢效率
+- 錯誤處理與重試機制
+- 響應式設計支援行動裝置
+
+查詢邏輯：
+- 僅顯示狀態為 'active' 的預約記錄
+- 按提交時間排序 (最新在前)
+- 支援手機號碼格式自動清理
+- 快取查詢結果 5 分鐘
+
+更新記錄：
+v4.0 - 修復所有JavaScript錯誤，完善修改功能
+v3.0 - 新增修改預約功能
+v2.0 - 優化查詢體驗
+v1.0 - 初始版本
+================================================================================
+-->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -5,176 +37,516 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doug Shuttle Service - 預約查詢</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: system-ui, sans-serif; background: #f5f5f5; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header { background: #667eea; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
-        .content { padding: 20px; }
-        .search-form { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1px solid #ddd; 
-            border-radius: 5px; 
-            font-size: 16px;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
         }
-        input:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
+        
+        body { 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            background: #f5f5f5; 
+            padding: 20px; 
+            line-height: 1.6;
         }
-        .search-group { display: flex; gap: 10px; align-items: flex-end; }
-        .btn { 
-            padding: 12px 24px; 
-            background: #667eea; 
+        
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            overflow: hidden;
+        }
+        
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
             color: white; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            font-size: 16px;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            white-space: nowrap;
+            padding: 30px 20px; 
+            text-align: center; 
         }
-        .btn:hover { 
-            background: #5a67d8; 
-            transform: translateY(-1px);
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
         }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .content { 
+            padding: 20px; 
+        }
+        
+        /* 導航連結 */
         .nav-links { 
             text-align: center; 
-            margin-bottom: 20px;
-            padding-bottom: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
             border-bottom: 1px solid #e5e7eb;
         }
+        
         .nav-links a { 
             margin: 0 10px; 
-            padding: 8px 16px; 
+            padding: 10px 16px; 
             text-decoration: none; 
             color: #667eea; 
             border: 1px solid #667eea; 
-            border-radius: 5px;
+            border-radius: 6px;
             transition: all 0.2s ease;
+            display: inline-block;
         }
+        
         .nav-links a:hover { 
             background: #667eea; 
             color: white; 
             transform: translateY(-1px);
         }
+        
         .nav-links a.active { 
             background: #667eea; 
             color: white; 
         }
+        
+        /* 搜尋表單 */
+        .search-form { 
+            background: #f9fafb; 
+            padding: 25px; 
+            border-radius: 10px; 
+            margin-bottom: 30px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            border: 2px solid #e5e7eb; 
+            border-radius: 6px; 
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+        
+        .search-group { 
+            display: flex; 
+            gap: 12px; 
+            align-items: flex-end; 
+        }
+        
+        .search-group input {
+            flex: 1;
+        }
+        
+        /* 按鈕樣式 */
+        .btn { 
+            padding: 12px 24px; 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover:not(:disabled) { 
+            background: #5a67d8; 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .btn-small { 
+            padding: 8px 16px; 
+            font-size: 14px; 
+        }
+        
+        .btn-outline { 
+            background: transparent; 
+            border: 2px solid #667eea; 
+            color: #667eea; 
+        }
+        
+        .btn-outline:hover:not(:disabled) { 
+            background: #667eea; 
+            color: white; 
+        }
+        
+        .btn-danger { 
+            background: #dc2626; 
+        }
+        
+        .btn-danger:hover:not(:disabled) { 
+            background: #b91c1c; 
+        }
+        
+        /* 載入狀態 */
         .loading { 
             display: none; 
             text-align: center; 
-            padding: 20px; 
-            color: #666;
-        }
-        .loading.show {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            background: #f0f4ff;
-            border-radius: 5px;
+            padding: 30px; 
             color: #667eea;
         }
+        
+        .loading.show {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            background: #f0f4ff;
+            border-radius: 8px;
+            color: #667eea;
+        }
+        
         .loading::before {
             content: '';
-            width: 16px;
-            height: 16px;
-            border: 2px solid #667eea;
-            border-top: 2px solid transparent;
+            width: 32px;
+            height: 32px;
+            border: 3px solid #667eea;
+            border-top: 3px solid transparent;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .results { display: none; }
-        .booking-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
-        .booking-header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; }
-        .booking-info { margin-bottom: 10px; }
-        .service-line { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
-        .datetime-line { font-size: 16px; color: #555; margin-bottom: 8px; }
-        .contact-line { font-size: 14px; color: #666; margin-bottom: 4px; }
-        .company-line { font-size: 14px; color: #666; margin-bottom: 8px; }
-        .booking-actions { display: flex; gap: 10px; }
-        .btn-small { padding: 6px 12px; font-size: 14px; }
-        .btn-outline { background: transparent; border: 1px solid #667eea; color: #667eea; }
-        .btn-outline:hover { background: #667eea; color: white; }
-        .btn-danger { background: #dc2626; }
-        .btn-danger:hover { background: #b91c1c; }
-        .no-results { text-align: center; padding: 40px; color: #666; }
-        .toast { position: fixed; top: 20px; right: 20px; padding: 15px; border-radius: 5px; z-index: 1000; animation: slideIn 0.3s ease-out; min-width: 250px; max-width: 400px; }
-        .toast-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .toast-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .toast-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        .error-message {
-            background: #fee;
-            color: #c53030;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            border: 1px solid #feb2b2;
-        }
-        .retry-btn {
-            margin-top: 10px;
+        
+        /* 查詢結果 */
+        .results { 
+            display: none; 
         }
         
-        /* 編輯表單樣式 */
+        .results.show {
+            display: block;
+        }
+        
+        .results-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .results-count {
+            color: #374151;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        /* 預約卡片 */
+        .booking-card { 
+            background: #f9fafb; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 10px; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .booking-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border-color: #d1d5db;
+        }
+        
+        .booking-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .booking-status {
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .booking-time {
+            color: #6b7280;
+            font-size: 13px;
+        }
+        
+        .booking-info { 
+            margin-bottom: 15px; 
+        }
+        
+        .service-line { 
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 8px;
+            color: #374151;
+        }
+        
+        .datetime-line { 
+            font-size: 16px; 
+            color: #667eea; 
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .route-line {
+            color: #6b7280; 
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        
+        .contact-line { 
+            font-size: 14px; 
+            color: #6b7280; 
+            margin-bottom: 6px; 
+        }
+        
+        .company-line { 
+            font-size: 14px; 
+            color: #6b7280; 
+            margin-bottom: 10px; 
+        }
+        
+        .remarks-line {
+            font-size: 14px;
+            color: #374151;
+            background: #f3f4f6;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        
+        .booking-actions { 
+            display: flex; 
+            gap: 10px; 
+            justify-content: flex-end;
+        }
+        
+        /* 無結果狀態 */
+        .no-results { 
+            text-align: center; 
+            padding: 60px 20px; 
+            color: #6b7280; 
+        }
+        
+        .no-results-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .no-results h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #374151;
+        }
+        
+        .no-results p {
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        /* Toast 通知 */
+        .toast { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            padding: 16px 20px; 
+            border-radius: 6px; 
+            z-index: 1000; 
+            animation: slideIn 0.3s ease-out; 
+            min-width: 280px; 
+            max-width: 400px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .toast-success { 
+            background: #d1fae5; 
+            color: #065f46; 
+            border: 1px solid #a7f3d0; 
+        }
+        
+        .toast-error { 
+            background: #fef2f2; 
+            color: #991b1b; 
+            border: 1px solid #fecaca; 
+        }
+        
+        .toast-info { 
+            background: #dbeafe; 
+            color: #1e40af; 
+            border: 1px solid #93c5fd; 
+        }
+        
+        /* 錯誤訊息 */
+        .error-message {
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #fecaca;
+        }
+        
+        .retry-btn {
+            margin-top: 12px;
+        }
+        
+        /* 編輯表單 */
         .edit-form {
             display: none;
             background: #fff;
             border: 2px solid #667eea;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 25px 0;
             position: relative;
         }
+        
         .edit-form.show {
             display: block;
+            animation: fadeIn 0.3s ease-out;
         }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
         .edit-form h4 {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             color: #667eea;
+            font-size: 1.2rem;
         }
+        
         .edit-form .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 18px;
         }
+        
         .edit-form label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #374151;
         }
-        .edit-form input, .edit-form select, .edit-form textarea {
+        
+        .edit-form input, 
+        .edit-form select, 
+        .edit-form textarea {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
         }
+        
+        .edit-form input:focus,
+        .edit-form select:focus,
+        .edit-form textarea:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+        
+        .edit-form textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
         .edit-form .btn-group {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             justify-content: flex-end;
+            margin-top: 25px;
         }
         
         @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
-        @media (max-width: 600px) { 
-            .container { margin: 10px; } 
-            .search-group { flex-direction: column; }
-            .booking-actions { flex-direction: column; }
-            .nav-links { margin-bottom: 15px; }
-            .nav-links a { margin: 5px; display: inline-block; }
+        
+        /* 響應式設計 */
+        @media (max-width: 768px) { 
+            .container { 
+                margin: 10px; 
+                border-radius: 0;
+            }
+            
+            .content {
+                padding: 15px;
+            }
+            
+            .search-group { 
+                flex-direction: column; 
+                gap: 15px;
+            }
+            
+            .booking-actions { 
+                flex-direction: column; 
+            }
+            
+            .booking-header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .nav-links a {
+                margin: 5px;
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+            
+            .edit-form .btn-group {
+                flex-direction: column;
+            }
+            
+            .toast {
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+            }
         }
     </style>
 </head>
@@ -188,37 +560,42 @@
         <div class="content">
             <div class="nav-links">
                 <a href="index.html">新增預約</a>
-                <a href="query.html" class="active">查詢預約</a>
+                <a href="#" class="active" onclick="location.reload()">查詢預約</a>
             </div>
 
+            <!-- 搜尋表單 -->
             <div class="search-form">
                 <div class="form-group">
-                    <label for="phone-search">手機號碼：</label>
+                    <label for="phone-search">手機號碼查詢：</label>
                     <div class="search-group">
-                        <input type="tel" id="phone-search" placeholder="0912-345-678" maxlength="12">
-                        <button class="btn" id="search-btn">查詢</button>
+                        <input type="tel" id="phone-search" placeholder="請輸入手機號碼 (例：0912-345-678)" maxlength="12">
+                        <button class="btn" id="search-btn">查詢預約</button>
                     </div>
                 </div>
             </div>
 
+            <!-- 載入狀態 -->
             <div class="loading" id="loading">
-                正在查詢您的預約記錄...
+                正在查詢您的預約記錄，請稍候...
             </div>
 
+            <!-- 查詢結果 -->
             <div class="results" id="results">
-                <div id="results-header" style="margin-bottom: 20px;">
-                    <h3 id="results-count">查詢結果</h3>
+                <div class="results-header">
+                    <h3 class="results-count" id="results-count">查詢結果</h3>
                 </div>
 
-                <div class="no-results" id="no-results">
-                    <div style="font-size: 48px; margin-bottom: 15px;">😔</div>
+                <!-- 無結果狀態 -->
+                <div class="no-results" id="no-results" style="display: none;">
+                    <div class="no-results-icon">😔</div>
                     <h3>未找到預約記錄</h3>
                     <p>請確認手機號碼是否正確，或是否有預約中的行程</p>
-                    <div style="margin-top: 20px;">
+                    <div>
                         <a href="index.html" class="btn">建立新預約</a>
                     </div>
                 </div>
 
+                <!-- 結果列表 -->
                 <div id="results-list">
                     <!-- 動態生成預約記錄 -->
                 </div>
@@ -226,32 +603,32 @@
 
             <!-- 編輯表單 -->
             <div class="edit-form" id="edit-form">
-                <h4>修改預約</h4>
+                <h4>修改預約資訊</h4>
                 <div class="form-group">
-                    <label>服務日期：</label>
+                    <label for="edit-date">服務日期：</label>
                     <input type="date" id="edit-date">
                 </div>
                 <div class="form-group">
-                    <label>出發時間：</label>
+                    <label for="edit-time">出發時間：</label>
                     <select id="edit-time">
                         <option value="">請選擇時間</option>
                         <!-- 時間選項由JavaScript生成 -->
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>上車地點：</label>
+                    <label for="edit-pickup">上車地點：</label>
                     <input type="text" id="edit-pickup">
                 </div>
                 <div class="form-group">
-                    <label>中停點：</label>
+                    <label for="edit-midstop">中停點：</label>
                     <input type="text" id="edit-midstop">
                 </div>
                 <div class="form-group">
-                    <label>下車地點：</label>
+                    <label for="edit-dropoff">下車地點：</label>
                     <input type="text" id="edit-dropoff">
                 </div>
                 <div class="form-group">
-                    <label>備註：</label>
+                    <label for="edit-remarks">備註：</label>
                     <textarea id="edit-remarks" rows="3"></textarea>
                 </div>
                 <div class="btn-group">
@@ -268,42 +645,71 @@
     </div>
 
     <script>
-        // 全域變數
-        let searchCache = new Map();
-        const CACHE_DURATION = 5 * 60 * 1000;
-        let retryCount = 0;
-        const MAX_RETRY = 1;
-        let currentEditBooking = null;
+        /*
+        ================================================================================
+        檔案名稱：query.html - JavaScript 查詢控制程式
+        功能描述：Doug Shuttle Service 預約查詢前端邏輯控制
+        版本：v4.0 - 完整功能版
+        建立日期：2025年9月12日
         
-        // API配置
+        主要功能模組：
+        1. 手機號碼查詢預約記錄
+        2. 預約資料顯示與格式化
+        3. 修改預約功能 (限時機制)
+        4. 取消預約功能
+        5. 快取機制優化查詢效率
+        6. 錯誤處理與重試機制
+        
+        API 端點：Google Apps Script
+        通訊格式：application/x-www-form-urlencoded (避免 CORS 預檢)
+        快取策略：5分鐘本地快取
+        ================================================================================
+        */
+        
+        // 全域變數定義
+        let searchCache = new Map();                // 查詢結果快取
+        const CACHE_DURATION = 5 * 60 * 1000;      // 快取時間：5分鐘
+        let retryCount = 0;                         // API 重試計數
+        const MAX_RETRY = 1;                        // 最大重試次數
+        let currentEditBooking = null;              // 當前編輯的預約記錄
+        
+        // API 配置
         const API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
 
-        // 初始化
+        /**
+         * DOM 載入完成初始化
+         */
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('Doug Shuttle Service 查詢系統 - 初始化中...');
+            
             bindEvents();
             generateTimeOptions();
+            showToast('請輸入手機號碼查詢預約記錄', 'info');
         });
 
-        // 綁定事件
+        /**
+         * 綁定所有事件監聽器
+         */
         function bindEvents() {
-            // 查詢按鈕
+            // 查詢按鈕點擊事件
             document.getElementById('search-btn').addEventListener('click', searchBookings);
             
-            // 手機號碼輸入框
+            // 手機號碼輸入框事件
             const phoneInput = document.getElementById('phone-search');
             
-            // Enter鍵查詢
+            // Enter鍵快速查詢
             phoneInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     searchBookings();
                 }
             });
 
-            // 手機號碼格式化並自動查詢
+            // 手機號碼格式化與自動查詢
             phoneInput.addEventListener('input', function(e) {
                 let value = e.target.value.replace(/\D/g, '');
                 if (value.length > 10) value = value.substring(0, 10);
                 
+                // 格式化顯示
                 let formatted = value;
                 if (value.length >= 8) {
                     formatted = value.substring(0, 4) + '-' + value.substring(4, 7) + '-' + value.substring(7);
@@ -315,16 +721,19 @@
                     e.target.value = formatted;
                 }
                 
-                // 當手機號碼完整時自動開始查詢
+                // 手機號碼完整時自動查詢
                 if (value.length === 10) {
-                    setTimeout(() => {
+                    clearTimeout(window.autoSearchTimer);
+                    window.autoSearchTimer = setTimeout(() => {
                         searchBookings();
-                    }, 300);
+                    }, 500);
                 }
             });
         }
 
-        // 生成時間選項
+        /**
+         * 生成時間選項
+         */
         function generateTimeOptions() {
             const timeSelect = document.getElementById('edit-time');
             timeSelect.innerHTML = '<option value="">請選擇時間</option>';
@@ -343,7 +752,350 @@
             }
         }
 
-        // API調用函數
+        /**
+         * 查詢預約記錄主函數
+         */
+        async function searchBookings() {
+            const phoneInput = document.getElementById('phone-search');
+            const phone = phoneInput.value.replace(/\D/g, '');
+            
+            // 輸入驗證
+            if (!phone) {
+                showToast('請輸入手機號碼', 'error');
+                phoneInput.focus();
+                return;
+            }
+            
+            if (phone.length < 10) {
+                showToast('請輸入完整的10位手機號碼', 'error');
+                phoneInput.focus();
+                return;
+            }
+
+            // 檢查快取
+            const cacheKey = 'search_' + phone;
+            const cached = searchCache.get(cacheKey);
+            if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+                console.log('使用快取結果');
+                displayResults(cached.data);
+                return;
+            }
+
+            // 顯示載入狀態
+            showLoading(true);
+
+            try {
+                const response = await apiCall('getBookingsByPhone', { phone: phone });
+                
+                if (response.success) {
+                    // 存入快取
+                    searchCache.set(cacheKey, {
+                        data: response.data || [],
+                        timestamp: Date.now()
+                    });
+                    
+                    displayResults(response.data || []);
+                } else {
+                    throw new Error(response.message || '查詢失敗');
+                }
+                
+            } catch (error) {
+                console.error('查詢錯誤:', error);
+                showToast('查詢失敗，請稍後再試', 'error');
+                displayResults([]);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        /**
+         * 顯示/隱藏載入狀態
+         */
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            
+            if (show) {
+                loading.className = 'loading show';
+                results.classList.remove('show');
+                document.getElementById('error-container').style.display = 'none';
+            } else {
+                loading.className = 'loading';
+            }
+        }
+
+        /**
+         * 顯示查詢結果
+         */
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            const resultsCount = document.getElementById('results-count');
+            const noResults = document.getElementById('no-results');
+            const resultsList = document.getElementById('results-list');
+            
+            resultsDiv.classList.add('show');
+            
+            if (results.length === 0) {
+                resultsCount.textContent = '查詢結果 (共0筆預約中)';
+                noResults.style.display = 'block';
+                resultsList.style.display = 'none';
+            } else {
+                resultsCount.textContent = `查詢結果 (共${results.length}筆預約中)`;
+                noResults.style.display = 'none';
+                resultsList.style.display = 'block';
+                generateResultsList(results);
+            }
+        }
+
+        /**
+         * 生成結果列表HTML
+         */
+        function generateResultsList(results) {
+            const resultsList = document.getElementById('results-list');
+            
+            let html = '';
+            for (let i = 0; i < results.length; i++) {
+                const booking = results[i];
+                
+                // 建構路線顯示
+                let routeDisplay = '📍 ' + booking.pickup;
+                if (booking.midstop && booking.midstop.trim()) {
+                    routeDisplay += ' → ' + booking.midstop;
+                }
+                routeDisplay += ' → ' + booking.dropoff;
+                
+                html += `<div class="booking-card" data-booking-id="${booking.rowIndex}">`;
+                
+                // 預約標題列
+                html += '<div class="booking-header">';
+                html += '<div class="booking-status">預約中</div>';
+                html += `<div class="booking-time">提交時間：${formatDateWithAMPM(booking.submitTime)}</div>`;
+                html += '</div>';
+                
+                html += '<div class="booking-info">';
+                html += `<div class="service-line">${getServiceIcon(booking.service)} ${booking.service}</div>`;
+                html += `<div class="datetime-line">${formatSimpleDate(booking.date)} ${formatTime(booking.time)}</div>`;
+                html += `<div class="route-line">${routeDisplay}</div>`;
+                
+                // 機場航班信息
+                if (booking.airport) {
+                    html += `<div style="color: #7c3aed; margin-bottom: 8px;">✈️ ${booking.airport}</div>`;
+                }
+                
+                // 聯絡資訊
+                html += `<div class="contact-line">👤 ${booking.name} (${booking.phone})</div>`;
+                if (booking.company) {
+                    html += `<div class="company-line">🏢 ${booking.company}</div>`;
+                }
+                
+                // 付款方式
+                if (booking.payment) {
+                    html += `<div class="contact-line">💳 ${booking.payment}</div>`;
+                }
+                
+                // 備註信息
+                if (booking.remarks && booking.remarks.trim()) {
+                    html += `<div class="remarks-line">📝 ${booking.remarks}</div>`;
+                }
+                
+                html += '</div>';
+                
+                // 操作按鈕
+                html += '<div class="booking-actions">';
+                if (canModifyBooking(booking.date)) {
+                    html += `<button class="btn btn-small btn-outline" onclick="editBooking('${booking.rowIndex}')">📝 修改</button>`;
+                }
+                html += `<button class="btn btn-small btn-danger" onclick="deleteBooking('${booking.rowIndex}')">🗑️ 取消</button>`;
+                html += '</div>';
+                
+                html += '</div>';
+            }
+            
+            resultsList.innerHTML = html;
+        }
+
+        /**
+         * 檢查是否可以修改預約 (前一日18:00前)
+         */
+        function canModifyBooking(bookingDate) {
+            try {
+                const booking = new Date(bookingDate);
+                const now = new Date();
+                
+                // 設定前一日18:00
+                const deadline = new Date(booking);
+                deadline.setDate(deadline.getDate() - 1);
+                deadline.setHours(18, 0, 0, 0);
+                
+                return now < deadline;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        /**
+         * 編輯預約功能
+         */
+        async function editBooking(id) {
+            // 從快取中找到對應的預約資料
+            let foundBooking = null;
+            
+            for (let cacheEntry of searchCache.entries()) {
+                const cacheData = cacheEntry[1];
+                if (cacheData.data) {
+                    for (let j = 0; j < cacheData.data.length; j++) {
+                        const booking = cacheData.data[j];
+                        if (booking.rowIndex && booking.rowIndex.toString() === id.toString()) {
+                            foundBooking = booking;
+                            break;
+                        }
+                    }
+                }
+                if (foundBooking) break;
+            }
+            
+            if (foundBooking) {
+                if (!canModifyBooking(foundBooking.date)) {
+                    showToast('已超過修改時間限制 (前一日18:00前)', 'error');
+                    return;
+                }
+                
+                currentEditBooking = foundBooking;
+                showEditForm(foundBooking);
+            } else {
+                showToast('無法載入預約資料', 'error');
+            }
+        }
+
+        /**
+         * 顯示編輯表單
+         */
+        function showEditForm(booking) {
+            // 設定最小日期
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('edit-date').min = today;
+            
+            // 填入當前資料
+            document.getElementById('edit-date').value = booking.date || '';
+            document.getElementById('edit-time').value = booking.time || '';
+            document.getElementById('edit-pickup').value = booking.pickup || '';
+            document.getElementById('edit-midstop').value = booking.midstop || '';
+            document.getElementById('edit-dropoff').value = booking.dropoff || '';
+            document.getElementById('edit-remarks').value = booking.remarks || '';
+            
+            // 顯示表單
+            document.getElementById('edit-form').className = 'edit-form show';
+            
+            // 滾動到表單
+            document.getElementById('edit-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /**
+         * 取消編輯
+         */
+        function cancelEdit() {
+            document.getElementById('edit-form').className = 'edit-form';
+            currentEditBooking = null;
+        }
+
+        /**
+         * 保存修改
+         */
+        async function saveEdit() {
+            if (!currentEditBooking) return;
+            
+            // 驗證必填欄位
+            const date = document.getElementById('edit-date').value;
+            const time = document.getElementById('edit-time').value;
+            const pickup = document.getElementById('edit-pickup').value.trim();
+            const dropoff = document.getElementById('edit-dropoff').value.trim();
+            
+            if (!date || !time || !pickup || !dropoff) {
+                showToast('請填寫所有必填欄位', 'error');
+                return;
+            }
+            
+            const updatedData = {
+                bookingId: currentEditBooking.rowIndex,
+                date: date,
+                time: time,
+                pickup: pickup,
+                midstop: document.getElementById('edit-midstop').value,
+                dropoff: dropoff,
+                remarks: document.getElementById('edit-remarks').value
+            };
+            
+            try {
+                const response = await apiCall('updateBooking', updatedData);
+                
+                if (response.success) {
+                    showToast('預約修改成功', 'success');
+                    cancelEdit();
+                    
+                    // 清除快取並重新查詢
+                    searchCache.clear();
+                    setTimeout(() => {
+                        searchBookings();
+                    }, 1000);
+                } else {
+                    throw new Error(response.message || '修改失敗');
+                }
+                
+            } catch (error) {
+                console.error('修改錯誤:', error);
+                showToast('修改失敗，請稍後再試', 'error');
+            }
+        }
+
+        /**
+         * 取消預約功能
+         */
+        async function deleteBooking(id) {
+            if (!confirm('確定要取消這筆預約嗎？此操作無法復原。')) {
+                return;
+            }
+            
+            try {
+                const response = await apiCall('cancelBooking', { bookingId: id });
+                
+                if (response.success) {
+                    showToast('預約取消成功', 'success');
+                    
+                    // 立即從頁面移除該預約卡片
+                    const bookingCard = document.querySelector(`[data-booking-id="${id}"]`);
+                    if (bookingCard) {
+                        bookingCard.style.transition = 'opacity 0.3s ease';
+                        bookingCard.style.opacity = '0';
+                        setTimeout(() => {
+                            bookingCard.remove();
+                            
+                            // 更新計數顯示
+                            const remainingCards = document.querySelectorAll('.booking-card').length;
+                            document.getElementById('results-count').textContent = `查詢結果 (共${remainingCards}筆預約中)`;
+                            
+                            // 如果沒有剩餘預約，顯示無結果頁面
+                            if (remainingCards === 0) {
+                                document.getElementById('no-results').style.display = 'block';
+                                document.getElementById('results-list').style.display = 'none';
+                            }
+                        }, 300);
+                    }
+                    
+                    // 清除快取
+                    searchCache.clear();
+                } else {
+                    throw new Error(response.message || '取消失敗');
+                }
+                
+            } catch (error) {
+                console.error('取消錯誤:', error);
+                showToast('取消失敗，請稍後再試', 'error');
+            }
+        }
+
+        /**
+         * API調用主函數
+         */
         async function apiCall(action, data, attempt = 1) {
             try {
                 const requestData = {
@@ -371,6 +1123,8 @@
                 return result;
 
             } catch (error) {
+                console.error(`API調用失敗 (嘗試 ${attempt}):`, error);
+                
                 if (attempt <= MAX_RETRY) {
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     return apiCall(action, data, attempt + 1);
@@ -381,7 +1135,9 @@
             }
         }
 
-        // 錯誤訊息處理
+        /**
+         * 錯誤訊息處理
+         */
         function getErrorMessage(error) {
             if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
                 return '連線不穩定，請檢查網路後重試';
@@ -394,15 +1150,24 @@
             }
         }
 
-        // 顯示錯誤訊息
+        /**
+         * 顯示錯誤訊息
+         */
         function showError(message, retryCallback) {
             const errorContainer = document.getElementById('error-container');
-            errorContainer.innerHTML = '<div class="error-message"><strong>查詢失敗：</strong>' + message + '<button class="btn btn-outline retry-btn" onclick="handleRetry()">重新嘗試</button></div>';
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <strong>查詢失敗：</strong>${message}
+                    <button class="btn btn-outline retry-btn" onclick="handleRetry()">重新嘗試</button>
+                </div>
+            `;
             errorContainer.style.display = 'block';
             window.currentRetryCallback = retryCallback;
         }
 
-        // 處理重試
+        /**
+         * 處理重試
+         */
         function handleRetry() {
             document.getElementById('error-container').style.display = 'none';
             if (window.currentRetryCallback) {
@@ -410,158 +1175,43 @@
             }
         }
 
-        // 查詢預約
-        async function searchBookings() {
-            const phoneInput = document.getElementById('phone-search');
-            const phone = phoneInput.value.replace(/\D/g, '');
+        /**
+         * Toast 通知系統
+         */
+        function showToast(message, type) {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) existingToast.remove();
             
-            if (!phone) {
-                showToast('請輸入手機號碼', 'error');
-                phoneInput.focus();
-                return;
-            }
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-' + type;
+            toast.textContent = message;
+            document.body.appendChild(toast);
             
-            if (phone.length < 10) {
-                showToast('請輸入完整的10位手機號碼', 'error');
-                phoneInput.focus();
-                return;
-            }
-
-            // 檢查快取
-            const cacheKey = 'search_' + phone;
-            const cached = searchCache.get(cacheKey);
-            if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-                displayResults(cached.data);
-                return;
-            }
-
-            showLoading(true);
-
-            try {
-                const response = await apiCall('getBookingsByPhone', { phone: phone });
-                
-                if (response.success) {
-                    searchCache.set(cacheKey, {
-                        data: response.data || [],
-                        timestamp: Date.now()
-                    });
-                    
-                    displayResults(response.data || []);
-                } else {
-                    throw new Error(response.message || '查詢失敗');
-                }
-                
-            } catch (error) {
-                console.error('查詢錯誤:', error);
-                displayResults([]);
-            } finally {
-                showLoading(false);
-            }
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 3000);
         }
 
-        // 顯示載入狀態
-        function showLoading(show) {
-            const loading = document.getElementById('loading');
-            const results = document.getElementById('results');
-            
-            if (show) {
-                loading.className = 'loading show';
-                results.style.display = 'none';
-                document.getElementById('error-container').style.display = 'none';
-            } else {
-                loading.className = 'loading';
-            }
-        }
-
-        // 顯示查詢結果
-        function displayResults(results) {
-            const resultsDiv = document.getElementById('results');
-            const resultsCount = document.getElementById('results-count');
-            const noResults = document.getElementById('no-results');
-            const resultsList = document.getElementById('results-list');
-            
-            resultsDiv.style.display = 'block';
-            
-            if (results.length === 0) {
-                resultsCount.textContent = '查詢結果 (共0筆預約中)';
-                noResults.style.display = 'block';
-                resultsList.style.display = 'none';
-            } else {
-                resultsCount.textContent = '查詢結果 (共' + results.length + '筆預約中)';
-                noResults.style.display = 'none';
-                resultsList.style.display = 'block';
-                generateResultsList(results);
-            }
-        }
-
-        // 生成結果列表
-        function generateResultsList(results) {
-            const resultsList = document.getElementById('results-list');
-            
-            let html = '';
-            for (let i = 0; i < results.length; i++) {
-                const booking = results[i];
-                
-                let routeDisplay = '📍 ' + booking.pickup;
-                if (booking.midstop && booking.midstop.trim()) {
-                    routeDisplay += ' → ' + booking.midstop;
-                }
-                routeDisplay += ' → ' + booking.dropoff;
-                
-                html += '<div class="booking-card" data-booking-id="' + booking.rowIndex + '">';
-                
-                // 移除預約中狀態，只保留提交時間
-                html += '<div class="booking-header">';
-                html += '<small style="color: #666;">' + formatDateWithAMPM(booking.submitTime) + '</small>';
-                html += '</div>';
-                
-                html += '<div class="booking-info">';
-                html += '<div class="service-line">' + getServiceIcon(booking.service) + ' ' + booking.service + '</div>';
-                html += '<div class="datetime-line">' + formatSimpleDate(booking.date) + ' ' + formatTime(booking.time) + '</div>';
-                html += '<div style="color: #666; margin-bottom: 8px;">' + routeDisplay + '</div>';
-                
-                if (booking.airport) {
-                    html += '<div style="color: #7c3aed; margin-bottom: 8px;">✈️ ' + booking.airport + '</div>';
-                }
-                
-                // 聯絡資訊分行顯示
-                html += '<div class="contact-line">👤 ' + booking.name + ' (' + booking.phone + ')</div>';
-                if (booking.company) {
-                    html += '<div class="company-line">🏢 ' + booking.company + '</div>';
-                }
-                
-                if (booking.payment) {
-                    html += '<div style="font-size: 14px; color: #666; margin-bottom: 8px;">💳 ' + booking.payment + '</div>';
-                }
-                
-                if (booking.remarks && booking.remarks.trim()) {
-                    html += '<div style="font-size: 14px; color: #666; margin-top: 5px;">📝 ' + booking.remarks + '</div>';
-                }
-                
-                html += '</div>';
-                html += '<div class="booking-actions">';
-                html += '<button class="btn btn-small btn-danger" onclick="deleteBooking(\'' + booking.rowIndex + '\')">🗑️ 刪除</button>';
-                html += '</div>';
-                html += '</div>';
-            }
-            
-            resultsList.innerHTML = html;
-        }
-
-        // 輔助函數
+        /**
+         * 格式化工具函數
+         */
+        
+        // 取得服務圖示
         function getServiceIcon(service) {
-            const icons = { '送機': '✈️', '接機': '🏠', '包車': '🚗' };
+            const icons = { 
+                '送機': '✈️', 
+                '接機': '🏠', 
+                '包車': '🚗' 
+            };
             return icons[service] || '🚗';
         }
 
-        // 修正的日期格式函數 - mm/dd/yyyy
+        // 格式化日期 (mm/dd/yyyy)
         function formatSimpleDate(dateString) {
             if (!dateString) return '';
             
-            // 處理不同的日期格式
             let date;
             if (dateString.includes('-')) {
-                // 處理 YYYY-MM-DD 格式
                 const parts = dateString.split('-');
                 if (parts.length === 3) {
                     date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -571,21 +1221,20 @@
             }
             
             if (!date || isNaN(date.getTime())) {
-                return dateString; // 如果無法解析，返回原始字串
+                return dateString;
             }
             
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
             const year = date.getFullYear();
             
-            return month + '/' + day + '/' + year;
+            return `${year}年${month}月${day}日`;
         }
 
-        // 修正的時間格式函數 - hh:mm AM/PM
+        // 格式化時間 (hh:mm AM/PM)
         function formatTime(timeString) {
             if (!timeString) return '';
             
-            // 處理 HH:MM 格式
             const timeParts = timeString.split(':');
             if (timeParts.length !== 2) return timeString;
             
@@ -599,16 +1248,16 @@
             hours = hours ? hours : 12;
             const displayHours = hours.toString().padStart(2, '0');
             
-            return displayHours + ':' + minutes + ' ' + ampm;
+            return `${displayHours}:${minutes} ${ampm}`;
         }
 
-        // 修正的提交時間格式函數 - mm/dd/yyyy hh:mm AM/PM
+        // 格式化提交時間 (mm/dd/yyyy hh:mm AM/PM)
         function formatDateWithAMPM(dateString) {
             if (!dateString) return '';
             
             const date = new Date(dateString);
             if (isNaN(date.getTime())) {
-                return dateString; // 如果無法解析，返回原始字串
+                return dateString;
             }
             
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -623,148 +1272,29 @@
             hours = hours ? hours : 12;
             const displayHours = hours.toString().padStart(2, '0');
             
-            return month + '/' + day + '/' + year + ' ' + displayHours + ':' + minutes + ' ' + ampm;
+            return `${month}/${day}/${year} ${displayHours}:${minutes} ${ampm}`;
         }
 
-        // 編輯預約
-        async function editBooking(id) {
-            // 從快取中找到對應的預約資料
-            let foundBooking = null;
-            
-            for (let cacheEntry of searchCache.entries()) {
-                const cacheData = cacheEntry[1];
-                if (cacheData.data) {
-                    for (let j = 0; j < cacheData.data.length; j++) {
-                        const booking = cacheData.data[j];
-                        if (booking.rowIndex && booking.rowIndex.toString() === id.toString()) {
-                            foundBooking = booking;
-                            break;
-                        }
-                    }
-                }
-                if (foundBooking) break;
+        /**
+         * 除錯函數 (開發用)
+         */
+        function debugSearch() {
+            console.log('=== Doug Shuttle Service 查詢系統 Debug Info ===');
+            console.log('快取項目數:', searchCache.size);
+            console.log('快取內容:');
+            for (let [key, value] of searchCache.entries()) {
+                console.log(`  ${key}:`, value.data.length, '筆記錄,', '快取時間:', new Date(value.timestamp));
             }
-            
-            if (foundBooking) {
-                currentEditBooking = foundBooking;
-                showEditForm(foundBooking);
-            } else {
-                showToast('無法載入預約資料', 'error');
-            }
+            console.log('當前編輯預約:', currentEditBooking);
+            console.log('API URL:', API_URL);
         }
 
-        // 顯示編輯表單
-        function showEditForm(booking) {
-            document.getElementById('edit-date').value = booking.date || '';
-            document.getElementById('edit-time').value = booking.time || '';
-            document.getElementById('edit-pickup').value = booking.pickup || '';
-            document.getElementById('edit-midstop').value = booking.midstop || '';
-            document.getElementById('edit-dropoff').value = booking.dropoff || '';
-            document.getElementById('edit-remarks').value = booking.remarks || '';
-            
-            document.getElementById('edit-form').className = 'edit-form show';
-        }
-
-        // 取消編輯
-        function cancelEdit() {
-            document.getElementById('edit-form').className = 'edit-form';
-            currentEditBooking = null;
-        }
-
-        // 保存修改
-        async function saveEdit() {
-            if (!currentEditBooking) return;
-            
-            const updatedData = {
-                bookingId: currentEditBooking.rowIndex,
-                date: document.getElementById('edit-date').value,
-                time: document.getElementById('edit-time').value,
-                pickup: document.getElementById('edit-pickup').value,
-                midstop: document.getElementById('edit-midstop').value,
-                dropoff: document.getElementById('edit-dropoff').value,
-                remarks: document.getElementById('edit-remarks').value
-            };
-            
-            try {
-                const response = await apiCall('updateBooking', updatedData);
-                
-                if (response.success) {
-                    showToast('預約修改成功', 'success');
-                    cancelEdit();
-                    // 清除快取並重新查詢
-                    searchCache.clear();
-                    setTimeout(() => {
-                        searchBookings();
-                    }, 1000);
-                } else {
-                    throw new Error(response.message || '修改失敗');
-                }
-                
-            } catch (error) {
-                console.error('修改錯誤:', error);
-                showToast('修改失敗，請稍後再試', 'error');
-            }
-        }
-
-        // 刪除預約
-        async function deleteBooking(id) {
-            if (!confirm('確定要刪除這筆預約嗎？此操作無法復原。')) {
-                return;
-            }
-            
-            try {
-                const response = await apiCall('cancelBooking', { bookingId: id });
-                
-                if (response.success) {
-                    showToast('預約刪除成功', 'success');
-                    
-                    // 立即從頁面移除該預約卡片
-                    const bookingCard = document.querySelector('[data-booking-id="' + id + '"]');
-                    if (bookingCard) {
-                        bookingCard.style.transition = 'opacity 0.3s ease';
-                        bookingCard.style.opacity = '0';
-                        setTimeout(() => {
-                            bookingCard.remove();
-                            
-                            // 更新計數顯示
-                            const remainingCards = document.querySelectorAll('.booking-card').length;
-                            document.getElementById('results-count').textContent = '查詢結果 (共' + remainingCards + '筆預約中)';
-                            
-                            // 如果沒有剩餘預約，顯示無結果頁面
-                            if (remainingCards === 0) {
-                                document.getElementById('no-results').style.display = 'block';
-                                document.getElementById('results-list').style.display = 'none';
-                            }
-                        }, 300);
-                    }
-                    
-                    // 清除快取
-                    searchCache.clear();
-                } else {
-                    throw new Error(response.message || '刪除失敗');
-                }
-                
-            } catch (error) {
-                console.error('刪除錯誤:', error);
-                showToast('刪除失敗，請稍後再試', 'error');
-            }
-        }
-
-        // Toast 提示
-        function showToast(message, type) {
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) existingToast.remove();
-            
-            const toast = document.createElement('div');
-            toast.className = 'toast toast-' + type;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 3000);
+        // 開發模式下啟用除錯
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            window.debugSearch = debugSearch;
+            console.log('Doug Shuttle Service 查詢系統 - 開發模式已啟用');
+            console.log('使用 debugSearch() 查看系統狀態');
         }
     </script>
 </body>
-</html>="btn btn-small" onclick="editBooking(\'' + booking.rowIndex + '\')">📝 修改</button>';
-                html += '<button class
+</html>
