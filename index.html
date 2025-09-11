@@ -10,23 +10,194 @@
         .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .header { background: #667eea; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
         .content { padding: 20px; }
-        .step { display: none; }
-        .step.active { display: block; }
+        
+        /* 步驟切換動畫 */
+        .step { 
+            display: none; 
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        .step.active { 
+            display: block; 
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        /* 聚焦效果 */
+        input:focus, select:focus, textarea:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+        
         .service-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-        .service-card { padding: 20px; border: 2px solid #ddd; border-radius: 5px; text-align: center; cursor: pointer; }
-        .service-card.selected { border-color: #667eea; background: #f0f4ff; }
-        .btn { padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
-        .btn:hover { background: #5a67d8; }
+        .service-card { 
+            padding: 20px; 
+            border: 2px solid #ddd; 
+            border-radius: 5px; 
+            text-align: center; 
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 服務卡片動畫 */
+        .service-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.6s;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .service-card.selected { 
+            border-color: #667eea; 
+            background: #f0f4ff; 
+        }
+        
+        .service-card.selected::after {
+            left: 100%;
+        }
+        
+        .btn { 
+            padding: 12px 24px; 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+        .btn:hover:not(:disabled) { 
+            background: #5a67d8; 
+            transform: translateY(-1px);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
         .btn-outline { background: transparent; border: 2px solid #667eea; color: #667eea; }
+        .btn-outline:hover:not(:disabled) { background: #667eea; color: white; }
+        
         .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
-        .loading { display: none; text-align: center; color: #666; }
-        .toast { position: fixed; top: 20px; right: 20px; padding: 15px; border-radius: 5px; z-index: 1000; }
+        
+        .loading { 
+            display: none; 
+            text-align: center; 
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f0f4ff;
+            border-radius: 5px;
+            color: #667eea;
+            font-size: 14px;
+        }
+        
+        .loading::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border: 2px solid #667eea;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .toast { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            padding: 15px; 
+            border-radius: 5px; 
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            min-width: 250px;
+            max-width: 400px;
+        }
         .toast-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .toast-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        @media (max-width: 600px) { .container { margin: 10px; } .btn-group { flex-direction: column; } }
+        .toast-info { background: #e0f2fe; color: #0277bd; border: 1px solid #b3e5fc; }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* 時間選單樣式 */
+        #time {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            padding-right: 40px;
+            appearance: none;
+        }
+        
+        /* 備註提示樣式 */
+        .remarks-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        @media (max-width: 600px) { 
+            .container { margin: 10px; } 
+            .btn-group { flex-direction: column; }
+            .service-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .service-card {
+                padding: 20px;
+                text-align: center;
+            }
+            .btn-group {
+                position: sticky;
+                bottom: 0;
+                background: white;
+                padding: 15px 0;
+                margin: 20px -20px -20px -20px;
+                border-top: 1px solid #e5e7eb;
+            }
+        }
     </style>
 </head>
 <body>
@@ -90,7 +261,10 @@
                 </div>
                 <div class="form-group">
                     <label for="time">出發時間 *</label>
-                    <input type="time" id="time" required>
+                    <select id="time" required>
+                        <option value="">請選擇時間</option>
+                        <!-- 選項由JavaScript動態生成 -->
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="pickup">上車地點 *</label>
@@ -102,7 +276,8 @@
                 </div>
                 <div class="form-group">
                     <label for="remarks">備註</label>
-                    <textarea id="remarks" placeholder="特殊需求"></textarea>
+                    <textarea id="remarks" placeholder="如有路線、人數、行李、車種等需求，請備註說明"></textarea>
+                    <div class="remarks-hint">如有路線、人數、行李、車種等需求，請備註說明</div>
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-outline" id="prev3">上一步</button>
@@ -138,19 +313,35 @@
         let currentStep = 1;
         let selectedService = '';
         let formData = {};
+        let autoProgressTimers = {};
+
+        // 自動進行延遲時間配置
+        const AUTO_PROGRESS_DELAYS = {
+            serviceSelection: 300,
+            phoneComplete: 2000,
+            nameComplete: 1500,
+            dateTime: 1000,
+            location: 2500,
+            defaultAcceptance: 3000
+        };
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date').min = today;
             
-            // 服務選擇
+            // 服務選擇 - 自動進行
             document.querySelectorAll('.service-card').forEach(card => {
                 card.addEventListener('click', function() {
                     document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
                     this.classList.add('selected');
                     selectedService = this.dataset.service;
                     document.getElementById('next1').disabled = false;
+                    
+                    clearTimeout(autoProgressTimers.service);
+                    autoProgressTimers.service = setTimeout(() => {
+                        goToStep(2);
+                    }, AUTO_PROGRESS_DELAYS.serviceSelection);
                 });
             });
 
@@ -158,19 +349,98 @@
             let timeout;
             document.getElementById('phone').addEventListener('input', function() {
                 clearTimeout(timeout);
+                clearTimeout(autoProgressTimers.phone);
+                
                 const phone = this.value.replace(/\D/g, '');
+                
+                if (phone.length < 10) {
+                    document.getElementById('name').value = '';
+                    document.getElementById('company').value = '';
+                }
+                
                 if (phone.length >= 10) {
                     timeout = setTimeout(() => {
-                        document.getElementById('loading').style.display = 'block';
+                        document.getElementById('loading').style.display = 'flex';
                         setTimeout(() => {
                             document.getElementById('loading').style.display = 'none';
                             if (phone === '0912345678') {
                                 document.getElementById('name').value = '王總';
                                 document.getElementById('company').value = 'ABC科技';
-                                showToast('已帶入資料', 'success');
+                                showToast('已帶入歷史資料', 'success');
                             }
+                            startAutoProgressTimer('phone');
                         }, 500);
                     }, 300);
+                }
+            });
+
+            // 姓名輸入
+            document.getElementById('name').addEventListener('input', function() {
+                clearTimeout(autoProgressTimers.name);
+                if (this.value.trim().length >= 2) {
+                    startAutoProgressTimer('name');
+                }
+            });
+
+            // 公司欄位處理
+            document.getElementById('company').addEventListener('input', function() {
+                clearTimeout(autoProgressTimers.name);
+                clearTimeout(autoProgressTimers.phone);
+            });
+
+            document.getElementById('company').addEventListener('blur', function() {
+                checkStep2AutoProgress();
+            });
+
+            // 日期時間選擇
+            document.getElementById('date').addEventListener('change', function() {
+                clearTimeout(autoProgressTimers.datetime);
+                if (this.value) {
+                    if (document.getElementById('time').value) {
+                        startAutoProgressTimer('datetime');
+                    } else {
+                        setTimeout(() => {
+                            document.getElementById('time').focus();
+                        }, 200);
+                    }
+                }
+            });
+
+            document.getElementById('time').addEventListener('change', function() {
+                clearTimeout(autoProgressTimers.datetime);
+                if (this.value && document.getElementById('date').value) {
+                    startAutoProgressTimer('datetime');
+                }
+            });
+
+            // 地點輸入
+            document.getElementById('pickup').addEventListener('input', function() {
+                clearTimeout(autoProgressTimers.location);
+                clearTimeout(autoProgressTimers.defaultAccept);
+                
+                if (this.value.trim().length >= 2) {
+                    checkLocationProgress();
+                }
+            });
+
+            document.getElementById('dropoff').addEventListener('input', function() {
+                clearTimeout(autoProgressTimers.location);
+                clearTimeout(autoProgressTimers.defaultAccept);
+                
+                if (this.value.trim().length >= 2) {
+                    checkLocationProgress();
+                }
+            });
+
+            // 備註欄位處理
+            document.getElementById('remarks').addEventListener('input', function() {
+                clearTimeout(autoProgressTimers.location);
+                clearTimeout(autoProgressTimers.defaultAccept);
+            });
+
+            document.getElementById('remarks').addEventListener('blur', function() {
+                if (validateStep3Core()) {
+                    startAutoProgressTimer('defaultAccept');
                 }
             });
 
@@ -182,30 +452,183 @@
             document.getElementById('next3').addEventListener('click', () => goToStep(4));
             document.getElementById('prev4').addEventListener('click', () => goToStep(3));
             document.getElementById('submit').addEventListener('click', submitForm);
+
+            generateTimeOptions();
         });
 
+        // 生成時間選項
+        function generateTimeOptions() {
+            const timeSelect = document.getElementById('time');
+            timeSelect.innerHTML = '<option value="">請選擇時間</option>';
+            
+            for (let hour = 0; hour < 24; hour++) {
+                for (let minute = 0; minute < 60; minute += 5) {
+                    const hourStr = hour.toString().padStart(2, '0');
+                    const minuteStr = minute.toString().padStart(2, '0');
+                    const timeValue = `${hourStr}:${minuteStr}`;
+                    
+                    const option = document.createElement('option');
+                    option.value = timeValue;
+                    option.textContent = timeValue;
+                    timeSelect.appendChild(option);
+                }
+            }
+        }
+
+        // 啟動自動進行計時器
+        function startAutoProgressTimer(type) {
+            clearTimeout(autoProgressTimers[type]);
+            
+            let delay, action;
+            
+            switch(type) {
+                case 'phone':
+                    delay = AUTO_PROGRESS_DELAYS.phoneComplete;
+                    action = () => {
+                        if (validateStep2Core()) {
+                            showProgressHint('即將自動進入下一步...', () => {
+                                if (validateStep()) goToStep(3);
+                            });
+                        }
+                    };
+                    break;
+                    
+                case 'name':
+                    delay = AUTO_PROGRESS_DELAYS.nameComplete;
+                    action = () => {
+                        if (validateStep2Core()) {
+                            showProgressHint('即將自動進入下一步...', () => {
+                                if (validateStep()) goToStep(3);
+                            });
+                        }
+                    };
+                    break;
+                    
+                case 'datetime':
+                    delay = AUTO_PROGRESS_DELAYS.dateTime;
+                    action = () => {
+                        showProgressHint('時間已確認，即將進入地點設定...', () => {
+                            document.getElementById('pickup').focus();
+                            showToast('請填寫上車地點', 'info');
+                        });
+                    };
+                    break;
+                    
+                case 'location':
+                    delay = AUTO_PROGRESS_DELAYS.location;
+                    action = () => {
+                        if (validateStep3Core()) {
+                            showProgressHint('地點已確認，即將進入確認頁面...', () => {
+                                if (validateStep()) goToStep(4);
+                            });
+                        }
+                    };
+                    break;
+                    
+                case 'defaultAccept':
+                    delay = AUTO_PROGRESS_DELAYS.defaultAcceptance;
+                    action = () => {
+                        if (validateStep3Core()) {
+                            showProgressHint('將使用預設設定進入確認頁面...', () => {
+                                if (validateStep()) goToStep(4);
+                            });
+                        }
+                    };
+                    break;
+            }
+            
+            if (action) {
+                autoProgressTimers[type] = setTimeout(action, delay);
+            }
+        }
+
+        function showProgressHint(message, callback) {
+            showToast(message, 'info');
+            setTimeout(callback, 1000);
+        }
+
+        function validateStep2Core() {
+            const phone = document.getElementById('phone').value.replace(/\D/g, '');
+            const name = document.getElementById('name').value.trim();
+            return phone.length >= 10 && name.length >= 2;
+        }
+
+        function validateStep3Core() {
+            return document.getElementById('date').value && 
+                   document.getElementById('time').value && 
+                   document.getElementById('pickup').value.trim().length >= 2 && 
+                   document.getElementById('dropoff').value.trim().length >= 2;
+        }
+
+        function checkStep2AutoProgress() {
+            if (currentStep !== 2) return;
+            
+            if (validateStep2Core()) {
+                const companyField = document.getElementById('company');
+                if (document.activeElement !== companyField) {
+                    startAutoProgressTimer('name');
+                }
+            }
+        }
+
+        function checkLocationProgress() {
+            if (currentStep !== 3) return;
+            
+            if (validateStep3Core()) {
+                const remarksField = document.getElementById('remarks');
+                if (document.activeElement !== remarksField) {
+                    startAutoProgressTimer('location');
+                }
+            }
+        }
+
         function goToStep(step) {
-            if (!validateStep()) return;
+            Object.keys(autoProgressTimers).forEach(key => {
+                clearTimeout(autoProgressTimers[key]);
+            });
+            
+            if (step > currentStep) {
+                if (!validateStep()) {
+                    showToast('請完成必填項目', 'error');
+                    return;
+                }
+            }
             
             document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
             document.getElementById('step' + step).classList.add('active');
             
             if (step === 4) generateSummary();
             currentStep = step;
+            
+            switch(step) {
+                case 2:
+                    setTimeout(() => document.getElementById('phone').focus(), 100);
+                    break;
+                case 3:
+                    setTimeout(() => document.getElementById('date').focus(), 100);
+                    break;
+                case 4:
+                    showToast('請確認預約資訊', 'info');
+                    break;
+            }
         }
 
         function validateStep() {
             switch(currentStep) {
-                case 1: return selectedService !== '';
-                case 2: return document.getElementById('phone').value && document.getElementById('name').value;
-                case 3: return document.getElementById('date').value && document.getElementById('time').value && 
-                              document.getElementById('pickup').value && document.getElementById('dropoff').value;
+                case 1: 
+                    return selectedService !== '';
+                case 2: 
+                    return validateStep2Core();
+                case 3: 
+                    return validateStep3Core();
             }
             return true;
         }
 
         function generateSummary() {
             const summary = document.getElementById('summary');
+            const remarksValue = document.getElementById('remarks').value.trim();
+            
             summary.innerHTML = `
                 <div><strong>服務：</strong> ${selectedService}</div>
                 <div><strong>日期：</strong> ${document.getElementById('date').value}</div>
@@ -213,6 +636,8 @@
                 <div><strong>上車：</strong> ${document.getElementById('pickup').value}</div>
                 <div><strong>下車：</strong> ${document.getElementById('dropoff').value}</div>
                 <div><strong>聯絡：</strong> ${document.getElementById('name').value} (${document.getElementById('phone').value})</div>
+                ${document.getElementById('company').value ? `<div><strong>公司：</strong> ${document.getElementById('company').value}</div>` : ''}
+                ${remarksValue ? `<div><strong>備註：</strong> ${remarksValue}</div>` : '<div><strong>備註：</strong> 無</div>'}
             `;
         }
 
@@ -229,7 +654,6 @@
         }
 
         function showToast(message, type) {
-            // 移除舊的toast
             const existingToast = document.querySelector('.toast');
             if (existingToast) {
                 existingToast.remove();
@@ -240,31 +664,12 @@
             toast.textContent = message;
             document.body.appendChild(toast);
             
-            // 3秒後自動移除
             setTimeout(() => {
                 if (toast.parentNode) {
                     toast.remove();
                 }
             }, 3000);
         }
-
-        // 除錯用：檢查所有事件是否正確綁定
-        function debugEvents() {
-            console.log('Selected Service:', selectedService);
-            console.log('Current Step:', currentStep);
-            console.log('Service Cards:', document.querySelectorAll('.service-card').length);
-            console.log('Buttons:', {
-                next1: document.getElementById('next1'),
-                prev2: document.getElementById('prev2'),
-                next2: document.getElementById('next2'),
-                prev3: document.getElementById('prev3'),
-                next3: document.getElementById('next3'),
-                prev4: document.getElementById('prev4'),
-                submit: document.getElementById('submit')
-            });
-        }
-
-        // 在控制台輸入 debugEvents() 來檢查狀態
     </script>
 </body>
 </html>
