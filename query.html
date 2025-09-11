@@ -112,6 +112,17 @@
         .toast-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .toast-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .toast-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .error-message {
+            background: #fee;
+            color: #c53030;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #feb2b2;
+        }
+        .retry-btn {
+            margin-top: 10px;
+        }
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
@@ -174,6 +185,11 @@
                     <!-- 動態生成預約記錄 -->
                 </div>
             </div>
+
+            <!-- 錯誤訊息區域 -->
+            <div id="error-container" style="display: none;">
+                <!-- 動態錯誤訊息 -->
+            </div>
         </div>
     </div>
 
@@ -181,6 +197,11 @@
         // 全域變數
         let searchCache = new Map();
         const CACHE_DURATION = 5 * 60 * 1000; // 5分鐘快取
+        let retryCount = 0;
+        const MAX_RETRY = 1;
+        
+        // API配置
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -240,6 +261,81 @@
             console.log('✅ 事件綁定完成');
         }
 
+        // API調用函數
+        async function apiCall(action, data, attempt = 1) {
+            try {
+                const requestData = {
+                    action: action,
+                    ...data
+                };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(requestData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                retryCount = 0; // 重置重試計數
+                return result;
+
+            } catch (error) {
+                console.error(`API調用失敗 (嘗試 ${attempt}):`, error);
+                
+                if (attempt <= MAX_RETRY) {
+                    // 自動重試
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    return apiCall(action, data, attempt + 1);
+                } else {
+                    // 顯示錯誤
+                    showError(getErrorMessage(error), () => apiCall(action, data, 1));
+                    throw error;
+                }
+            }
+        }
+
+        // 錯誤訊息處理
+        function getErrorMessage(error) {
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                return '連線不穩定，請檢查網路後重試';
+            } else if (error.message.includes('403') || error.message.includes('401')) {
+                return '系統暫時無法存取，請稍後再試或聯絡管理員';
+            } else if (error.message.includes('400')) {
+                return '請檢查輸入資料格式';
+            } else {
+                return '系統暫時無法處理您的請求，請稍後再試';
+            }
+        }
+
+        // 顯示錯誤訊息
+        function showError(message, retryCallback) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <strong>查詢失敗：</strong>${message}
+                    <button class="btn btn-outline retry-btn" onclick="handleRetry()">重新嘗試</button>
+                </div>
+            `;
+            errorContainer.style.display = 'block';
+            
+            // 儲存重試回調
+            window.currentRetryCallback = retryCallback;
+        }
+
+        // 處理重試
+        function handleRetry() {
+            document.getElementById('error-container').style.display = 'none';
+            if (window.currentRetryCallback) {
+                window.currentRetryCallback();
+            }
+        }
+
         // 查詢預約
         async function searchBookings() {
             console.log('🚀 開始查詢流程...');
@@ -275,26 +371,26 @@
             showLoading(true);
 
             try {
-                console.log('⏳ 模擬API查詢...');
+                console.log('⏳ 開始API查詢...');
                 
-                // 模擬API查詢延遲
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                const response = await apiCall('getBookingsByPhone', { phone: phone });
+                console.log('📊 查詢結果:', response);
                 
-                // 模擬查詢結果
-                const mockResults = getMockBookingData(phone);
-                console.log('📊 查詢結果:', mockResults);
-                
-                // 保存到快取
-                searchCache.set(cacheKey, {
-                    data: mockResults,
-                    timestamp: Date.now()
-                });
-                
-                displayResults(mockResults);
+                if (response.success) {
+                    // 保存到快取
+                    searchCache.set(cacheKey, {
+                        data: response.data || [],
+                        timestamp: Date.now()
+                    });
+                    
+                    displayResults(response.data || []);
+                } else {
+                    throw new Error(response.message || '查詢失敗');
+                }
                 
             } catch (error) {
                 console.error('❌ 查詢錯誤:', error);
-                showToast('查詢失敗，請稍後再試', 'error');
+                displayResults([]); // 顯示無結果
             } finally {
                 showLoading(false);
             }
@@ -308,6 +404,7 @@
             if (show) {
                 loading.className = 'loading show';
                 results.style.display = 'none';
+                document.getElementById('error-container').style.display = 'none';
             } else {
                 loading.className = 'loading';
             }
@@ -336,11 +433,17 @@
             }
         }
 
-        // 生成結果列表（移除詳情按鈕）
+        // 生成結果列表（包含中停點顯示）
         function generateResultsList(results) {
             const resultsList = document.getElementById('results-list');
             
             resultsList.innerHTML = results.map(booking => {
+                let routeDisplay = `📍 ${booking.pickup}`;
+                if (booking.midstop && booking.midstop.trim()) {
+                    routeDisplay += ` → ${booking.midstop}`;
+                }
+                routeDisplay += ` → ${booking.dropoff}`;
+                
                 return `
                     <div class="booking-card">
                         <div class="booking-header">
@@ -352,14 +455,14 @@
                                 ${getServiceIcon(booking.service)} ${booking.service} | ${booking.date} ${booking.time}
                             </div>
                             <div style="color: #666; margin-bottom: 8px;">
-                                📍 ${booking.pickup} → ${booking.dropoff}
+                                ${routeDisplay}
                             </div>
                             ${booking.airport ? `<div style="color: #7c3aed; margin-bottom: 8px;">✈️ ${booking.airport}</div>` : ''}
                             <div style="font-size: 14px; color: #666;">
                                 👤 ${booking.name} (${booking.phone})
                                 ${booking.company ? ` | 🏢 ${booking.company}` : ''}
                             </div>
-                            ${booking.remarks ? `<div style="font-size: 14px; color: #666; margin-top: 5px;">📝 ${booking.remarks}</div>` : ''}
+                            ${booking.remarks && booking.remarks.trim() ? `<div style="font-size: 14px; color: #666; margin-top: 5px;">📝 ${booking.remarks}</div>` : ''}
                         </div>
                         <div class="booking-actions">
                             <button class="btn btn-small" onclick="editBooking('${booking.rowIndex}')">📝 修改</button>
@@ -368,66 +471,6 @@
                     </div>
                 `;
             }).join('');
-        }
-
-        // 模擬查詢資料
-        function getMockBookingData(phone) {
-            console.log('🎭 生成模擬資料，手機號碼:', phone);
-            
-            if (phone === '0912345678' || phone === '912345678') {
-                return [
-                    {
-                        rowIndex: 1,
-                        service: '送機',
-                        company: 'ABC科技',
-                        phone: '0912-345-678',
-                        name: '王總',
-                        date: '2025-09-15',
-                        time: '12:30',
-                        airport: 'CI123 14:30起飛',
-                        pickup: '台北車站東三門',
-                        dropoff: '桃園機場',
-                        remarks: '大型行李，需要大車廂',
-                        submitTime: '2025-09-10 15:30:00',
-                        status: 'active'
-                    },
-                    {
-                        rowIndex: 2,
-                        service: '接機',
-                        company: 'ABC科技',
-                        phone: '0912-345-678',
-                        name: '王總',
-                        date: '2025-09-20',
-                        time: '16:00',
-                        airport: 'BR395 14:10抵達',
-                        pickup: '桃園機場',
-                        dropoff: '台北101',
-                        remarks: '',
-                        submitTime: '2025-09-11 10:20:00',
-                        status: 'active'
-                    }
-                ];
-            } else if (phone === '0987654321' || phone === '987654321') {
-                return [
-                    {
-                        rowIndex: 3,
-                        service: '包車',
-                        company: 'XYZ企業',
-                        phone: '0987-654-321',
-                        name: '李小姐',
-                        date: '2025-09-18',
-                        time: '09:00',
-                        airport: '',
-                        pickup: '台北車站',
-                        dropoff: '九份老街',
-                        remarks: '公司員工旅遊，約8人',
-                        submitTime: '2025-09-12 14:15:00',
-                        status: 'active'
-                    }
-                ];
-            } else {
-                return [];
-            }
         }
 
         // 輔助函數
@@ -442,22 +485,36 @@
         }
 
         // 操作函數
-        function editBooking(id) {
-            showToast(`修改預約功能開發中 - ID: ${id}`, 'info');
+        async function editBooking(id) {
+            showToast('修改功能開發中', 'info');
         }
 
-        function cancelBooking(id) {
-            if (confirm(`確定要取消這筆預約嗎？ - ID: ${id}`)) {
-                showToast(`預約已取消 - ID: ${id}`, 'success');
-                // 實際應用中這裡會重新查詢更新列表
-                setTimeout(() => {
-                    searchBookings();
-                }, 1000);
+        async function cancelBooking(id) {
+            if (!confirm('確定要取消這筆預約嗎？此操作無法復原。')) {
+                return;
+            }
+            
+            try {
+                const response = await apiCall('cancelBooking', { bookingId: id });
+                
+                if (response.success) {
+                    showToast('預約取消成功', 'success');
+                    // 重新查詢以更新列表
+                    setTimeout(() => {
+                        searchBookings();
+                    }, 1000);
+                } else {
+                    throw new Error(response.message || '取消失敗');
+                }
+                
+            } catch (error) {
+                console.error('取消錯誤:', error);
+                showToast('取消失敗，請稍後再試', 'error');
             }
         }
 
         function showHelp() {
-            showToast('📋 測試手機號碼：0912-345-678 (2筆) 或 0987-654-321 (1筆)', 'info');
+            showToast('📋 輸入手機號碼查詢您的預約記錄', 'info');
         }
 
         // Toast 提示
@@ -487,7 +544,6 @@
 
         // 在控制台輸入 debugSearch() 來檢查狀態
         console.log('🔧 除錯提示：在控制台輸入 debugSearch() 來檢查狀態');
-        console.log('🧪 測試資料：手機號碼 0912-345-678 或 0987-654-321');
     </script>
 </body>
 </html>
