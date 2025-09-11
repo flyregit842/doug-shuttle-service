@@ -48,6 +48,18 @@
             display: block; 
             opacity: 1;
             transform: translateX(0);
+            animation: fadeInSlide 0.3s ease-out;
+        }
+        
+        @keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
         
         .form-group { margin-bottom: 20px; }
@@ -401,6 +413,8 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing...');
+            
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date').min = today;
             document.getElementById('error-container').style.display = 'none';
@@ -412,6 +426,8 @@
 
         // 初始化事件監聽器
         function initializeEventListeners() {
+            console.log('Initializing event listeners...');
+            
             // 服務選擇
             document.querySelectorAll('.service-card').forEach(card => {
                 card.addEventListener('click', function() {
@@ -469,11 +485,9 @@
             // 付款方式選擇
             document.getElementById('payment').addEventListener('change', function() {
                 if (this.value === '簽單') {
-                    // 檢查公司名稱是否已填寫
                     const company = document.getElementById('company').value.trim();
                     if (!company) {
                         showToast('選擇簽單付款需填寫公司名稱', 'error');
-                        // 跳回公司名稱欄位
                         setTimeout(() => {
                             document.getElementById('company').focus();
                         }, 100);
@@ -559,6 +573,8 @@
 
         // 跳轉步驟函數
         function goToStep(step) {
+            console.log(`Going to step ${step}`);
+            
             Object.keys(autoProgressTimers).forEach(key => {
                 clearTimeout(autoProgressTimers[key]);
             });
@@ -599,6 +615,28 @@
                     return validateStep3Core();
             }
             return true;
+        }
+
+        function validateStep2Core() {
+            const phone = document.getElementById('phone').value.replace(/\D/g, '');
+            const name = document.getElementById('name').value.trim();
+            const payment = document.getElementById('payment').value;
+            
+            let valid = phone.length >= 10 && name.length >= 2 && payment;
+            
+            if (payment === '簽單') {
+                const company = document.getElementById('company').value.trim();
+                valid = valid && company.length >= 1;
+            }
+            
+            return valid;
+        }
+
+        function validateStep3Core() {
+            return document.getElementById('date').value && 
+                   document.getElementById('time').value && 
+                   document.getElementById('pickup').value.trim().length >= 2 && 
+                   document.getElementById('dropoff').value.trim().length >= 2;
         }
 
         function generateSummary() {
@@ -659,11 +697,8 @@
                 const response = await apiCall('createBooking', formData);
                 
                 if (response.success) {
-                    // 顯示成功頁面
                     document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
                     document.getElementById('complete').classList.add('active');
-                    
-                    // 顯示預約詳情
                     displayBookingDetails(response.data);
                     showToast('預約建立成功！', 'success');
                 } else {
@@ -685,7 +720,7 @@
             const remarksValue = document.getElementById('remarks').value.trim();
             
             let detailsHTML = `
-                <h4>預約編號：${bookingData.bookingId || 'B' + Date.now().toString().slice(-6)}</h4>
+                <h4>預約編號：${bookingData?.bookingId || 'B' + Date.now().toString().slice(-6)}</h4>
                 <div><strong>服務：</strong> ${selectedService}</div>
                 <div><strong>日期：</strong> ${document.getElementById('date').value}</div>
                 <div><strong>時間：</strong> ${document.getElementById('time').value}</div>
@@ -711,7 +746,7 @@
                 detailsHTML += `<div><strong>備註：</strong> ${remarksValue}</div>`;
             }
             
-            if (bookingData.estimatedFee) {
+            if (bookingData?.estimatedFee) {
                 detailsHTML += `<div><strong>預估費用：</strong> NT$ ${bookingData.estimatedFee}</div>`;
             }
             
@@ -733,7 +768,6 @@
                 }
             } catch (error) {
                 console.error('查詢用戶資料錯誤:', error);
-                // 靜默失敗，不影響用戶填寫
             } finally {
                 loadingElement.className = 'loading';
             }
@@ -746,26 +780,3 @@
                     action: action,
                     ...data
                 };
-
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams(requestData)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const result = await response.json();
-                retryCount = 0; // 重置重試計數
-                return result;
-
-            } catch (error) {
-                console.error(`API調用失敗 (嘗試 ${attempt}):`, error);
-                
-                if (attempt <= MAX_RETRY) {
-                    // 自動重試
-                    await new Promise(resolve => setTimeout(resolve, 2000
