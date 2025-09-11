@@ -145,31 +145,30 @@
 
         <div class="content">
             <div class="nav-links">
-                <a href="index.html">🏠 新增預約</a>
-                <a href="query.html" class="active">📋 查詢預約</a>
-                <a href="#" onclick="showHelp()">❓ 使用說明</a>
+                <a href="index.html">新增預約</a>
+                <a href="query.html" class="active">查詢預約</a>
             </div>
 
             <div class="search-form">
                 <div class="form-group">
-                    <label for="phone-search">📱 請輸入手機號碼：</label>
+                    <label for="phone-search">手機號碼：</label>
                     <div class="search-group">
                         <input type="tel" id="phone-search" placeholder="0912-345-678" maxlength="12">
-                        <button class="btn" id="search-btn">🔍 查詢</button>
+                        <button class="btn" id="search-btn">查詢</button>
                     </div>
                     <small style="color: #666; margin-top: 5px; display: block;">
-                        💡 支援格式：0912345678 或 0912-345-678
+                        支援格式：0912345678 或 0912-345-678
                     </small>
                 </div>
             </div>
 
             <div class="loading" id="loading">
-                🔍 正在查詢您的預約記錄...
+                正在查詢您的預約記錄...
             </div>
 
             <div class="results" id="results">
                 <div id="results-header" style="margin-bottom: 20px;">
-                    <h3 id="results-count">📋 查詢結果</h3>
+                    <h3 id="results-count">查詢結果</h3>
                 </div>
 
                 <div class="no-results" id="no-results">
@@ -177,7 +176,7 @@
                     <h3>未找到預約記錄</h3>
                     <p>請確認手機號碼是否正確，或是否有預約中的行程</p>
                     <div style="margin-top: 20px;">
-                        <a href="index.html" class="btn">🆕 建立新預約</a>
+                        <a href="index.html" class="btn">建立新預約</a>
                     </div>
                 </div>
 
@@ -422,18 +421,18 @@
             resultsDiv.style.display = 'block';
             
             if (results.length === 0) {
-                resultsCount.textContent = '📋 查詢結果 (共0筆預約中)';
+                resultsCount.textContent = '查詢結果 (共0筆預約中)';
                 noResults.style.display = 'block';
                 resultsList.style.display = 'none';
             } else {
-                resultsCount.textContent = `📋 查詢結果 (共${results.length}筆預約中)`;
+                resultsCount.textContent = `查詢結果 (共${results.length}筆預約中)`;
                 noResults.style.display = 'none';
                 resultsList.style.display = 'block';
                 generateResultsList(results);
             }
         }
 
-        // 生成結果列表（包含中停點顯示）
+        // 生成結果列表（包含中停點顯示和修正的日期格式）
         function generateResultsList(results) {
             const resultsList = document.getElementById('results-list');
             
@@ -448,7 +447,7 @@
                     <div class="booking-card">
                         <div class="booking-header">
                             <div class="status">🟢 預約中</div>
-                            <small style="color: #666;">${formatDate(booking.submitTime)}</small>
+                            <small style="color: #666;">${formatDateWithAMPM(booking.submitTime)}</small>
                         </div>
                         <div class="booking-info">
                             <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">
@@ -462,11 +461,12 @@
                                 👤 ${booking.name} (${booking.phone})
                                 ${booking.company ? ` | 🏢 ${booking.company}` : ''}
                             </div>
+                            ${booking.payment ? `<div style="font-size: 14px; color: #666;">💳 ${booking.payment}</div>` : ''}
                             ${booking.remarks && booking.remarks.trim() ? `<div style="font-size: 14px; color: #666; margin-top: 5px;">📝 ${booking.remarks}</div>` : ''}
                         </div>
                         <div class="booking-actions">
                             <button class="btn btn-small" onclick="editBooking('${booking.rowIndex}')">📝 修改</button>
-                            <button class="btn btn-small btn-danger" onclick="cancelBooking('${booking.rowIndex}')">❌ 取消</button>
+                            <button class="btn btn-small btn-danger" onclick="deleteBooking('${booking.rowIndex}')">🗑️ 刪除</button>
                         </div>
                     </div>
                 `;
@@ -479,9 +479,25 @@
             return icons[service] || '🚗';
         }
 
-        function formatDate(dateString) {
+        // 修正的日期格式函數 - 格式為 mm/dd/yyyy hh:mm AM/PM
+        function formatDateWithAMPM(dateString) {
             const date = new Date(dateString);
-            return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+            
+            // 取得月、日、年
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const year = date.getFullYear();
+            
+            // 取得小時、分鐘，並轉換為12小時制
+            let hours = date.getHours();
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            
+            hours = hours % 12;
+            hours = hours ? hours : 12; // 0點顯示為12點
+            const displayHours = hours.toString().padStart(2, '0');
+            
+            return `${month}/${day}/${year} ${displayHours}:${minutes} ${ampm}`;
         }
 
         // 操作函數
@@ -489,8 +505,8 @@
             showToast('修改功能開發中', 'info');
         }
 
-        async function cancelBooking(id) {
-            if (!confirm('確定要取消這筆預約嗎？此操作無法復原。')) {
+        async function deleteBooking(id) {
+            if (!confirm('確定要刪除這筆預約嗎？此操作無法復原。')) {
                 return;
             }
             
@@ -498,23 +514,19 @@
                 const response = await apiCall('cancelBooking', { bookingId: id });
                 
                 if (response.success) {
-                    showToast('預約取消成功', 'success');
+                    showToast('預約刪除成功', 'success');
                     // 重新查詢以更新列表
                     setTimeout(() => {
                         searchBookings();
                     }, 1000);
                 } else {
-                    throw new Error(response.message || '取消失敗');
+                    throw new Error(response.message || '刪除失敗');
                 }
                 
             } catch (error) {
-                console.error('取消錯誤:', error);
-                showToast('取消失敗，請稍後再試', 'error');
+                console.error('刪除錯誤:', error);
+                showToast('刪除失敗，請稍後再試', 'error');
             }
-        }
-
-        function showHelp() {
-            showToast('📋 輸入手機號碼查詢您的預約記錄', 'info');
         }
 
         // Toast 提示
