@@ -402,7 +402,175 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('date').min = today;
+            document.getElementById('error-container').style.display = 'none';
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step' + step).classList.add('active');
+            
+            if (step === 4) generateSummary();
+            currentStep = step;
+            
+            switch(step) {
+                case 2:
+                    setTimeout(() => document.getElementById('phone').focus(), 100);
+                    break;
+                case 3:
+                    setTimeout(() => document.getElementById('date').focus(), 100);
+                    break;
+                case 4:
+                    showToast('請確認預約資訊', 'info');
+                    break;
+            }
+        }
+
+        function validateStep() {
+            switch(currentStep) {
+                case 1: 
+                    return selectedService !== '';
+                case 2: 
+                    return validateStep2Core();
+                case 3: 
+                    return validateStep3Core();
+            }
+            return true;
+        }
+
+        function generateSummary() {
+            const summary = document.getElementById('summary');
+            const remarksValue = document.getElementById('remarks').value.trim();
+            const midstopValue = document.getElementById('midstop').value.trim();
+            
+            let summaryHTML = `
+                <div><strong>服務：</strong> ${selectedService}</div>
+                <div><strong>日期：</strong> ${document.getElementById('date').value}</div>
+                <div><strong>時間：</strong> ${document.getElementById('time').value}</div>
+                <div><strong>上車：</strong> ${document.getElementById('pickup').value}</div>
+            `;
+            
+            if (midstopValue) {
+                summaryHTML += `<div><strong>中停：</strong> ${midstopValue}</div>`;
+            }
+            
+            summaryHTML += `
+                <div><strong>下車：</strong> ${document.getElementById('dropoff').value}</div>
+                <div><strong>聯絡：</strong> ${document.getElementById('name').value} (${document.getElementById('phone').value})</div>
+            `;
+            
+            if (document.getElementById('company').value) {
+                summaryHTML += `<div><strong>公司：</strong> ${document.getElementById('company').value}</div>`;
+            }
+            
+            summaryHTML += `<div><strong>付款：</strong> ${document.getElementById('payment').value}</div>`;
+            
+            if (remarksValue) {
+                summaryHTML += `<div><strong>備註：</strong> ${remarksValue}</div>`;
+            }
+            
+            summary.innerHTML = summaryHTML;
+        }
+
+        // 提交表單
+        async function submitForm() {
+            const btn = document.getElementById('submit');
+            btn.disabled = true;
+            btn.textContent = '處理中...';
+            
+            try {
+                const formData = {
+                    '服務項目': selectedService,
+                    '手機號碼': document.getElementById('phone').value,
+                    '姓名': document.getElementById('name').value,
+                    '公司名稱': document.getElementById('company').value,
+                    '日期': document.getElementById('date').value,
+                    '時間': document.getElementById('time').value,
+                    '上車點': document.getElementById('pickup').value,
+                    '中停點': document.getElementById('midstop').value,
+                    '下車點': document.getElementById('dropoff').value,
+                    '備註': document.getElementById('remarks').value,
+                    '費用支付': document.getElementById('payment').value
+                };
+                
+                const response = await apiCall('createBooking', formData);
+                
+                if (response.success) {
+                    // 顯示成功頁面
+                    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+                    document.getElementById('complete').classList.add('active');
+                    
+                    // 顯示預約詳情
+                    displayBookingDetails(response.data);
+                    showToast('預約建立成功！', 'success');
+                } else {
+                    throw new Error(response.message || '預約失敗');
+                }
+                
+            } catch (error) {
+                console.error('提交錯誤:', error);
+                showToast('預約失敗，請稍後再試', 'error');
+                btn.disabled = false;
+                btn.textContent = '確認預約';
+            }
+        }
+
+        // 顯示預約詳情
+        function displayBookingDetails(bookingData) {
+            const detailsElement = document.getElementById('booking-details');
+            const midstopValue = document.getElementById('midstop').value.trim();
+            const remarksValue = document.getElementById('remarks').value.trim();
+            
+            let detailsHTML = `
+                <h4>預約編號：${bookingData.bookingId || 'B' + Date.now().toString().slice(-6)}</h4>
+                <div><strong>服務：</strong> ${selectedService}</div>
+                <div><strong>日期：</strong> ${document.getElementById('date').value}</div>
+                <div><strong>時間：</strong> ${document.getElementById('time').value}</div>
+                <div><strong>上車：</strong> ${document.getElementById('pickup').value}</div>
+            `;
+            
+            if (midstopValue) {
+                detailsHTML += `<div><strong>中停：</strong> ${midstopValue}</div>`;
+            }
+            
+            detailsHTML += `
+                <div><strong>下車：</strong> ${document.getElementById('dropoff').value}</div>
+                <div><strong>聯絡：</strong> ${document.getElementById('name').value} (${document.getElementById('phone').value})</div>
+            `;
+            
+            if (document.getElementById('company').value) {
+                detailsHTML += `<div><strong>公司：</strong> ${document.getElementById('company').value}</div>`;
+            }
+            
+            detailsHTML += `<div><strong>付款：</strong> ${document.getElementById('payment').value}</div>`;
+            
+            if (remarksValue) {
+                detailsHTML += `<div><strong>備註：</strong> ${remarksValue}</div>`;
+            }
+            
+            if (bookingData.estimatedFee) {
+                detailsHTML += `<div><strong>預估費用：</strong> NT$ ${bookingData.estimatedFee}</div>`;
+            }
+            
+            detailsElement.innerHTML = detailsHTML;
+        }
+
+        function showToast(message, type) {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>date').min = today;
             
             initializeEventListeners();
             generateTimeOptions();
@@ -783,16 +951,4 @@
                 }
             }
             
-            document.getElementById('error-container').style.display = 'none';
-            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-            document.getElementById('step' + step).classList.add('active');
-            
-            if (step === 4) generateSummary();
-            currentStep = step;
-            
-            switch(step) {
-                case 2:
-                    setTimeout(() => document.getElementById('phone').focus(), 100);
-                    break;
-                case 3:
-                    setTimeout(()
+            document.getElementById('
