@@ -99,11 +99,12 @@
         }
         .results { display: none; }
         .booking-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
-        .booking-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .status { color: #10b981; font-weight: bold; }
+        .booking-header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; }
         .booking-info { margin-bottom: 10px; }
         .service-line { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
         .datetime-line { font-size: 16px; color: #555; margin-bottom: 8px; }
+        .contact-line { font-size: 14px; color: #666; margin-bottom: 4px; }
+        .company-line { font-size: 14px; color: #666; margin-bottom: 8px; }
         .booking-actions { display: flex; gap: 10px; }
         .btn-small { padding: 6px 12px; font-size: 14px; }
         .btn-outline { background: transparent; border: 1px solid #667eea; color: #667eea; }
@@ -279,7 +280,6 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('頁面載入完成，開始初始化...');
             bindEvents();
             generateTimeOptions();
         });
@@ -350,7 +350,6 @@
                     action: action
                 };
                 
-                // 合併資料
                 for (let key in data) {
                     requestData[key] = data[key];
                 }
@@ -372,8 +371,6 @@
                 return result;
 
             } catch (error) {
-                console.error('API調用失敗 (嘗試 ' + attempt + '):', error);
-                
                 if (attempt <= MAX_RETRY) {
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     return apiCall(action, data, attempt + 1);
@@ -418,7 +415,6 @@
             const phoneInput = document.getElementById('phone-search');
             const phone = phoneInput.value.replace(/\D/g, '');
             
-            // 驗證手機號碼
             if (!phone) {
                 showToast('請輸入手機號碼', 'error');
                 phoneInput.focus();
@@ -439,14 +435,12 @@
                 return;
             }
 
-            // 顯示載入狀態
             showLoading(true);
 
             try {
                 const response = await apiCall('getBookingsByPhone', { phone: phone });
                 
                 if (response.success) {
-                    // 保存到快取
                     searchCache.set(cacheKey, {
                         data: response.data || [],
                         timestamp: Date.now()
@@ -515,27 +509,29 @@
                 routeDisplay += ' → ' + booking.dropoff;
                 
                 html += '<div class="booking-card" data-booking-id="' + booking.rowIndex + '">';
+                
+                // 移除預約中狀態，只保留提交時間
                 html += '<div class="booking-header">';
-                html += '<div class="status">🟢 預約中</div>';
                 html += '<small style="color: #666;">' + formatDateWithAMPM(booking.submitTime) + '</small>';
                 html += '</div>';
+                
                 html += '<div class="booking-info">';
                 html += '<div class="service-line">' + getServiceIcon(booking.service) + ' ' + booking.service + '</div>';
-                html += '<div class="datetime-line">' + formatSimpleDate(booking.date) + ' ' + booking.time + '</div>';
+                html += '<div class="datetime-line">' + formatSimpleDate(booking.date) + ' ' + formatTime(booking.time) + '</div>';
                 html += '<div style="color: #666; margin-bottom: 8px;">' + routeDisplay + '</div>';
                 
                 if (booking.airport) {
                     html += '<div style="color: #7c3aed; margin-bottom: 8px;">✈️ ' + booking.airport + '</div>';
                 }
                 
-                html += '<div style="font-size: 14px; color: #666;">👤 ' + booking.name + ' (' + booking.phone + ')';
+                // 聯絡資訊分行顯示
+                html += '<div class="contact-line">👤 ' + booking.name + ' (' + booking.phone + ')</div>';
                 if (booking.company) {
-                    html += ' | 🏢 ' + booking.company;
+                    html += '<div class="company-line">🏢 ' + booking.company + '</div>';
                 }
-                html += '</div>';
                 
                 if (booking.payment) {
-                    html += '<div style="font-size: 14px; color: #666;">💳 ' + booking.payment + '</div>';
+                    html += '<div style="font-size: 14px; color: #666; margin-bottom: 8px;">💳 ' + booking.payment + '</div>';
                 }
                 
                 if (booking.remarks && booking.remarks.trim()) {
@@ -544,7 +540,6 @@
                 
                 html += '</div>';
                 html += '<div class="booking-actions">';
-                html += '<button class="btn btn-small" onclick="editBooking(\'' + booking.rowIndex + '\')">📝 修改</button>';
                 html += '<button class="btn btn-small btn-danger" onclick="deleteBooking(\'' + booking.rowIndex + '\')">🗑️ 刪除</button>';
                 html += '</div>';
                 html += '</div>';
@@ -559,11 +554,26 @@
             return icons[service] || '🚗';
         }
 
-        // 簡單日期格式 mm/dd/yyyy
+        // 修正的日期格式函數 - mm/dd/yyyy
         function formatSimpleDate(dateString) {
             if (!dateString) return '';
             
-            const date = new Date(dateString);
+            // 處理不同的日期格式
+            let date;
+            if (dateString.includes('-')) {
+                // 處理 YYYY-MM-DD 格式
+                const parts = dateString.split('-');
+                if (parts.length === 3) {
+                    date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                }
+            } else {
+                date = new Date(dateString);
+            }
+            
+            if (!date || isNaN(date.getTime())) {
+                return dateString; // 如果無法解析，返回原始字串
+            }
+            
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
             const year = date.getFullYear();
@@ -571,11 +581,35 @@
             return month + '/' + day + '/' + year;
         }
 
-        // 日期時間格式 mm/dd/yyyy hh:mm AM/PM
+        // 修正的時間格式函數 - hh:mm AM/PM
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            
+            // 處理 HH:MM 格式
+            const timeParts = timeString.split(':');
+            if (timeParts.length !== 2) return timeString;
+            
+            let hours = parseInt(timeParts[0]);
+            const minutes = timeParts[1];
+            
+            if (isNaN(hours)) return timeString;
+            
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const displayHours = hours.toString().padStart(2, '0');
+            
+            return displayHours + ':' + minutes + ' ' + ampm;
+        }
+
+        // 修正的提交時間格式函數 - mm/dd/yyyy hh:mm AM/PM
         function formatDateWithAMPM(dateString) {
             if (!dateString) return '';
             
             const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return dateString; // 如果無法解析，返回原始字串
+            }
             
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
@@ -595,19 +629,28 @@
         // 編輯預約
         async function editBooking(id) {
             // 從快取中找到對應的預約資料
-            for (let cacheEntry of searchCache) {
+            let foundBooking = null;
+            
+            for (let cacheEntry of searchCache.entries()) {
                 const cacheData = cacheEntry[1];
-                for (let j = 0; j < cacheData.data.length; j++) {
-                    const booking = cacheData.data[j];
-                    if (booking.rowIndex == id) {
-                        currentEditBooking = booking;
-                        showEditForm(booking);
-                        return;
+                if (cacheData.data) {
+                    for (let j = 0; j < cacheData.data.length; j++) {
+                        const booking = cacheData.data[j];
+                        if (booking.rowIndex && booking.rowIndex.toString() === id.toString()) {
+                            foundBooking = booking;
+                            break;
+                        }
                     }
                 }
+                if (foundBooking) break;
             }
             
-            showToast('無法載入預約資料', 'error');
+            if (foundBooking) {
+                currentEditBooking = foundBooking;
+                showEditForm(foundBooking);
+            } else {
+                showToast('無法載入預約資料', 'error');
+            }
         }
 
         // 顯示編輯表單
@@ -721,18 +764,7 @@
                 if (toast.parentNode) toast.remove();
             }, 3000);
         }
-
-        // 除錯函數
-        function debugSearch() {
-            console.log('=== 除錯資訊 ===');
-            console.log('查詢按鈕:', document.getElementById('search-btn'));
-            console.log('手機輸入框:', document.getElementById('phone-search'));
-            console.log('載入區域:', document.getElementById('loading'));
-            console.log('結果區域:', document.getElementById('results'));
-            console.log('快取內容:', Array.from(searchCache.entries()));
-        }
-
-        console.log('除錯提示：在控制台輸入 debugSearch() 來檢查狀態');
     </script>
 </body>
-</html>
+</html>="btn btn-small" onclick="editBooking(\'' + booking.rowIndex + '\')">📝 修改</button>';
+                html += '<button class
