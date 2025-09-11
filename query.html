@@ -13,28 +13,116 @@
         .search-form { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
         .search-group { display: flex; gap: 10px; }
-        .btn { padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
-        .btn:hover { background: #5a67d8; }
-        .nav-links { text-align: center; margin-bottom: 20px; }
-        .nav-links a { margin: 0 10px; padding: 8px 16px; text-decoration: none; color: #667eea; border: 1px solid #667eea; border-radius: 5px; }
-        .nav-links a:hover { background: #667eea; color: white; }
-        .loading { display: none; text-align: center; padding: 20px; color: #666; }
+        .btn { 
+            padding: 12px 24px; 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 16px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        .btn:hover { 
+            background: #5a67d8; 
+            transform: translateY(-1px);
+        }
+        .nav-links { 
+            text-align: center; 
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .nav-links a { 
+            margin: 0 10px; 
+            padding: 8px 16px; 
+            text-decoration: none; 
+            color: #667eea; 
+            border: 1px solid #667eea; 
+            border-radius: 5px;
+            transition: all 0.2s ease;
+        }
+        .nav-links a:hover { 
+            background: #667eea; 
+            color: white; 
+            transform: translateY(-1px);
+        }
+        .nav-links a.active { 
+            background: #667eea; 
+            color: white; 
+        }
+        .loading { 
+            display: none; 
+            text-align: center; 
+            padding: 20px; 
+            color: #666;
+        }
+        .loading.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: #f0f4ff;
+            border-radius: 5px;
+            color: #667eea;
+        }
+        .loading::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border: 2px solid #667eea;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
         .results { display: none; }
         .booking-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
-        .booking-header { display: flex; justify-content: between; align-items: center; margin-bottom: 10px; }
+        .booking-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .status { color: #10b981; font-weight: bold; }
         .booking-info { margin-bottom: 10px; }
         .booking-actions { display: flex; gap: 10px; }
         .btn-small { padding: 6px 12px; font-size: 14px; }
         .btn-outline { background: transparent; border: 1px solid #667eea; color: #667eea; }
+        .btn-outline:hover { background: #667eea; color: white; }
+        .btn-danger { background: #dc2626; }
+        .btn-danger:hover { background: #b91c1c; }
         .no-results { text-align: center; padding: 40px; color: #666; }
-        .toast { position: fixed; top: 20px; right: 20px; padding: 15px; border-radius: 5px; z-index: 1000; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 15px; border-radius: 5px; z-index: 1000; animation: slideIn 0.3s ease-out; min-width: 250px; max-width: 400px; }
         .toast-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .toast-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .toast-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        @media (max-width: 600px) { .container { margin: 10px; } .search-group { flex-direction: column; } }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @media (max-width: 600px) { 
+            .container { margin: 10px; } 
+            .search-group { flex-direction: column; }
+            .booking-actions { flex-direction: column; }
+            .nav-links { margin-bottom: 15px; }
+            .nav-links a { margin: 5px; display: inline-block; }
+        }
     </style>
 </head>
 <body>
@@ -47,7 +135,7 @@
         <div class="content">
             <div class="nav-links">
                 <a href="index.html">🏠 新增預約</a>
-                <a href="query.html" style="background: #667eea; color: white;">📋 查詢預約</a>
+                <a href="query.html" class="active">📋 查詢預約</a>
                 <a href="#" onclick="showHelp()">❓ 使用說明</a>
             </div>
 
@@ -65,7 +153,7 @@
             </div>
 
             <div class="loading" id="loading">
-                <div style="margin-bottom: 10px;">🔍 正在查詢您的預約記錄...</div>
+                🔍 正在查詢您的預約記錄...
             </div>
 
             <div class="results" id="results">
@@ -218,10 +306,10 @@
             const results = document.getElementById('results');
             
             if (show) {
-                loading.style.display = 'block';
+                loading.className = 'loading show';
                 results.style.display = 'none';
             } else {
-                loading.style.display = 'none';
+                loading.className = 'loading';
             }
         }
 
@@ -248,7 +336,7 @@
             }
         }
 
-        // 生成結果列表
+        // 生成結果列表（移除詳情按鈕）
         function generateResultsList(results) {
             const resultsList = document.getElementById('results-list');
             
@@ -274,9 +362,8 @@
                             ${booking.remarks ? `<div style="font-size: 14px; color: #666; margin-top: 5px;">📝 ${booking.remarks}</div>` : ''}
                         </div>
                         <div class="booking-actions">
-                            <button class="btn btn-small btn-outline" onclick="viewDetails('${booking.rowIndex}')">👁️ 詳情</button>
                             <button class="btn btn-small" onclick="editBooking('${booking.rowIndex}')">📝 修改</button>
-                            <button class="btn btn-small" style="background: #dc2626;" onclick="cancelBooking('${booking.rowIndex}')">❌ 取消</button>
+                            <button class="btn btn-small btn-danger" onclick="cancelBooking('${booking.rowIndex}')">❌ 取消</button>
                         </div>
                     </div>
                 `;
@@ -333,7 +420,7 @@
                         airport: '',
                         pickup: '台北車站',
                         dropoff: '九份老街',
-                        remarks: '公司員工旅遊',
+                        remarks: '公司員工旅遊，約8人',
                         submitTime: '2025-09-12 14:15:00',
                         status: 'active'
                     }
@@ -355,17 +442,17 @@
         }
 
         // 操作函數
-        function viewDetails(id) {
-            showToast(`查看預約詳情 - ID: ${id}`, 'info');
-        }
-
         function editBooking(id) {
-            showToast(`修改預約 - ID: ${id}`, 'info');
+            showToast(`修改預約功能開發中 - ID: ${id}`, 'info');
         }
 
         function cancelBooking(id) {
             if (confirm(`確定要取消這筆預約嗎？ - ID: ${id}`)) {
                 showToast(`預約已取消 - ID: ${id}`, 'success');
+                // 實際應用中這裡會重新查詢更新列表
+                setTimeout(() => {
+                    searchBookings();
+                }, 1000);
             }
         }
 
