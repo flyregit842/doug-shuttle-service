@@ -1,3 +1,29 @@
+<!--
+================================================================================
+檔案名稱：index.html - Doug Shuttle Service 機場接送預約建立頁面
+功能描述：多步驟預約表單，包含服務選擇、基本資訊、時間地點設定及確認
+技術架構：HTML5 + CSS3 + Vanilla JavaScript
+API整合：Google Apps Script 後端服務
+建立日期：2025年9月12日
+版本：v4.0 - 完整功能版
+開發者：Doug Shuttle Service Team
+
+主要功能：
+- 4步驟預約流程 (服務選擇 → 基本資訊 → 時間地點 → 確認)
+- 手機號碼自動查詢歷史資料
+- 表單驗證與錯誤處理
+- 響應式設計支援行動裝置
+- 自動進行計時器與用戶體驗優化
+- Toast通知系統
+- API重試機制
+
+更新記錄：
+v4.0 - 修復所有JavaScript錯誤，完善功能實作
+v3.0 - 新增自動進行功能
+v2.0 - 流程優化版本
+v1.0 - 初始版本
+================================================================================
+-->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -5,11 +31,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doug Shuttle Service - 機場接送預約</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: system-ui, sans-serif; background: #f5f5f5; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header { background: #667eea; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
-        .content { padding: 20px; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body { 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            background: #f5f5f5; 
+            padding: 20px; 
+            line-height: 1.6;
+        }
+        
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            overflow: hidden;
+        }
+        
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 30px 20px; 
+            text-align: center; 
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .content { 
+            padding: 20px; 
+        }
         
         /* 導航連結 */
         .nav-links { 
@@ -18,52 +81,84 @@
             padding-bottom: 15px;
             border-bottom: 1px solid #e5e7eb;
         }
+        
         .nav-links a { 
             margin: 0 10px; 
-            padding: 8px 16px; 
+            padding: 10px 16px; 
             text-decoration: none; 
             color: #667eea; 
             border: 1px solid #667eea; 
-            border-radius: 5px;
+            border-radius: 6px;
             transition: all 0.2s ease;
+            display: inline-block;
         }
+        
         .nav-links a:hover { 
             background: #667eea; 
             color: white; 
             transform: translateY(-1px);
         }
+        
         .nav-links a.active { 
             background: #667eea; 
             color: white; 
         }
         
+        /* 步驟指示器 */
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .step-item {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .step-item.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .step-item.completed {
+            background: #10b981;
+            color: white;
+        }
+        
         /* 步驟切換動畫 */
         .step { 
             display: none; 
-            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
             opacity: 0;
             transform: translateX(20px);
+            transition: all 0.3s ease;
         }
+        
         .step.active { 
             display: block; 
             opacity: 1;
             transform: translateX(0);
-            animation: fadeInSlide 0.3s ease-out;
         }
         
-        @keyframes fadeInSlide {
-            from {
-                opacity: 0;
-                transform: translateX(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+        .form-group { 
+            margin-bottom: 20px; 
         }
         
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600;
+            color: #374151;
+        }
         
         /* 必填欄位標示 */
         .required::after {
@@ -74,11 +169,12 @@
         
         input, select, textarea { 
             width: 100%; 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 5px; 
+            padding: 12px; 
+            border: 2px solid #e5e7eb; 
+            border-radius: 6px; 
             font-size: 16px;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            transition: all 0.3s ease;
+            font-family: inherit;
         }
         
         /* 聚焦效果 */
@@ -88,79 +184,118 @@
             outline: none;
         }
         
-        .service-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        /* 服務選擇網格 */
+        .service-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+            gap: 15px; 
+            margin-top: 15px;
+        }
+        
         .service-card { 
             padding: 20px; 
-            border: 2px solid #ddd; 
-            border-radius: 5px; 
+            border: 2px solid #e5e7eb; 
+            border-radius: 8px; 
             text-align: center; 
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-        }
-        
-        /* 服務卡片動畫 */
-        .service-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transition: left 0.6s;
+            background: white;
         }
         
         .service-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border-color: #d1d5db;
         }
         
         .service-card.selected { 
             border-color: #667eea; 
             background: #f0f4ff; 
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
         }
         
-        .service-card.selected::after {
-            left: 100%;
+        .service-card h4 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #374151;
         }
         
+        .service-card p {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        /* 按鈕樣式 */
         .btn { 
             padding: 12px 24px; 
             background: #667eea; 
             color: white; 
             border: none; 
-            border-radius: 5px; 
+            border-radius: 6px; 
             cursor: pointer; 
             font-size: 16px;
+            font-weight: 500;
             transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
         }
+        
         .btn:hover:not(:disabled) { 
             background: #5a67d8; 
             transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
+        
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none !important;
+            box-shadow: none !important;
         }
-        .btn-outline { background: transparent; border: 2px solid #667eea; color: #667eea; }
-        .btn-outline:hover:not(:disabled) { background: #667eea; color: white; }
-        .btn-danger { background: #dc2626; }
-        .btn-danger:hover:not(:disabled) { background: #b91c1c; }
         
-        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        .btn-outline { 
+            background: transparent; 
+            border: 2px solid #667eea; 
+            color: #667eea; 
+        }
         
+        .btn-outline:hover:not(:disabled) { 
+            background: #667eea; 
+            color: white; 
+        }
+        
+        .btn-danger { 
+            background: #dc2626; 
+        }
+        
+        .btn-danger:hover:not(:disabled) { 
+            background: #b91c1c; 
+        }
+        
+        .btn-group { 
+            display: flex; 
+            gap: 12px; 
+            justify-content: center; 
+            margin-top: 30px; 
+        }
+        
+        /* 載入狀態 */
         .loading { 
             display: none; 
             text-align: center; 
-            color: #666;
+            color: #667eea;
             padding: 10px;
             background: #f0f4ff;
-            border-radius: 5px;
-            color: #667eea;
+            border-radius: 6px;
             font-size: 14px;
+            margin-top: 8px;
         }
         
         .loading.show {
@@ -185,20 +320,38 @@
             100% { transform: rotate(360deg); }
         }
         
+        /* Toast 通知 */
         .toast { 
             position: fixed; 
             top: 20px; 
             right: 20px; 
-            padding: 15px; 
-            border-radius: 5px; 
+            padding: 16px 20px; 
+            border-radius: 6px; 
             z-index: 1000;
             animation: slideIn 0.3s ease-out;
-            min-width: 250px;
+            min-width: 280px;
             max-width: 400px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        .toast-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .toast-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .toast-info { background: #e0f2fe; color: #0277bd; border: 1px solid #b3e5fc; }
+        
+        .toast-success { 
+            background: #d1fae5; 
+            color: #065f46; 
+            border: 1px solid #a7f3d0; 
+        }
+        
+        .toast-error { 
+            background: #fef2f2; 
+            color: #991b1b; 
+            border: 1px solid #fecaca; 
+        }
+        
+        .toast-info { 
+            background: #dbeafe; 
+            color: #1e40af; 
+            border: 1px solid #93c5fd; 
+        }
         
         @keyframes slideIn {
             from {
@@ -211,46 +364,93 @@
             }
         }
         
-        /* 錯誤狀態 */
+        /* 錯誤訊息 */
         .error-message {
-            background: #fee;
-            color: #c53030;
-            padding: 10px;
-            border-radius: 5px;
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 6px;
             margin: 10px 0;
-            border: 1px solid #feb2b2;
+            border: 1px solid #fecaca;
         }
         
         .retry-btn {
             margin-top: 10px;
         }
         
-        /* 提示文字樣式 */
+        /* 提示文字 */
         .hint-text {
             font-size: 12px;
-            color: #666;
+            color: #6b7280;
             margin-top: 5px;
             font-style: italic;
         }
         
+        /* 確認頁面樣式 */
+        .summary {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+        
+        .summary-label {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .summary-value {
+            color: #6b7280;
+        }
+        
+        /* 響應式設計 */
         @media (max-width: 600px) { 
-            .container { margin: 10px; } 
-            .btn-group { flex-direction: column; }
+            .container { 
+                margin: 10px; 
+                border-radius: 0;
+            } 
+            
+            .content {
+                padding: 15px;
+            }
+            
+            .btn-group { 
+                flex-direction: column; 
+            }
+            
             .service-grid {
                 grid-template-columns: 1fr;
-                gap: 15px;
+                gap: 12px;
             }
-            .service-card {
-                padding: 20px;
-                text-align: center;
+            
+            .nav-links a {
+                margin: 5px;
+                padding: 8px 12px;
+                font-size: 14px;
             }
-            .btn-group {
-                position: sticky;
-                bottom: 0;
-                background: white;
-                padding: 15px 0;
-                margin: 20px -20px -20px -20px;
-                border-top: 1px solid #e5e7eb;
+            
+            .step-indicator {
+                margin-bottom: 20px;
+            }
+            
+            .step-item {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+                margin: 0 6px;
             }
         }
     </style>
@@ -259,13 +459,21 @@
     <div class="container">
         <div class="header">
             <h1>Doug Shuttle Service</h1>
-            <p>機場接送預約系統</p>
+            <p>專業機場接送預約系統</p>
         </div>
         
         <div class="content">
             <div class="nav-links">
                 <a href="#" class="active" onclick="location.reload()">新增預約</a>
                 <a href="query.html">查詢預約</a>
+            </div>
+            
+            <!-- 步驟指示器 -->
+            <div class="step-indicator">
+                <div class="step-item active" id="indicator-1">1</div>
+                <div class="step-item" id="indicator-2">2</div>
+                <div class="step-item" id="indicator-3">3</div>
+                <div class="step-item" id="indicator-4">4</div>
             </div>
             
             <!-- 步驟1: 選擇服務 -->
@@ -295,16 +503,16 @@
                 <h3>基本資訊</h3>
                 <div class="form-group">
                     <label for="phone" class="required">手機號碼</label>
-                    <input type="tel" id="phone" required>
+                    <input type="tel" id="phone" placeholder="0912-345-678" required>
                     <div class="loading" id="loading">查詢歷史資料中...</div>
                 </div>
                 <div class="form-group">
                     <label for="name" class="required">姓名</label>
-                    <input type="text" id="name" required>
+                    <input type="text" id="name" placeholder="請輸入姓名" required>
                 </div>
                 <div class="form-group">
                     <label for="company">公司名稱</label>
-                    <input type="text" id="company">
+                    <input type="text" id="company" placeholder="請輸入公司名稱">
                 </div>
                 <div class="form-group">
                     <label for="payment" class="required">付款方式</label>
@@ -336,20 +544,20 @@
                 </div>
                 <div class="form-group">
                     <label for="pickup" class="required">上車地點</label>
-                    <input type="text" id="pickup" required>
+                    <input type="text" id="pickup" placeholder="請輸入詳細上車地址" required>
                 </div>
                 <div class="form-group">
                     <label for="midstop">中停點</label>
-                    <input type="text" id="midstop">
+                    <input type="text" id="midstop" placeholder="如有中停點請輸入 (選填)">
                 </div>
                 <div class="form-group">
                     <label for="dropoff" class="required">下車地點</label>
-                    <input type="text" id="dropoff" required>
+                    <input type="text" id="dropoff" placeholder="請輸入詳細下車地址" required>
                 </div>
                 <div class="form-group">
                     <label for="remarks">備註</label>
-                    <textarea id="remarks" placeholder="如有路線、人數、行李、車種等需求，請備註說明"></textarea>
-                    <div class="hint-text">如有路線、人數、行李、車種等需求，請備註說明</div>
+                    <textarea id="remarks" placeholder="如有特殊需求請在此說明，例如：行李數量、車種需求、路線偏好等"></textarea>
+                    <div class="hint-text">請詳細說明特殊需求，以便司機提供更好的服務</div>
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-outline" id="prev3">上一步</button>
@@ -360,8 +568,8 @@
             <!-- 步驟4: 確認 -->
             <div class="step" id="step4">
                 <h3>確認預約資訊</h3>
-                <div id="summary" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                    <!-- 確認資訊 -->
+                <div class="summary" id="summary">
+                    <!-- 確認資訊由JavaScript生成 -->
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-outline" id="prev4">返回修改</button>
@@ -369,16 +577,16 @@
                 </div>
             </div>
 
-            <!-- 完成 -->
+            <!-- 完成頁面 -->
             <div class="step" id="complete" style="text-align: center;">
-                <h2 style="color: #28a745;">🎉 預約成功！</h2>
-                <p>Email確認已發送</p>
-                <div id="booking-details" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; text-align: left;">
-                    <!-- 預約詳情 -->
+                <h2 style="color: #10b981; margin-bottom: 16px;">🎉 預約成功！</h2>
+                <p style="color: #6b7280; margin-bottom: 20px;">您的預約已建立完成，確認訊息將會發送至您的手機</p>
+                <div id="booking-details" class="summary" style="text-align: left;">
+                    <!-- 預約詳情由JavaScript生成 -->
                 </div>
                 <div class="btn-group">
                     <a href="query.html" class="btn">查看預約</a>
-                    <button class="btn btn-outline" onclick="location.reload()">新預約</button>
+                    <button class="btn btn-outline" onclick="location.reload()">新增預約</button>
                 </div>
             </div>
 
@@ -390,80 +598,155 @@
     </div>
 
     <script>
-        // 全域變數
-        let currentStep = 1;
-        let selectedService = '';
-        let formData = {};
-        let autoProgressTimers = {};
-        let retryCount = 0;
-        const MAX_RETRY = 1;
+        /*
+        ================================================================================
+        檔案名稱：index.html - JavaScript 主控制程式
+        功能描述：Doug Shuttle Service 預約表單前端邏輯控制
+        版本：v4.0 - 完整功能版
+        建立日期：2025年9月12日
         
-        // API配置
+        主要功能模組：
+        1. 多步驟表單導航控制
+        2. 服務選擇與表單驗證
+        3. 手機號碼自動查詢功能
+        4. API 通訊與錯誤處理
+        5. 用戶體驗優化 (自動進行、Toast通知)
+        6. 響應式設計支援
+        
+        API 端點：Google Apps Script
+        通訊格式：application/x-www-form-urlencoded (避免 CORS 預檢)
+        ================================================================================
+        */
+        
+        // 全域變數定義
+        let currentStep = 1;                    // 當前步驟
+        let selectedService = '';               // 選擇的服務類型
+        let formData = {};                      // 表單資料暫存
+        let autoProgressTimers = {};           // 自動進行計時器
+        let retryCount = 0;                     // API 重試計數
+        const MAX_RETRY = 1;                    // 最大重試次數
+        
+        // API 配置
         const API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
 
-        // 自動進行延遲時間配置
+        // 自動進行延遲時間配置 (毫秒)
         const AUTO_PROGRESS_DELAYS = {
-            serviceSelection: 300,
-            phoneComplete: 2000,
-            nameComplete: 1500,
-            dateTime: 1000,
-            location: 2500,
-            defaultAcceptance: 3000
+            serviceSelection: 800,          // 服務選擇後自動進行
+            phoneComplete: 2000,            // 手機號碼填完後
+            nameComplete: 1500,             // 姓名填完後
+            dateTime: 1000,                 // 日期時間選擇後
+            location: 2500,                 // 地點填完後
+            defaultAcceptance: 3000         // 預設接受時間
         };
 
-        // 初始化
+        /**
+         * DOM 載入完成初始化
+         */
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, initializing...');
+            console.log('Doug Shuttle Service - 系統初始化中...');
             
+            // 設定最小日期為今天
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date').min = today;
+            
+            // 隱藏錯誤容器
             document.getElementById('error-container').style.display = 'none';
             
+            // 初始化各功能模組
             initializeEventListeners();
             generateTimeOptions();
-            showToast('請選擇服務項目', 'info');
+            updateStepIndicator();
+            
+            // 顯示歡迎訊息
+            showToast('歡迎使用 Doug Shuttle Service！請選擇服務項目', 'info');
         });
 
-        // 初始化事件監聽器
+        /**
+         * 初始化所有事件監聽器
+         */
         function initializeEventListeners() {
-            console.log('Initializing event listeners...');
+            console.log('正在初始化事件監聽器...');
             
-            // 服務選擇
+            // 服務選擇卡片事件
+            initServiceSelection();
+            
+            // 手機號碼輸入事件
+            initPhoneInput();
+            
+            // 表單輸入事件
+            initFormInputs();
+            
+            // 導航按鈕事件
+            initNavigationButtons();
+        }
+
+        /**
+         * 初始化服務選擇功能
+         */
+        function initServiceSelection() {
             document.querySelectorAll('.service-card').forEach(card => {
                 card.addEventListener('click', function() {
+                    // 移除其他選中狀態
                     document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
+                    
+                    // 設定當前選中
                     this.classList.add('selected');
                     selectedService = this.dataset.service;
+                    
+                    // 啟用下一步按鈕
                     document.getElementById('next1').disabled = false;
                     
+                    // 清除舊計時器並設定自動進行
                     clearTimeout(autoProgressTimers.service);
                     autoProgressTimers.service = setTimeout(() => {
                         goToStep(2);
                     }, AUTO_PROGRESS_DELAYS.serviceSelection);
                 });
             });
+        }
 
-            // 手機號碼查詢
+        /**
+         * 初始化手機號碼輸入功能
+         */
+        function initPhoneInput() {
             let phoneTimeout;
-            document.getElementById('phone').addEventListener('input', function() {
+            const phoneInput = document.getElementById('phone');
+            
+            phoneInput.addEventListener('input', function() {
                 clearTimeout(phoneTimeout);
                 clearTimeout(autoProgressTimers.phone);
                 
+                // 清理非數字字符
                 const phone = this.value.replace(/\D/g, '');
                 
+                // 如果號碼太短，清空其他欄位
                 if (phone.length < 10) {
                     document.getElementById('name').value = '';
                     document.getElementById('company').value = '';
                 }
                 
+                // 如果號碼完整，查詢歷史資料
                 if (phone.length >= 10) {
                     phoneTimeout = setTimeout(async () => {
                         await lookupUserData(phone);
                         startAutoProgressTimer('phone');
-                    }, 300);
+                    }, 500);
                 }
             });
+            
+            // 手機號碼格式化
+            phoneInput.addEventListener('blur', function() {
+                const phone = this.value.replace(/\D/g, '');
+                if (phone.length === 10) {
+                    this.value = phone.substring(0, 4) + '-' + phone.substring(4, 7) + '-' + phone.substring(7);
+                }
+            });
+        }
 
+        /**
+         * 初始化表單輸入事件
+         */
+        function initFormInputs() {
             // 姓名輸入
             document.getElementById('name').addEventListener('input', function() {
                 clearTimeout(autoProgressTimers.name);
@@ -497,7 +780,20 @@
                 checkStep2AutoProgress();
             });
 
-            // 日期時間
+            // 日期時間選擇
+            initDateTimeInputs();
+            
+            // 地點輸入
+            initLocationInputs();
+            
+            // 備註輸入
+            initRemarksInput();
+        }
+
+        /**
+         * 初始化日期時間輸入
+         */
+        function initDateTimeInputs() {
             document.getElementById('date').addEventListener('change', function() {
                 clearTimeout(autoProgressTimers.datetime);
                 if (this.value) {
@@ -517,8 +813,12 @@
                     startAutoProgressTimer('datetime');
                 }
             });
+        }
 
-            // 地點輸入
+        /**
+         * 初始化地點輸入
+         */
+        function initLocationInputs() {
             ['pickup', 'midstop', 'dropoff'].forEach(fieldId => {
                 document.getElementById(fieldId).addEventListener('input', function() {
                     clearTimeout(autoProgressTimers.location);
@@ -529,8 +829,12 @@
                     }
                 });
             });
+        }
 
-            // 備註處理
+        /**
+         * 初始化備註輸入
+         */
+        function initRemarksInput() {
             document.getElementById('remarks').addEventListener('input', function() {
                 clearTimeout(autoProgressTimers.location);
                 clearTimeout(autoProgressTimers.defaultAccept);
@@ -541,8 +845,12 @@
                     startAutoProgressTimer('defaultAccept');
                 }
             });
+        }
 
-            // 導航按鈕
+        /**
+         * 初始化導航按鈕
+         */
+        function initNavigationButtons() {
             document.getElementById('next1').addEventListener('click', () => goToStep(2));
             document.getElementById('prev2').addEventListener('click', () => goToStep(1));
             document.getElementById('next2').addEventListener('click', () => goToStep(3));
@@ -552,7 +860,9 @@
             document.getElementById('submit').addEventListener('click', submitForm);
         }
 
-        // 生成時間選項
+        /**
+         * 生成時間選項 (24小時制，每5分鐘一個選項)
+         */
         function generateTimeOptions() {
             const timeSelect = document.getElementById('time');
             timeSelect.innerHTML = '<option value="">請選擇時間</option>';
@@ -571,14 +881,18 @@
             }
         }
 
-        // 跳轉步驟函數
+        /**
+         * 步驟導航主函數
+         */
         function goToStep(step) {
-            console.log(`Going to step ${step}`);
+            console.log(`正在前往步驟 ${step}`);
             
+            // 清除所有自動進行計時器
             Object.keys(autoProgressTimers).forEach(key => {
                 clearTimeout(autoProgressTimers[key]);
             });
             
+            // 向前進行時驗證當前步驟
             if (step > currentStep) {
                 if (!validateStep()) {
                     showToast('請完成必填項目', 'error');
@@ -586,18 +900,26 @@
                 }
             }
             
+            // 切換步驟顯示
             document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
             document.getElementById('step' + step).classList.add('active');
             
+            // 更新步驟指示器
+            updateStepIndicator(step);
+            
+            // 特殊步驟處理
             if (step === 4) generateSummary();
             currentStep = step;
             
+            // 設定焦點和提示
             switch(step) {
                 case 2:
                     setTimeout(() => document.getElementById('phone').focus(), 100);
+                    showToast('請填寫基本資訊', 'info');
                     break;
                 case 3:
                     setTimeout(() => document.getElementById('date').focus(), 100);
+                    showToast('請選擇時間與地點', 'info');
                     break;
                 case 4:
                     showToast('請確認預約資訊', 'info');
@@ -605,6 +927,25 @@
             }
         }
 
+        /**
+         * 更新步驟指示器
+         */
+        function updateStepIndicator(step = currentStep) {
+            for (let i = 1; i <= 4; i++) {
+                const indicator = document.getElementById(`indicator-${i}`);
+                indicator.classList.remove('active', 'completed');
+                
+                if (i < step) {
+                    indicator.classList.add('completed');
+                } else if (i === step) {
+                    indicator.classList.add('active');
+                }
+            }
+        }
+
+        /**
+         * 驗證當前步驟
+         */
         function validateStep() {
             switch(currentStep) {
                 case 1: 
@@ -617,6 +958,9 @@
             return true;
         }
 
+        /**
+         * 驗證步驟2核心邏輯
+         */
         function validateStep2Core() {
             const phone = document.getElementById('phone').value.replace(/\D/g, '');
             const name = document.getElementById('name').value.trim();
@@ -624,6 +968,7 @@
             
             let valid = phone.length >= 10 && name.length >= 2 && payment;
             
+            // 簽單付款需要公司名稱
             if (payment === '簽單') {
                 const company = document.getElementById('company').value.trim();
                 valid = valid && company.length >= 1;
@@ -632,6 +977,9 @@
             return valid;
         }
 
+        /**
+         * 驗證步驟3核心邏輯
+         */
         function validateStep3Core() {
             return document.getElementById('date').value && 
                    document.getElementById('time').value && 
@@ -639,41 +987,88 @@
                    document.getElementById('dropoff').value.trim().length >= 2;
         }
 
+        /**
+         * 生成確認頁面摘要
+         */
         function generateSummary() {
             const summary = document.getElementById('summary');
             const remarksValue = document.getElementById('remarks').value.trim();
             const midstopValue = document.getElementById('midstop').value.trim();
             
             let summaryHTML = `
-                <div><strong>服務：</strong> ${selectedService}</div>
-                <div><strong>日期：</strong> ${document.getElementById('date').value}</div>
-                <div><strong>時間：</strong> ${document.getElementById('time').value}</div>
-                <div><strong>上車：</strong> ${document.getElementById('pickup').value}</div>
+                <div class="summary-item">
+                    <span class="summary-label">服務項目：</span>
+                    <span class="summary-value">${selectedService}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">服務日期：</span>
+                    <span class="summary-value">${formatDate(document.getElementById('date').value)}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">出發時間：</span>
+                    <span class="summary-value">${document.getElementById('time').value}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">上車地點：</span>
+                    <span class="summary-value">${document.getElementById('pickup').value}</span>
+                </div>
             `;
             
             if (midstopValue) {
-                summaryHTML += `<div><strong>中停：</strong> ${midstopValue}</div>`;
+                summaryHTML += `
+                    <div class="summary-item">
+                        <span class="summary-label">中停點：</span>
+                        <span class="summary-value">${midstopValue}</span>
+                    </div>
+                `;
             }
             
             summaryHTML += `
-                <div><strong>下車：</strong> ${document.getElementById('dropoff').value}</div>
-                <div><strong>聯絡：</strong> ${document.getElementById('name').value} (${document.getElementById('phone').value})</div>
+                <div class="summary-item">
+                    <span class="summary-label">下車地點：</span>
+                    <span class="summary-value">${document.getElementById('dropoff').value}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">聯絡人：</span>
+                    <span class="summary-value">${document.getElementById('name').value}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">聯絡電話：</span>
+                    <span class="summary-value">${document.getElementById('phone').value}</span>
+                </div>
             `;
             
             if (document.getElementById('company').value) {
-                summaryHTML += `<div><strong>公司：</strong> ${document.getElementById('company').value}</div>`;
+                summaryHTML += `
+                    <div class="summary-item">
+                        <span class="summary-label">公司名稱：</span>
+                        <span class="summary-value">${document.getElementById('company').value}</span>
+                    </div>
+                `;
             }
             
-            summaryHTML += `<div><strong>付款：</strong> ${document.getElementById('payment').value}</div>`;
+            summaryHTML += `
+                <div class="summary-item">
+                    <span class="summary-label">付款方式：</span>
+                    <span class="summary-value">${document.getElementById('payment').value}</span>
+                </div>
+            `;
             
             if (remarksValue) {
-                summaryHTML += `<div><strong>備註：</strong> ${remarksValue}</div>`;
+                summaryHTML += `
+                    <div class="summary-item">
+                        <span class="summary-label">備註：</span>
+                        <span class="summary-value">${remarksValue}</span>
+                    </div>
+                `;
             }
             
             summary.innerHTML = summaryHTML;
         }
 
-        // 提交表單
+        /**
+         * 提交表單
+         */
         async function submitForm() {
             const btn = document.getElementById('submit');
             btn.disabled = true;
@@ -697,8 +1092,14 @@
                 const response = await apiCall('createBooking', formData);
                 
                 if (response.success) {
+                    // 顯示成功頁面
                     document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
                     document.getElementById('complete').classList.add('active');
+                    
+                    // 更新步驟指示器
+                    updateStepIndicator(5);
+                    
+                    // 顯示預約詳情
                     displayBookingDetails(response.data);
                     showToast('預約建立成功！', 'success');
                 } else {
@@ -713,47 +1114,101 @@
             }
         }
 
-        // 顯示預約詳情
+        /**
+         * 顯示預約詳情
+         */
         function displayBookingDetails(bookingData) {
             const detailsElement = document.getElementById('booking-details');
             const midstopValue = document.getElementById('midstop').value.trim();
             const remarksValue = document.getElementById('remarks').value.trim();
             
             let detailsHTML = `
-                <h4>預約編號：${bookingData?.bookingId || 'B' + Date.now().toString().slice(-6)}</h4>
-                <div><strong>服務：</strong> ${selectedService}</div>
-                <div><strong>日期：</strong> ${document.getElementById('date').value}</div>
-                <div><strong>時間：</strong> ${document.getElementById('time').value}</div>
-                <div><strong>上車：</strong> ${document.getElementById('pickup').value}</div>
+                <div class="summary-item">
+                    <span class="summary-label">預約編號：</span>
+                    <span class="summary-value">${bookingData?.bookingId || 'B' + Date.now().toString().slice(-6)}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">服務項目：</span>
+                    <span class="summary-value">${selectedService}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">服務日期：</span>
+                    <span class="summary-value">${formatDate(document.getElementById('date').value)}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">出發時間：</span>
+                    <span class="summary-value">${document.getElementById('time').value}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">上車地點：</span>
+                    <span class="summary-value">${document.getElementById('pickup').value}</span>
+                </div>
             `;
             
             if (midstopValue) {
-                detailsHTML += `<div><strong>中停：</strong> ${midstopValue}</div>`;
+                detailsHTML += `
+                    <div class="summary-item">
+                        <span class="summary-label">中停點：</span>
+                        <span class="summary-value">${midstopValue}</span>
+                    </div>
+                `;
             }
             
             detailsHTML += `
-                <div><strong>下車：</strong> ${document.getElementById('dropoff').value}</div>
-                <div><strong>聯絡：</strong> ${document.getElementById('name').value} (${document.getElementById('phone').value})</div>
+                <div class="summary-item">
+                    <span class="summary-label">下車地點：</span>
+                    <span class="summary-value">${document.getElementById('dropoff').value}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">聯絡人：</span>
+                    <span class="summary-value">${document.getElementById('name').value}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">聯絡電話：</span>
+                    <span class="summary-value">${document.getElementById('phone').value}</span>
+                </div>
             `;
             
             if (document.getElementById('company').value) {
-                detailsHTML += `<div><strong>公司：</strong> ${document.getElementById('company').value}</div>`;
+                detailsHTML += `
+                    <div class="summary-item">
+                        <span class="summary-label">公司名稱：</span>
+                        <span class="summary-value">${document.getElementById('company').value}</span>
+                    </div>
+                `;
             }
             
-            detailsHTML += `<div><strong>付款：</strong> ${document.getElementById('payment').value}</div>`;
+            detailsHTML += `
+                <div class="summary-item">
+                    <span class="summary-label">付款方式：</span>
+                    <span class="summary-value">${document.getElementById('payment').value}</span>
+                </div>
+            `;
             
             if (remarksValue) {
-                detailsHTML += `<div><strong>備註：</strong> ${remarksValue}</div>`;
+                detailsHTML += `
+                    <div class="summary-item">
+                        <span class="summary-label">備註：</span>
+                        <span class="summary-value">${remarksValue}</span>
+                    </div>
+                `;
             }
             
             if (bookingData?.estimatedFee) {
-                detailsHTML += `<div><strong>預估費用：</strong> NT$ ${bookingData.estimatedFee}</div>`;
+                detailsHTML += `
+                    <div class="summary-item" style="border-top: 2px solid #667eea; padding-top: 12px; margin-top: 12px;">
+                        <span class="summary-label">預估費用：</span>
+                        <span class="summary-value" style="color: #667eea; font-weight: 600;">NT$ ${bookingData.estimatedFee}</span>
+                    </div>
+                `;
             }
             
             detailsElement.innerHTML = detailsHTML;
         }
 
-        // 查詢用戶資料
+        /**
+         * 查詢用戶歷史資料
+         */
         async function lookupUserData(phone) {
             const loadingElement = document.getElementById('loading');
             loadingElement.className = 'loading show';
@@ -768,15 +1223,259 @@
                 }
             } catch (error) {
                 console.error('查詢用戶資料錯誤:', error);
+                // 靜默失敗，不影響用戶繼續填寫
             } finally {
                 loadingElement.className = 'loading';
             }
         }
 
-        // API調用函數
+        /**
+         * API調用主函數
+         */
         async function apiCall(action, data, attempt = 1) {
             try {
                 const requestData = {
                     action: action,
                     ...data
                 };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(requestData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                retryCount = 0; // 重置重試計數
+                return result;
+
+            } catch (error) {
+                console.error(`API調用失敗 (嘗試 ${attempt}):`, error);
+                
+                if (attempt <= MAX_RETRY) {
+                    // 自動重試
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    return apiCall(action, data, attempt + 1);
+                } else {
+                    // 顯示錯誤
+                    showError(getErrorMessage(error), () => apiCall(action, data, 1));
+                    throw error;
+                }
+            }
+        }
+
+        /**
+         * 錯誤訊息處理
+         */
+        function getErrorMessage(error) {
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                return '連線不穩定，請檢查網路後重試';
+            } else if (error.message.includes('403') || error.message.includes('401')) {
+                return '系統暫時無法存取，請稍後再試或聯絡管理員';
+            } else if (error.message.includes('400')) {
+                return '請檢查輸入資料格式';
+            } else {
+                return '系統暫時無法處理您的請求，請稍後再試';
+            }
+        }
+
+        /**
+         * 顯示錯誤訊息
+         */
+        function showError(message, retryCallback) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <strong>操作失敗：</strong>${message}
+                    <button class="btn btn-outline retry-btn" onclick="handleRetry()">重新嘗試</button>
+                </div>
+            `;
+            errorContainer.style.display = 'block';
+            window.currentRetryCallback = retryCallback;
+        }
+
+        /**
+         * 處理重試
+         */
+        function handleRetry() {
+            document.getElementById('error-container').style.display = 'none';
+            if (window.currentRetryCallback) {
+                window.currentRetryCallback();
+            }
+        }
+
+        /**
+         * 自動進行計時器管理
+         */
+        function startAutoProgressTimer(type) {
+            clearTimeout(autoProgressTimers[type]);
+            
+            let delay, action;
+            
+            switch(type) {
+                case 'phone':
+                    delay = AUTO_PROGRESS_DELAYS.phoneComplete;
+                    action = () => {
+                        if (validateStep2Core()) {
+                            showProgressHint('即將自動進入下一步...', () => {
+                                if (validateStep()) goToStep(3);
+                            });
+                        }
+                    };
+                    break;
+                    
+                case 'name':
+                    delay = AUTO_PROGRESS_DELAYS.nameComplete;
+                    action = () => {
+                        if (validateStep2Core()) {
+                            showProgressHint('即將自動進入下一步...', () => {
+                                if (validateStep()) goToStep(3);
+                            });
+                        }
+                    };
+                    break;
+                    
+                case 'datetime':
+                    delay = AUTO_PROGRESS_DELAYS.dateTime;
+                    action = () => {
+                        showProgressHint('時間已確認，即將進入地點設定...', () => {
+                            document.getElementById('pickup').focus();
+                            showToast('請填寫上車地點', 'info');
+                        });
+                    };
+                    break;
+                    
+                case 'location':
+                    delay = AUTO_PROGRESS_DELAYS.location;
+                    action = () => {
+                        if (validateStep3Core()) {
+                            showProgressHint('地點已確認，即將進入確認頁面...', () => {
+                                if (validateStep()) goToStep(4);
+                            });
+                        }
+                    };
+                    break;
+                    
+                case 'defaultAccept':
+                    delay = AUTO_PROGRESS_DELAYS.defaultAcceptance;
+                    action = () => {
+                        if (validateStep3Core()) {
+                            showProgressHint('將使用預設設定進入確認頁面...', () => {
+                                if (validateStep()) goToStep(4);
+                            });
+                        }
+                    };
+                    break;
+            }
+            
+            if (action) {
+                autoProgressTimers[type] = setTimeout(action, delay);
+            }
+        }
+
+        function showProgressHint(message, callback) {
+            showToast(message, 'info');
+            setTimeout(callback, 1000);
+        }
+
+        function checkStep2AutoProgress() {
+            if (currentStep !== 2) return;
+            
+            if (validateStep2Core()) {
+                const activeElement = document.activeElement;
+                const inputElements = ['company', 'payment'];
+                const isUserTyping = inputElements.some(id => document.getElementById(id) === activeElement);
+                
+                if (!isUserTyping) {
+                    startAutoProgressTimer('name');
+                }
+            }
+        }
+
+        function checkLocationProgress() {
+            if (currentStep !== 3) return;
+            
+            if (validateStep3Core()) {
+                const remarksField = document.getElementById('remarks');
+                if (document.activeElement !== remarksField) {
+                    startAutoProgressTimer('location');
+                }
+            }
+        }
+
+        /**
+         * Toast通知系統
+         */
+        function showToast(message, type) {
+            // 移除現有的toast
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // 創建新的toast
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // 自動移除
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 3000);
+        }
+
+        /**
+         * 日期格式化工具
+         */
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            
+            const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+            const weekday = weekdays[date.getDay()];
+            
+            return `${year}年${month}月${day}日 (星期${weekday})`;
+        }
+
+        /**
+         * 除錯函數 (開發用)
+         */
+        function debugEvents() {
+            console.log('=== Doug Shuttle Service Debug Info ===');
+            console.log('當前步驟:', currentStep);
+            console.log('選擇服務:', selectedService);
+            console.log('表單資料:', {
+                phone: document.getElementById('phone').value,
+                name: document.getElementById('name').value,
+                company: document.getElementById('company').value,
+                payment: document.getElementById('payment').value,
+                date: document.getElementById('date').value,
+                time: document.getElementById('time').value,
+                pickup: document.getElementById('pickup').value,
+                dropoff: document.getElementById('dropoff').value
+            });
+            console.log('活動計時器:', Object.keys(autoProgressTimers).filter(key => autoProgressTimers[key]));
+        }
+
+        // 開發模式下啟用除錯
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            window.debugEvents = debugEvents;
+            console.log('Doug Shuttle Service - 開發模式已啟用');
+            console.log('使用 debugEvents() 查看系統狀態');
+        }
+    </script>
+</body>
+</html>
