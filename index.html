@@ -512,7 +512,19 @@ v1.0 - 初始版本
                 </div>
                 <div class="form-group">
                     <label for="company">公司名稱</label>
-                    <input type="text" id="company" placeholder="請輸入公司名稱">
+                    <input type="text" id="company">
+                </div>
+                <div class="form-group">
+                    <label for="email">電郵信箱</label>
+                    <input type="email" id="email">
+                </div>
+                <div class="form-group">
+                    <label for="proxyEmail">代理信箱</label>
+                    <input type="email" id="proxyEmail">
+                </div>
+                <div class="form-group">
+                    <label for="costCenter">成本中心</label>
+                    <input type="text" id="costCenter">
                 </div>
                 <div class="form-group">
                     <label for="payment" class="required">付款方式</label>
@@ -533,7 +545,7 @@ v1.0 - 初始版本
                 <h3>時間與地點</h3>
                 <div class="form-group">
                     <label for="date" class="required">服務日期</label>
-                    <input type="date" id="date" required>
+                    <input type="date" id="date" required lang="zh-TW">
                 </div>
                 <div class="form-group">
                     <label for="time" class="required" id="time-label">出發時間</label>
@@ -1131,7 +1143,7 @@ v1.0 - 初始版本
                     <span class="summary-value">${document.getElementById('dropoff').value}</span>
                 </div>
                 <div class="summary-item">
-                    <span class="summary-label">聯絡人：</span>
+                    <span class="summary-label">客戶姓名：</span>
                     <span class="summary-value">${document.getElementById('name').value}</span>
                 </div>
                 <div class="summary-item">
@@ -1182,6 +1194,9 @@ v1.0 - 初始版本
                     '手機號碼': document.getElementById('phone').value,
                     '姓名': document.getElementById('name').value,
                     '公司名稱': document.getElementById('company').value,
+                    '電郵信箱': document.getElementById('email').value,
+                    '代理信箱': document.getElementById('proxyEmail').value,
+                    '成本中心': document.getElementById('costCenter').value,
                     '日期': document.getElementById('date').value,
                     '時間': document.getElementById('time').value,
                     '航班編號': document.getElementById('flight').value,
@@ -1310,18 +1325,39 @@ v1.0 - 初始版本
         }
 
         /**
-         * 查詢用戶歷史資料
+         * 查詢用戶歷史資料 (根據服務類型帶入相關資料)
          */
         async function lookupUserData(phone) {
             const loadingElement = document.getElementById('loading');
             loadingElement.className = 'loading show';
             
             try {
-                const response = await apiCall('getUserDataByPhone', { phone: phone });
+                // 傳遞當前選擇的服務類型
+                const response = await apiCall('getUserDataByPhone', { 
+                    phone: phone,
+                    serviceType: selectedService 
+                });
                 
                 if (response.success && response.data) {
-                    document.getElementById('name').value = response.data.name || '';
-                    document.getElementById('company').value = response.data.company || '';
+                    const data = response.data;
+                    
+                    // 基本資料 (所有服務都帶入)
+                    if (data.name) document.getElementById('name').value = data.name;
+                    if (data.company) document.getElementById('company').value = data.company;
+                    if (data.email) document.getElementById('email').value = data.email;
+                    if (data.proxyEmail) document.getElementById('proxyEmail').value = data.proxyEmail;
+                    if (data.costCenter) document.getElementById('costCenter').value = data.costCenter;
+                    if (data.payment) document.getElementById('payment').value = data.payment;
+                    
+                    // 地點資料 (根據服務類型決定是否帶入)
+                    if (selectedService === '送機' || selectedService === '接機') {
+                        if (data.pickup) document.getElementById('pickup').value = data.pickup;
+                        if (data.midstop) document.getElementById('midstop').value = data.midstop;
+                        if (data.dropoff) document.getElementById('dropoff').value = data.dropoff;
+                        if (data.flight) document.getElementById('flight').value = data.flight;
+                    }
+                    // 包車服務不帶入地點資料
+                    
                     showToast('已自動帶入歷史資料', 'success');
                 }
             } catch (error) {
