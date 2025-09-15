@@ -503,7 +503,7 @@ v1.0 - 初始版本
                 <h3>基本資訊</h3>
                 <div class="form-group">
                     <label for="phone" class="required">手機號碼</label>
-                    <input type="tel" id="phone" placeholder="0912-345-678" required>
+                    <input type="tel" id="phone" required>
                     <div class="loading" id="loading">查詢歷史資料中...</div>
                 </div>
                 <div class="form-group">
@@ -542,6 +542,10 @@ v1.0 - 初始版本
                         <!-- 選項由JavaScript動態生成 -->
                     </select>
                 </div>
+                <div class="form-group" id="flight-group">
+                    <label for="flight">航班編號</label>
+                    <input type="text" id="flight" placeholder="例：CI123">
+                </div>
                 <div class="form-group">
                     <label for="pickup" class="required">上車地點</label>
                     <input type="text" id="pickup" placeholder="請輸入詳細上車地址" required>
@@ -556,8 +560,7 @@ v1.0 - 初始版本
                 </div>
                 <div class="form-group">
                     <label for="remarks">備註</label>
-                    <textarea id="remarks" placeholder="如有特殊需求請在此說明，例如：行李數量、車種需求、路線偏好等"></textarea>
-                    <div class="hint-text">請詳細說明特殊需求，以便司機提供更好的服務</div>
+                    <textarea id="remarks" placeholder="如有特殊需求請在此說明，例如：行李數量、車種需求、路線等"></textarea>
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-outline" id="prev3">上一步</button>
@@ -693,6 +696,9 @@ v1.0 - 初始版本
                     this.classList.add('selected');
                     selectedService = this.dataset.service;
                     
+                    // 更新航班欄位顯示
+                    updateFlightFieldDisplay(selectedService);
+                    
                     // 啟用下一步按鈕
                     document.getElementById('next1').disabled = false;
                     
@@ -703,6 +709,36 @@ v1.0 - 初始版本
                     }, AUTO_PROGRESS_DELAYS.serviceSelection);
                 });
             });
+        }
+
+        /**
+         * 更新航班欄位顯示
+         */
+        function updateFlightFieldDisplay(service) {
+            const flightGroup = document.getElementById('flight-group');
+            const flightLabel = document.querySelector('#flight-group label');
+            const flightInput = document.getElementById('flight');
+            
+            if (service === '接機') {
+                // 接機時航班編號為必填
+                flightLabel.className = 'required';
+                flightLabel.textContent = '航班編號';
+                flightInput.required = true;
+                flightInput.placeholder = '例：CI123 (必填)';
+                flightGroup.style.display = 'block';
+            } else if (service === '送機') {
+                // 送機時航班編號為選填
+                flightLabel.className = '';
+                flightLabel.textContent = '航班編號';
+                flightInput.required = false;
+                flightInput.placeholder = '例：CI123 (選填)';
+                flightGroup.style.display = 'block';
+            } else {
+                // 包車時隱藏航班欄位
+                flightGroup.style.display = 'none';
+                flightInput.required = false;
+                flightInput.value = '';
+            }
         }
 
         /**
@@ -981,10 +1017,18 @@ v1.0 - 初始版本
          * 驗證步驟3核心邏輯
          */
         function validateStep3Core() {
-            return document.getElementById('date').value && 
-                   document.getElementById('time').value && 
-                   document.getElementById('pickup').value.trim().length >= 2 && 
-                   document.getElementById('dropoff').value.trim().length >= 2;
+            const basicValid = document.getElementById('date').value && 
+                              document.getElementById('time').value && 
+                              document.getElementById('pickup').value.trim().length >= 2 && 
+                              document.getElementById('dropoff').value.trim().length >= 2;
+            
+            // 如果是接機，檢查航班編號是否必填
+            if (selectedService === '接機') {
+                const flightValue = document.getElementById('flight').value.trim();
+                return basicValid && flightValue.length >= 1;
+            }
+            
+            return basicValid;
         }
 
         /**
@@ -1008,6 +1052,18 @@ v1.0 - 初始版本
                     <span class="summary-label">出發時間：</span>
                     <span class="summary-value">${document.getElementById('time').value}</span>
                 </div>
+            `;
+            
+            if (document.getElementById('flight').value) {
+                summaryHTML += `
+                    <div class="summary-item">
+                        <span class="summary-label">航班編號：</span>
+                        <span class="summary-value">${document.getElementById('flight').value}</span>
+                    </div>
+                `;
+            }
+            
+            summaryHTML += `
                 <div class="summary-item">
                     <span class="summary-label">上車地點：</span>
                     <span class="summary-value">${document.getElementById('pickup').value}</span>
@@ -1082,6 +1138,7 @@ v1.0 - 初始版本
                     '公司名稱': document.getElementById('company').value,
                     '日期': document.getElementById('date').value,
                     '時間': document.getElementById('time').value,
+                    '航班編號': document.getElementById('flight').value,
                     '上車點': document.getElementById('pickup').value,
                     '中停點': document.getElementById('midstop').value,
                     '下車點': document.getElementById('dropoff').value,
