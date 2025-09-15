@@ -348,7 +348,9 @@ v1.0 - 初始版本
             padding: 8px 12px;
             border-radius: 6px;
             margin-bottom: 10px;
-            text-align: left;
+            text-align: left !important;
+            display: block;
+            width: 100%;
         }
         
         .booking-actions { 
@@ -874,7 +876,7 @@ v1.0 - 初始版本
                 html += '</div>';
                 
                 html += '<div class="booking-info">';
-                html += `<div class="service-line">服務項目：${booking.service} | 日期：${formatSimpleDate(booking.date)} | 時間：${formatTime(booking.time)}</div>`;
+                html += `<div class="service-line">服務項目：${booking.service} 日期：${formatSimpleDate(booking.date)} 時間：${formatTime(booking.time)}</div>`;
                 html += `<div class="route-line">${routeDisplay}</div>`;
                 
                 // 機場航班信息
@@ -975,9 +977,43 @@ v1.0 - 初始版本
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('edit-date').min = today;
             
-            // 填入當前資料
-            document.getElementById('edit-date').value = booking.date || '';
-            document.getElementById('edit-time').value = booking.time || '';
+            // 填入當前資料 - 處理各種日期格式
+            let dateValue = '';
+            if (booking.date) {
+                // 處理奇怪的日期格式
+                if (booking.date.includes('1899-12-30T')) {
+                    // 使用今天的日期作為默認值
+                    dateValue = today;
+                } else if (booking.date.includes('-')) {
+                    // 標準 YYYY-MM-DD 格式
+                    dateValue = booking.date;
+                } else {
+                    // 嘗試解析其他格式
+                    const parsed = new Date(booking.date);
+                    if (!isNaN(parsed.getTime())) {
+                        dateValue = parsed.toISOString().split('T')[0];
+                    } else {
+                        dateValue = today;
+                    }
+                }
+            }
+            
+            // 處理時間格式
+            let timeValue = '';
+            if (booking.time) {
+                if (booking.time.includes('1899-12-30T')) {
+                    const timeMatch = booking.time.match(/T(\d{2}):(\d{2})/);
+                    if (timeMatch) {
+                        timeValue = `${timeMatch[1]}:${timeMatch[2]}`;
+                    }
+                } else {
+                    timeValue = booking.time;
+                }
+            }
+            
+            // 填入所有欄位的原始值
+            document.getElementById('edit-date').value = dateValue;
+            document.getElementById('edit-time').value = timeValue;
             document.getElementById('edit-pickup').value = booking.pickup || '';
             document.getElementById('edit-midstop').value = booking.midstop || '';
             document.getElementById('edit-dropoff').value = booking.dropoff || '';
@@ -988,6 +1024,9 @@ v1.0 - 初始版本
             
             // 滾動到表單
             document.getElementById('edit-form').scrollIntoView({ behavior: 'smooth' });
+            
+            // 提示用戶
+            showToast('請修改需要變更的欄位', 'info');
         }
 
         /**
