@@ -612,7 +612,7 @@ v1.0 - 初始版本
                     <input type="date" id="edit-date">
                 </div>
                 <div class="form-group">
-                    <label for="edit-time">出發時間：</label>
+                    <label for="edit-time" id="edit-time-label">出發時間：</label>
                     <select id="edit-time">
                         <option value="">請選擇時間</option>
                         <!-- 時間選項由JavaScript生成 -->
@@ -880,7 +880,14 @@ v1.0 - 初始版本
                 html += '</div>';
                 
                 html += '<div class="booking-info">';
-                html += `<div class="service-line">${booking.service}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日期：${formatSimpleDate(booking.date)}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;時間：${formatTime(booking.time)}</div>`;
+                // 根據服務類型顯示時間標籤
+                let timeLabel = '時間';
+                if (booking.service === '接機') {
+                    timeLabel = '抵達時間';
+                } else {
+                    timeLabel = '出發時間';
+                }
+                html += `<div class="service-line">${booking.service}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日期：${formatSimpleDate(booking.date)}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${timeLabel}：${formatTime(booking.time)}</div>`;
                 html += `<div class="route-line">${routeDisplay}</div>`;
                 
                 // 機場航班信息
@@ -980,6 +987,14 @@ v1.0 - 初始版本
             // 設定最小日期
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('edit-date').min = today;
+            
+            // 根據服務類型設定時間標籤
+            const timeLabel = document.getElementById('edit-time-label');
+            if (booking.service === '接機') {
+                timeLabel.textContent = '抵達時間：';
+            } else {
+                timeLabel.textContent = '出發時間：';
+            }
             
             // 填入當前資料 - 處理各種日期格式
             let dateValue = '';
