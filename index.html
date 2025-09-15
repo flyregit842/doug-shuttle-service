@@ -536,7 +536,7 @@ v1.0 - 初始版本
                     <input type="date" id="date" required>
                 </div>
                 <div class="form-group">
-                    <label for="time" class="required">出發時間</label>
+                    <label for="time" class="required" id="time-label">出發時間</label>
                     <select id="time" required>
                         <option value="">請選擇時間</option>
                         <!-- 選項由JavaScript動態生成 -->
@@ -547,16 +547,16 @@ v1.0 - 初始版本
                     <input type="text" id="flight" placeholder="例：CI123">
                 </div>
                 <div class="form-group">
-                    <label for="pickup" class="required">上車地點</label>
-                    <input type="text" id="pickup" placeholder="請輸入詳細上車地址" required>
+                    <label for="pickup" class="required" id="pickup-label">上車地點</label>
+                    <input type="text" id="pickup" required>
                 </div>
                 <div class="form-group">
                     <label for="midstop">中停點</label>
-                    <input type="text" id="midstop" placeholder="如有中停點請輸入 (選填)">
+                    <input type="text" id="midstop">
                 </div>
                 <div class="form-group">
-                    <label for="dropoff" class="required">下車地點</label>
-                    <input type="text" id="dropoff" placeholder="請輸入詳細下車地址" required>
+                    <label for="dropoff" class="required" id="dropoff-label">下車地點</label>
+                    <input type="text" id="dropoff" required>
                 </div>
                 <div class="form-group">
                     <label for="remarks">備註</label>
@@ -718,26 +718,72 @@ v1.0 - 初始版本
             const flightGroup = document.getElementById('flight-group');
             const flightLabel = document.querySelector('#flight-group label');
             const flightInput = document.getElementById('flight');
+            const timeLabel = document.getElementById('time-label');
+            const pickupLabel = document.getElementById('pickup-label');
+            const dropoffLabel = document.getElementById('dropoff-label');
+            const pickupInput = document.getElementById('pickup');
+            const dropoffInput = document.getElementById('dropoff');
             
             if (service === '接機') {
-                // 接機時航班編號為必填
+                // 接機時的設定
                 flightLabel.className = 'required';
                 flightLabel.textContent = '航班編號';
                 flightInput.required = true;
-                flightInput.placeholder = '例：CI123 (必填)';
+                flightInput.placeholder = '例：CI123';
                 flightGroup.style.display = 'block';
+                
+                // 時間標籤改為"抵達時間"
+                timeLabel.textContent = '抵達時間';
+                
+                // 上車地點自動填入"機場"但可修改
+                if (!pickupInput.value || pickupInput.value === '機場') {
+                    pickupInput.value = '機場';
+                }
+                pickupInput.placeholder = '接機地點 (預設：機場)';
+                
+                // 下車地點標籤和提示
+                dropoffInput.placeholder = '目的地地址';
+                
             } else if (service === '送機') {
-                // 送機時航班編號為選填
+                // 送機時的設定
                 flightLabel.className = '';
                 flightLabel.textContent = '航班編號';
                 flightInput.required = false;
                 flightInput.placeholder = '例：CI123 (選填)';
                 flightGroup.style.display = 'block';
+                
+                // 時間標籤保持"出發時間"
+                timeLabel.textContent = '出發時間';
+                
+                // 上車地點標籤和提示
+                pickupInput.placeholder = '出發地地址';
+                
+                // 下車地點自動填入"機場"但可修改
+                if (!dropoffInput.value || dropoffInput.value === '機場') {
+                    dropoffInput.value = '機場';
+                }
+                dropoffInput.placeholder = '送達地點 (預設：機場)';
+                
             } else {
-                // 包車時隱藏航班欄位
+                // 包車時的設定
                 flightGroup.style.display = 'none';
                 flightInput.required = false;
                 flightInput.value = '';
+                
+                // 時間標籤保持"出發時間"
+                timeLabel.textContent = '出發時間';
+                
+                // 清除預設值和設定一般提示
+                pickupInput.placeholder = '上車地址';
+                dropoffInput.placeholder = '下車地址';
+                
+                // 如果當前值是"機場"，清除它
+                if (pickupInput.value === '機場') {
+                    pickupInput.value = '';
+                }
+                if (dropoffInput.value === '機場') {
+                    dropoffInput.value = '';
+                }
             }
         }
 
@@ -1491,12 +1537,14 @@ v1.0 - 初始版本
         }
 
         /**
-         * 日期格式化工具
+         * 日期格式化工具 (中文格式)
          */
         function formatDate(dateString) {
             if (!dateString) return '';
             
             const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            
             const year = date.getFullYear();
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
