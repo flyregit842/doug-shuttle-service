@@ -348,9 +348,9 @@ v1.0 - 初始版本
             padding: 8px 12px;
             border-radius: 6px;
             margin-bottom: 10px;
-            text-align: left !important;
-            display: block;
-            width: 100%;
+            text-align: left;
+            clear: both;
+            overflow: hidden;
         }
         
         .booking-actions { 
@@ -619,6 +619,10 @@ v1.0 - 初始版本
                     </select>
                 </div>
                 <div class="form-group">
+                    <label for="edit-flight">航班編號：</label>
+                    <input type="text" id="edit-flight" placeholder="例：CI123">
+                </div>
+                <div class="form-group">
                     <label for="edit-pickup">上車地點：</label>
                     <input type="text" id="edit-pickup">
                 </div>
@@ -876,7 +880,7 @@ v1.0 - 初始版本
                 html += '</div>';
                 
                 html += '<div class="booking-info">';
-                html += `<div class="service-line">服務項目：${booking.service} 日期：${formatSimpleDate(booking.date)} 時間：${formatTime(booking.time)}</div>`;
+                html += `<div class="service-line">${booking.service}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日期：${formatSimpleDate(booking.date)}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;時間：${formatTime(booking.time)}</div>`;
                 html += `<div class="route-line">${routeDisplay}</div>`;
                 
                 // 機場航班信息
@@ -1014,6 +1018,7 @@ v1.0 - 初始版本
             // 填入所有欄位的原始值
             document.getElementById('edit-date').value = dateValue;
             document.getElementById('edit-time').value = timeValue;
+            document.getElementById('edit-flight').value = booking.airport || '';
             document.getElementById('edit-pickup').value = booking.pickup || '';
             document.getElementById('edit-midstop').value = booking.midstop || '';
             document.getElementById('edit-dropoff').value = booking.dropoff || '';
@@ -1058,6 +1063,7 @@ v1.0 - 初始版本
                 bookingId: currentEditBooking.rowIndex,
                 date: date,
                 time: time,
+                flight: document.getElementById('edit-flight').value,
                 pickup: pickup,
                 midstop: document.getElementById('edit-midstop').value,
                 dropoff: dropoff,
