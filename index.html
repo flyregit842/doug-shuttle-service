@@ -1117,14 +1117,72 @@
             submitBtn.textContent = '提交中...';
             
             try {
-                // 處理日期格式 - 修正項目2：台灣時區
-                const dateStr = document.getElementById('date').value; // MM/DD/YYYY
-                const timeStr = document.getElementById('time').value; // HH:MM
+                // 先檢查所有前端狀態
+                console.log('=== 提交前檢查 ===');
+                console.log('selectedService:', selectedService);
+                console.log('currentStep:', currentStep);
+                
+                // 檢查基本欄位值
+                const basicValues = {
+                    service: selectedService,
+                    phone: document.getElementById('phone').value,
+                    name: document.getElementById('name').value,
+                    date: document.getElementById('date').value,
+                    time: document.getElementById('time').value,
+                    pickup: document.getElementById('pickup').value,
+                    dropoff: document.getElementById('dropoff').value,
+                    payment: document.getElementById('payment').value
+                };
+                
+                console.log('基本欄位值:', basicValues);
+                
+                // 如果 selectedService 為空，嘗試從已選中的卡片獲取
+                if (!selectedService) {
+                    const selectedCard = document.querySelector('.service-card.selected');
+                    if (selectedCard) {
+                        selectedService = selectedCard.dataset.service;
+                        console.log('從選中卡片重新獲取服務:', selectedService);
+                    }
+                }
+                
+                // 再次檢查必填欄位
+                if (!selectedService) {
+                    throw new Error('請選擇服務項目');
+                }
+                if (!document.getElementById('phone').value.trim()) {
+                    throw new Error('請輸入手機號碼');
+                }
+                if (!document.getElementById('name').value.trim()) {
+                    throw new Error('請輸入姓名');
+                }
+                if (!document.getElementById('date').value.trim()) {
+                    throw new Error('請輸入日期');
+                }
+                if (!document.getElementById('time').value) {
+                    throw new Error('請選擇時間');
+                }
+                if (!document.getElementById('pickup').value.trim()) {
+                    throw new Error('請輸入上車地點');
+                }
+                if (!document.getElementById('dropoff').value.trim()) {
+                    throw new Error('請輸入下車地點');
+                }
+                if (!document.getElementById('payment').value) {
+                    throw new Error('請選擇付款方式');
+                }
+                
+                // 處理日期格式
+                const dateStr = document.getElementById('date').value;
+                const timeStr = document.getElementById('time').value;
                 
                 console.log('原始日期時間:', dateStr, timeStr);
                 
                 // 轉換為標準格式
                 const dateParts = dateStr.split('/');
+                if (dateParts.length !== 3) {
+                    throw new Error('日期格式錯誤，請使用 MM/DD/YYYY');
+                }
+                
                 const month = dateParts[0].padStart(2, '0');
                 const day = dateParts[1].padStart(2, '0');
                 const year = dateParts[2];
@@ -1132,11 +1190,11 @@
                 const standardDate = `${year}-${month}-${day}`;
                 console.log('轉換後日期:', standardDate);
                 
-                // 收集所有資料 - 使用確切的中文欄位名稱
+                // 收集所有資料
                 const formData = {
                     '服務項目': selectedService,
                     '公司名稱': document.getElementById('company').value.trim(),
-                    '部門': '', // 你的新版本可能沒有這個欄位，給空值
+                    '部門': '', 
                     '手機號碼': document.getElementById('phone').value.trim(),
                     '姓名': document.getElementById('name').value.trim(),
                     '日期': standardDate,
@@ -1152,21 +1210,22 @@
                     '成本中心': document.getElementById('costCenter').value.trim()
                 };
                 
-                // 驗證必填欄位
+                console.log('準備發送的資料:', formData);
+                
+                // 最終驗證
                 const requiredFields = ['服務項目', '手機號碼', '姓名', '日期', '時間', '上車點', '下車點', '費用支付'];
                 const missingFields = [];
                 
                 requiredFields.forEach(field => {
-                    if (!formData[field] || formData[field].trim() === '') {
+                    if (!formData[field] || formData[field].toString().trim() === '') {
                         missingFields.push(field);
                     }
                 });
                 
                 if (missingFields.length > 0) {
-                    throw new Error(`前端驗證失敗，缺少: ${missingFields.join(', ')}`);
+                    console.log('缺少的欄位:', missingFields);
+                    throw new Error(`缺少必填欄位: ${missingFields.join(', ')}`);
                 }
-                
-                console.log('準備發送的資料:', formData);
                 
                 const response = await apiCall('createBooking', formData);
                 
@@ -1181,35 +1240,7 @@
                 
             } catch (error) {
                 console.error('提交錯誤詳情:', error);
-                
-                let errorMessage = '預約失敗';
-                if (error.message.includes('Failed to fetch')) {
-                    errorMessage = '網路連線失敗，請檢查網路後重試';
-                } else if (error.message.includes('403') || error.message.includes('401')) {
-                    errorMessage = 'API存取被拒絕，請檢查API設定';
-                } else if (error.message.includes('404')) {
-                    errorMessage = 'API端點不存在，請檢查API URL';
-                } else if (error.message.includes('前端驗證失敗')) {
-                    errorMessage = `前端檢查失敗: ${error.message}`;
-                } else if (error.message) {
-                    errorMessage = `錯誤: ${error.message}`;
-                }
-                
-                showToast(errorMessage, 'error');
-                
-                // 顯示更詳細的除錯資訊
-                console.log('=== 除錯資訊 ===');
-                console.log('選擇的服務:', selectedService);
-                console.log('表單資料:', {
-                    date: document.getElementById('date').value,
-                    time: document.getElementById('time').value,
-                    phone: document.getElementById('phone').value,
-                    name: document.getElementById('name').value,
-                    pickup: document.getElementById('pickup').value,
-                    dropoff: document.getElementById('dropoff').value,
-                    payment: document.getElementById('payment').value
-                });
-                
+                showToast(error.message || '預約失敗，請稍後再試', 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '確認預約';
