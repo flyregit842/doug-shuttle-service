@@ -1,36 +1,21 @@
-<!--
-================================================================================
-檔案名稱：query.html - Doug Shuttle Service 機場接送預約查詢頁面
-功能描述：手機號碼查詢預約記錄，支援修改、取消、詳細檢視功能
-技術架構：HTML5 + CSS3 + Vanilla JavaScript
-API整合：Google Apps Script 後端服務
-建立日期：2025年9月12日
-版本：v4.0 - 完整功能版
-開發者：Doug Shuttle Service Team
-
-主要功能：
-- 手機號碼查詢預約記錄
-- 預約資料顯示與管理
-- 修改預約功能 (前一日18:00前)
-- 取消預約功能
-- 快取機制提升查詢效率
-- 錯誤處理與重試機制
-- 響應式設計支援行動裝置
-
-查詢邏輯：
-- 僅顯示狀態為 'active' 的預約記錄
-- 按提交時間排序 (最新在前)
-- 支援手機號碼格式自動清理
-- 快取查詢結果 5 分鐘
-
-更新記錄：
-v4.0 - 修復所有JavaScript錯誤，完善修改功能
-v3.0 - 新增修改預約功能
-v2.0 - 優化查詢體驗
-v1.0 - 初始版本
-================================================================================
--->
 <!DOCTYPE html>
+<!--
+程式名稱：Doug 機場接送預約系統 - 預約查詢管理頁面
+版本：v4.2-fixed-complete
+開發日期：2025年9月
+最後更新：2025年9月19日
+功能描述：查詢、編輯、取消現有預約，支援送機/接機/包車服務
+技術架構：HTML5 + CSS3 + Vanilla JavaScript + Google Apps Script
+開發者：Doug Shuttle Service Team
+修正項目：
+1. 送機服務顯示"登車時間"
+2. 修正台灣時區問題
+3. 確認頁面顯示完整輸入資料
+4. 移除預估費用顯示
+5. 優化編輯表單時間標籤顯示
+6. 按照"接送機的日期+時間"順序顯示
+7. 顯示完整預約資料，多欄顯示節省畫面
+-->
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -51,7 +36,7 @@ v1.0 - 初始版本
         }
         
         .container { 
-            max-width: 900px; 
+            max-width: 1200px; 
             margin: 0 auto; 
             background: white; 
             border-radius: 10px; 
@@ -265,7 +250,7 @@ v1.0 - 初始版本
             font-weight: 600;
         }
         
-        /* 預約卡片 */
+        /* 預約卡片 - 修正項目7：多欄顯示節省畫面 */
         .booking-card { 
             background: #f9fafb; 
             border: 1px solid #e5e7eb; 
@@ -291,6 +276,21 @@ v1.0 - 初始版本
             border-bottom: 1px solid #e5e7eb;
         }
         
+        .booking-service-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .service-type {
+            background: #667eea;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
         .booking-status {
             background: #10b981;
             color: white;
@@ -304,70 +304,62 @@ v1.0 - 初始版本
             background: #ef4444;
         }
         
-        .sequence-number {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-        
         .booking-time {
             color: #6b7280;
             font-size: 13px;
         }
         
-        .booking-info { 
-            margin-bottom: 15px; 
+        /* 預約詳細資訊 - 多欄佈局 */
+        .booking-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 15px;
         }
         
-        .service-line { 
-            font-size: 18px; 
-            font-weight: 600; 
-            margin-bottom: 8px;
+        .detail-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #f0f0f0;
+        }
+        
+        .section-title {
+            font-weight: 600;
             color: #374151;
-        }
-        
-        .datetime-line { 
-            font-size: 16px; 
-            color: #667eea; 
             margin-bottom: 10px;
-            font-weight: 500;
-        }
-        
-        .route-line {
-            color: #6b7280; 
-            margin-bottom: 8px;
-            font-size: 15px;
-        }
-        
-        .contact-line { 
-            font-size: 14px; 
-            color: #6b7280; 
-            margin-bottom: 6px; 
-        }
-        
-        .company-line { 
-            font-size: 14px; 
-            color: #6b7280; 
-            margin-bottom: 10px; 
-        }
-        
-        .remarks-line {
             font-size: 14px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 5px;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .detail-label {
+            color: #6b7280;
+            font-weight: 500;
+            min-width: 80px;
+        }
+        
+        .detail-value {
             color: #374151;
-            background: #f3f4f6;
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            text-align: left;
-            clear: both;
-            overflow: hidden;
+            text-align: right;
+            flex: 1;
+            margin-left: 10px;
         }
         
         .booking-actions { 
             display: flex; 
             gap: 10px; 
             justify-content: flex-end;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
         }
         
         /* 無結果狀態 */
@@ -536,6 +528,11 @@ v1.0 - 初始版本
                 gap: 15px;
             }
             
+            .booking-details-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
             .booking-actions { 
                 flex-direction: column; 
             }
@@ -582,7 +579,7 @@ v1.0 - 初始版本
                 <div class="form-group">
                     <label for="phone-search">手機號碼查詢：</label>
                     <div class="search-group">
-                        <input type="tel" id="phone-search" maxlength="12">
+                        <input type="tel" id="phone-search" maxlength="12" placeholder="請輸入手機號碼">
                         <button class="btn" id="search-btn">查詢預約</button>
                     </div>
                 </div>
@@ -623,7 +620,7 @@ v1.0 - 初始版本
                     <input type="date" id="edit-date">
                 </div>
                 <div class="form-group">
-                    <label for="edit-time" id="edit-time-label">出發時間：</label>
+                    <label for="edit-time" id="edit-time-label">時間：</label>
                     <select id="edit-time">
                         <option value="">請選擇時間</option>
                         <!-- 時間選項由JavaScript生成 -->
@@ -663,36 +660,25 @@ v1.0 - 初始版本
     </div>
 
     <script>
-        /*
-        ================================================================================
-        檔案名稱：query.html - JavaScript 查詢控制程式
-        功能描述：Doug Shuttle Service 預約查詢前端邏輯控制
-        版本：v4.0 - 完整功能版
-        建立日期：2025年9月12日
-        
-        主要功能模組：
-        1. 手機號碼查詢預約記錄
-        2. 預約資料顯示與格式化
-        3. 修改預約功能 (限時機制)
-        4. 取消預約功能
-        5. 快取機制優化查詢效率
-        6. 錯誤處理與重試機制
-        
-        API 端點：Google Apps Script
-        通訊格式：application/x-www-form-urlencoded (避免 CORS 預檢)
-        快取策略：5分鐘本地快取
-        ================================================================================
-        */
-        
         // 全域變數定義
-        let searchCache = new Map();                // 查詢結果快取
-        const CACHE_DURATION = 5 * 60 * 1000;      // 快取時間：5分鐘
-        let retryCount = 0;                         // API 重試計數
-        const MAX_RETRY = 1;                        // 最大重試次數
-        let currentEditBooking = null;              // 當前編輯的預約記錄
+        let searchCache = new Map();
+        const CACHE_DURATION = 5 * 60 * 1000;
+        let retryCount = 0;
+        const MAX_RETRY = 1;
+        let currentEditBooking = null;
         
         // API 配置
         const API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
+
+        /**
+         * 取得台灣時區的當前日期時間
+         */
+        function getTaiwanDateTime() {
+            const now = new Date();
+            // 台灣是UTC+8
+            const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+            return taiwanTime;
+        }
 
         /**
          * DOM 載入完成初始化
@@ -866,70 +852,98 @@ v1.0 - 初始版本
         }
 
         /**
-         * 生成結果列表HTML
+         * 生成結果列表HTML - 修正項目6：按照日期時間排序，修正項目7：多欄顯示
          */
         function generateResultsList(results) {
             const resultsList = document.getElementById('results-list');
             
-            let html = '';
-            for (let i = 0; i < results.length; i++) {
-                const booking = results[i];
+            // 修正項目6：按照"接送機的日期+時間"順序排序
+            const sortedResults = results.sort((a, b) => {
+                // 建立完整的日期時間字串來比較
+                const dateTimeA = `${a.date || ''} ${a.time || '00:00'}`;
+                const dateTimeB = `${b.date || ''} ${b.time || '00:00'}`;
                 
-                // 建構路線顯示
-                let routeDisplay = '📍 ' + booking.pickup;
-                if (booking.midstop && booking.midstop.trim()) {
-                    routeDisplay += ' → ' + booking.midstop;
+                // 轉換為Date物件進行比較（使用台灣時區）
+                const dateA = new Date(dateTimeA.replace(' ', 'T') + '+08:00');
+                const dateB = new Date(dateTimeB.replace(' ', 'T') + '+08:00');
+                
+                return dateA - dateB; // 升序排列：最早的在前
+            });
+            
+            let html = '';
+            for (let i = 0; i < sortedResults.length; i++) {
+                const booking = sortedResults[i];
+                
+                // 根據服務類型設定時間標籤 - 修正項目1
+                let timeLabel = '時間';
+                if (booking.service === '送機') {
+                    timeLabel = '登車時間';
+                } else if (booking.service === '接機') {
+                    timeLabel = '抵達時間';
+                } else {
+                    timeLabel = '出發時間';
                 }
-                routeDisplay += ' → ' + booking.dropoff;
                 
                 html += `<div class="booking-card" data-booking-id="${booking.rowIndex}">`;
                 
                 // 預約標題列
                 html += '<div class="booking-header">';
+                html += '<div class="booking-service-info">';
+                html += `<div class="service-type">${booking.service}</div>`;
+                html += `<div><strong>${formatSimpleDate(booking.date)} ${formatTime(booking.time)}</strong></div>`;
+                html += '</div>';
                 html += '<div class="booking-status">預約中</div>';
-                html += `<div class="booking-time">收到時間：${formatDateWithAMPM(booking.submitTime)}</div>`;
                 html += '</div>';
                 
-                html += '<div class="booking-info">';
-                // 根據服務類型顯示時間標籤
-                let timeLabel = '時間';
-                if (booking.service === '接機') {
-                    timeLabel = '抵達時間';
-                } else {
-                    timeLabel = '出發時間';
-                }
-                html += `<div class="service-line">${booking.service}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日期：${formatSimpleDate(booking.date)}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${timeLabel}：${formatTime(booking.time)}</div>`;
-                html += `<div class="route-line">${routeDisplay}</div>`;
+                // 修正項目7：多欄顯示完整預約資料
+                html += '<div class="booking-details-grid">';
                 
-                // 機場航班信息
-                if (booking.airport) {
-                    html += `<div style="color: #7c3aed; margin-bottom: 8px;">✈️ ${booking.airport}</div>`;
+                // 左欄：行程資訊
+                html += '<div class="detail-section">';
+                html += '<div class="section-title">行程資訊</div>';
+                html += `<div class="detail-item"><span class="detail-label">${timeLabel}:</span><span class="detail-value">${formatTime(booking.time)}</span></div>`;
+                html += `<div class="detail-item"><span class="detail-label">上車點:</span><span class="detail-value">${booking.pickup || '-'}</span></div>`;
+                if (booking.midstop && booking.midstop.trim()) {
+                    html += `<div class="detail-item"><span class="detail-label">中停點:</span><span class="detail-value">${booking.midstop}</span></div>`;
                 }
-                
-                // 聯絡資訊
-                html += `<div class="contact-line">👤 ${booking.name} (${booking.phone})</div>`;
-                if (booking.company) {
-                    html += `<div class="company-line">🏢 ${booking.company}</div>`;
+                html += `<div class="detail-item"><span class="detail-label">下車點:</span><span class="detail-value">${booking.dropoff || '-'}</span></div>`;
+                if (booking.airport && booking.airport.trim()) {
+                    html += `<div class="detail-item"><span class="detail-label">航班:</span><span class="detail-value">${booking.airport}</span></div>`;
                 }
+                html += '</div>';
                 
-                // 付款方式
-                if (booking.payment) {
-                    html += `<div class="contact-line">💳 ${booking.payment}</div>`;
+                // 右欄：聯絡資訊
+                html += '<div class="detail-section">';
+                html += '<div class="section-title">聯絡資訊</div>';
+                html += `<div class="detail-item"><span class="detail-label">姓名:</span><span class="detail-value">${booking.name || '-'}</span></div>`;
+                html += `<div class="detail-item"><span class="detail-label">電話:</span><span class="detail-value">${booking.phone || '-'}</span></div>`;
+                if (booking.company && booking.company.trim()) {
+                    html += `<div class="detail-item"><span class="detail-label">公司:</span><span class="detail-value">${booking.company}</span></div>`;
                 }
+                if (booking.email && booking.email.trim()) {
+                    html += `<div class="detail-item"><span class="detail-label">信箱:</span><span class="detail-value">${booking.email}</span></div>`;
+                }
+                if (booking.payment && booking.payment.trim()) {
+                    html += `<div class="detail-item"><span class="detail-label">付款:</span><span class="detail-value">${booking.payment}</span></div>`;
+                }
+                html += `<div class="detail-item"><span class="detail-label">提交:</span><span class="detail-value">${formatDateWithAMPM(booking.submitTime)}</span></div>`;
+                html += '</div>';
                 
-                // 備註信息
+                html += '</div>'; // 結束 booking-details-grid
+                
+                // 備註信息（如果有的話）
                 if (booking.remarks && booking.remarks.trim()) {
-                    html += `<div class="remarks-line">📝 ${booking.remarks}</div>`;
+                    html += `<div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #667eea;">`;
+                    html += `<strong>備註：</strong>${booking.remarks}`;
+                    html += `</div>`;
                 }
-                
-                html += '</div>';
                 
                 // 操作按鈕
                 html += '<div class="booking-actions">';
                 if (canModifyBooking(booking.date)) {
-                    html += `<button class="btn btn-small btn-outline" onclick="editBooking('${booking.rowIndex}')">📝 修改</button>`;
+                    html += `<button class="btn btn-small btn-outline" onclick="editBooking('${booking.rowIndex}')">修改</button>`;
                 }
-                html += `<button class="btn btn-small btn-danger" onclick="deleteBooking('${booking.rowIndex}')">🗑️ 取消</button>`;
+                html += `<button class="btn btn-small btn-danger" onclick="deleteBooking('${booking.rowIndex}')">取消</button>`;
                 html += '</div>';
                 
                 html += '</div>';
@@ -943,10 +957,11 @@ v1.0 - 初始版本
          */
         function canModifyBooking(bookingDate) {
             try {
-                const booking = new Date(bookingDate);
-                const now = new Date();
+                // 使用台灣時區處理日期比較 - 修正項目2
+                const booking = new Date(bookingDate + 'T00:00:00+08:00');
+                const now = getTaiwanDateTime();
                 
-                // 設定前一日18:00
+                // 設定前一日18:00（台灣時區）
                 const deadline = new Date(booking);
                 deadline.setDate(deadline.getDate() - 1);
                 deadline.setHours(18, 0, 0, 0);
@@ -1008,19 +1023,21 @@ v1.0 - 初始版本
          * 顯示編輯表單
          */
         function showEditForm(booking) {
-            // 設定最小日期
-            const today = new Date().toISOString().split('T')[0];
+            // 設定最小日期（使用台灣時區）
+            const today = getTaiwanDateTime().toISOString().split('T')[0];
             document.getElementById('edit-date').min = today;
             
-            // 根據服務類型設定時間標籤
+            // 根據服務類型設定時間標籤 - 修正項目1
             const timeLabel = document.getElementById('edit-time-label');
-            if (booking.service === '接機') {
+            if (booking.service === '送機') {
+                timeLabel.textContent = '登車時間：';
+            } else if (booking.service === '接機') {
                 timeLabel.textContent = '抵達時間：';
             } else {
                 timeLabel.textContent = '出發時間：';
             }
             
-            // 填入當前資料 - 處理各種日期格式
+            // 填入當前資料 - 處理各種日期格式（修正項目2：台灣時區）
             let dateValue = '';
             if (booking.date) {
                 // 處理奇怪的日期格式
@@ -1032,7 +1049,7 @@ v1.0 - 初始版本
                     dateValue = booking.date;
                 } else {
                     // 嘗試解析其他格式
-                    const parsed = new Date(booking.date);
+                    const parsed = new Date(booking.date + 'T00:00:00+08:00');
                     if (!isNaN(parsed.getTime())) {
                         dateValue = parsed.toISOString().split('T')[0];
                     } else {
@@ -1098,10 +1115,14 @@ v1.0 - 初始版本
                 return;
             }
             
+            // 使用台灣時區處理更新資料 - 修正項目2
+            const taiwanDateTime = new Date(`${date}T${time}:00+08:00`);
+            
             const updatedData = {
                 bookingId: currentEditBooking.rowIndex,
                 date: date,
                 time: time,
+                taiwanDateTime: taiwanDateTime.toISOString(),
                 flight: document.getElementById('edit-flight').value,
                 pickup: pickup,
                 midstop: document.getElementById('edit-midstop').value,
@@ -1280,55 +1301,25 @@ v1.0 - 初始版本
          * 格式化工具函數
          */
         
-        // 取得服務圖示
-        function getServiceIcon(service) {
-            const icons = { 
-                '送機': '✈️', 
-                '接機': '🏠', 
-                '包車': '🚗' 
-            };
-            return icons[service] || '🚗';
-        }
-
-        // 格式化日期 (yyyy年mm月dd日)
+        // 格式化日期 (mm/dd/yyyy) - 修正項目2：使用台灣時區
         function formatSimpleDate(dateString) {
             if (!dateString) return '';
             
-            // 處理各種日期格式
             let date;
             
-            // 處理奇怪的 1899-12-30T11:30:00.000Z 格式 - 這通常是Excel日期序列號轉換錯誤
+            // 處理各種日期格式，強制使用台灣時區
             if (dateString.includes('1899-12-30T')) {
-                // 提取時間部分並當作日期使用 (這是一個workaround)
-                const timeMatch = dateString.match(/T(\d{2}):(\d{2})/);
-                if (timeMatch) {
-                    // 假設這是當前年月的日期，用時間作為日期
-                    const now = new Date();
-                    const day = parseInt(timeMatch[1]); // 小時當作日
-                    const month = parseInt(timeMatch[2]); // 分鐘當作月 (這是不正確的，需要後端修正)
-                    
-                    // 如果無法合理解析，返回今天的日期
-                    if (day > 31 || month > 12) {
-                        date = now;
-                    } else {
-                        date = new Date(now.getFullYear(), month - 1, day);
-                    }
-                }
+                // 處理Excel錯誤格式，使用今天日期
+                date = getTaiwanDateTime();
             } else if (dateString.includes('-')) {
-                // 標準 YYYY-MM-DD 格式
-                const parts = dateString.split('-');
-                if (parts.length === 3) {
-                    date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-                }
-            } else if (dateString.includes('/')) {
-                // MM/DD/YYYY 或 YYYY/MM/DD 格式
-                date = new Date(dateString);
+                // 標準 YYYY-MM-DD 格式，加上台灣時區
+                date = new Date(dateString + 'T00:00:00+08:00');
             } else {
                 date = new Date(dateString);
             }
             
             if (!date || isNaN(date.getTime())) {
-                return dateString; // 如果無法解析，返回原始字串
+                return dateString;
             }
             
             const year = date.getFullYear();
@@ -1363,21 +1354,31 @@ v1.0 - 初始版本
             return timeString;
         }
 
-        // 格式化提交時間 (mm/dd/yyyy hh:mm AM/PM)
+        // 格式化提交時間 (mm/dd/yyyy hh:mm AM/PM) - 修正項目2：台灣時區
         function formatDateWithAMPM(dateString) {
             if (!dateString) return '';
             
-            const date = new Date(dateString);
+            // 確保使用台灣時區解析
+            let date;
+            if (dateString.includes('+08:00') || dateString.includes('Z')) {
+                date = new Date(dateString);
+            } else {
+                date = new Date(dateString + '+08:00');
+            }
+            
             if (isNaN(date.getTime())) {
                 return dateString;
             }
             
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            const year = date.getFullYear();
+            // 轉換為台灣時區顯示
+            const taiwanTime = new Date(date.getTime() + (8 * 60 * 60 * 1000));
             
-            let hours = date.getHours();
-            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const month = (taiwanTime.getMonth() + 1).toString().padStart(2, '0');
+            const day = taiwanTime.getDate().toString().padStart(2, '0');
+            const year = taiwanTime.getFullYear();
+            
+            let hours = taiwanTime.getHours();
+            const minutes = taiwanTime.getMinutes().toString().padStart(2, '0');
             const ampm = hours >= 12 ? 'PM' : 'AM';
             
             hours = hours % 12;
@@ -1399,6 +1400,7 @@ v1.0 - 初始版本
             }
             console.log('當前編輯預約:', currentEditBooking);
             console.log('API URL:', API_URL);
+            console.log('台灣時間:', getTaiwanDateTime().toISOString());
         }
 
         // 開發模式下啟用除錯

@@ -1,30 +1,19 @@
-<!---
-================================================================================
-檔案名稱：index.html - Doug Shuttle Service 機場接送預約建立頁面
-功能描述：多步驟預約表單，包含服務選擇、基本資訊、時間地點設定及確認
-技術架構：HTML5 + CSS3 + Vanilla JavaScript
-API整合：Google Apps Script 後端服務
-建立日期：2025年9月12日
-版本：v4.0 - 完整功能版
-開發者：Doug Shuttle Service Team
-
-主要功能：
-- 4步驟預約流程 (服務選擇 → 基本資訊 → 時間地點 → 確認)
-- 手機號碼自動查詢歷史資料
-- 表單驗證與錯誤處理
-- 響應式設計支援行動裝置
-- 自動進行計時器與用戶體驗優化
-- Toast通知系統
-- API重試機制
-
-更新記錄：
-v4.0 - 修復所有JavaScript錯誤，完善功能實作
-v3.0 - 新增自動進行功能
-v2.0 - 流程優化版本
-v1.0 - 初始版本
-================================================================================
--->
 <!DOCTYPE html>
+<!--
+程式名稱：Doug 機場接送預約系統 - 預約建立頁面
+版本：v4.2-fixed
+開發日期：2025年9月
+最後更新：2025年9月19日
+功能描述：企業用戶機場接送預約系統，支援送機/接機/包車服務
+技術架構：HTML5 + CSS3 + Vanilla JavaScript + Google Apps Script
+開發者：Doug Shuttle Service Team
+修正項目：
+1. 送機服務顯示"登車時間"
+2. 修正台灣時區問題
+3. 移除自動跳轉，增加明確"下一步"按鈕
+4. 確認頁面顯示完整輸入資料
+5. 移除預估費用顯示
+-->
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -494,7 +483,7 @@ v1.0 - 初始版本
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn" id="next1" disabled>下一步</button>
+                    <button class="btn" id="next1" onclick="goToStep(2)" disabled>下一步</button>
                 </div>
             </div>
 
@@ -535,12 +524,12 @@ v1.0 - 初始版本
                     </select>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-outline" id="prev2">上一步</button>
-                    <button class="btn" id="next2">下一步</button>
+                    <button class="btn btn-outline" onclick="goToStep(1)">上一步</button>
+                    <button class="btn" onclick="goToStep(3)">下一步</button>
                 </div>
             </div>
 
-            <!-- 步驟3: 時間地點 -->
+            <!-- 步驟3: 時間與地點 -->
             <div class="step" id="step3">
                 <h3>時間與地點</h3>
                 <div class="form-group">
@@ -548,7 +537,7 @@ v1.0 - 初始版本
                     <input type="date" id="date" required lang="zh-TW">
                 </div>
                 <div class="form-group">
-                    <label for="time" class="required" id="time-label">出發時間</label>
+                    <label for="time" class="required" id="time-label">時間</label>
                     <select id="time" required>
                         <option value="">請選擇時間</option>
                         <!-- 選項由JavaScript動態生成 -->
@@ -575,8 +564,8 @@ v1.0 - 初始版本
                     <textarea id="remarks" placeholder="如有特殊需求請在此說明，例如：行李數量、車種需求、路線等"></textarea>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-outline" id="prev3">上一步</button>
-                    <button class="btn" id="next3">下一步</button>
+                    <button class="btn btn-outline" onclick="goToStep(2)">上一步</button>
+                    <button class="btn" onclick="goToStep(4)">下一步</button>
                 </div>
             </div>
 
@@ -587,8 +576,8 @@ v1.0 - 初始版本
                     <!-- 確認資訊由JavaScript生成 -->
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-outline" id="prev4">返回修改</button>
-                    <button class="btn" id="submit">確認預約</button>
+                    <button class="btn btn-outline" onclick="goToStep(3)">返回修改</button>
+                    <button class="btn" onclick="submitForm()">確認預約</button>
                 </div>
             </div>
 
@@ -613,46 +602,13 @@ v1.0 - 初始版本
     </div>
 
     <script>
-        /*
-        ================================================================================
-        檔案名稱：index.html - JavaScript 主控制程式
-        功能描述：Doug Shuttle Service 預約表單前端邏輯控制
-        版本：v4.0 - 完整功能版
-        建立日期：2025年9月12日
-        
-        主要功能模組：
-        1. 多步驟表單導航控制
-        2. 服務選擇與表單驗證
-        3. 手機號碼自動查詢功能
-        4. API 通訊與錯誤處理
-        5. 用戶體驗優化 (自動進行、Toast通知)
-        6. 響應式設計支援
-        
-        API 端點：Google Apps Script
-        通訊格式：application/x-www-form-urlencoded (避免 CORS 預檢)
-        ================================================================================
-        */
-        
         // 全域變數定義
-        let currentStep = 1;                    // 當前步驟
-        let selectedService = '';               // 選擇的服務類型
-        let formData = {};                      // 表單資料暫存
-        let autoProgressTimers = {};           // 自動進行計時器
-        let retryCount = 0;                     // API 重試計數
-        const MAX_RETRY = 1;                    // 最大重試次數
+        let currentStep = 1;
+        let selectedService = '';
+        let formData = {};
         
         // API 配置
         const API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
-
-        // 自動進行延遲時間配置 (毫秒)
-        const AUTO_PROGRESS_DELAYS = {
-            serviceSelection: 800,          // 服務選擇後自動進行
-            phoneComplete: 2000,            // 手機號碼填完後
-            nameComplete: 1500,             // 姓名填完後
-            dateTime: 1000,                 // 日期時間選擇後
-            location: 2500,                 // 地點填完後
-            defaultAcceptance: 3000         // 預設接受時間
-        };
 
         /**
          * DOM 載入完成初始化
@@ -660,8 +616,8 @@ v1.0 - 初始版本
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Doug Shuttle Service - 系統初始化中...');
             
-            // 設定最小日期為今天
-            const today = new Date().toISOString().split('T')[0];
+            // 設定最小日期為今天（使用台灣時區）
+            const today = getTaiwanDate().toISOString().split('T')[0];
             document.getElementById('date').min = today;
             
             // 隱藏錯誤容器
@@ -671,10 +627,17 @@ v1.0 - 初始版本
             initializeEventListeners();
             generateTimeOptions();
             updateStepIndicator();
-            
-            // 顯示歡迎訊息
-            showToast('歡迎使用 Doug Shuttle Service！請選擇服務項目', 'info');
         });
+
+        /**
+         * 取得台灣時區的當前日期
+         */
+        function getTaiwanDate() {
+            const now = new Date();
+            // 台灣是UTC+8，所以加8小時
+            const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+            return taiwanTime;
+        }
 
         /**
          * 初始化所有事件監聽器
@@ -713,12 +676,6 @@ v1.0 - 初始版本
                     
                     // 啟用下一步按鈕
                     document.getElementById('next1').disabled = false;
-                    
-                    // 清除舊計時器並設定自動進行
-                    clearTimeout(autoProgressTimers.service);
-                    autoProgressTimers.service = setTimeout(() => {
-                        goToStep(2);
-                    }, AUTO_PROGRESS_DELAYS.serviceSelection);
                 });
             });
         }
@@ -764,8 +721,8 @@ v1.0 - 初始版本
                 flightInput.placeholder = '例：CI123 (選填)';
                 flightGroup.style.display = 'block';
                 
-                // 時間標籤保持"出發時間"
-                timeLabel.textContent = '出發時間';
+                // 時間標籤改為"登車時間" - 修正項目1
+                timeLabel.textContent = '登車時間';
                 
                 // 上車地點標籤和提示
                 pickupInput.placeholder = '出發地地址';
@@ -808,7 +765,6 @@ v1.0 - 初始版本
             
             phoneInput.addEventListener('input', function() {
                 clearTimeout(phoneTimeout);
-                clearTimeout(autoProgressTimers.phone);
                 
                 // 清理非數字字符
                 const phone = this.value.replace(/\D/g, '');
@@ -823,7 +779,6 @@ v1.0 - 初始版本
                 if (phone.length >= 10) {
                     phoneTimeout = setTimeout(async () => {
                         await lookupUserData(phone);
-                        startAutoProgressTimer('phone');
                     }, 500);
                 }
             });
@@ -841,24 +796,6 @@ v1.0 - 初始版本
          * 初始化表單輸入事件
          */
         function initFormInputs() {
-            // 姓名輸入
-            document.getElementById('name').addEventListener('input', function() {
-                clearTimeout(autoProgressTimers.name);
-                if (this.value.trim().length >= 2) {
-                    startAutoProgressTimer('name');
-                }
-            });
-
-            // 公司名稱輸入
-            document.getElementById('company').addEventListener('input', function() {
-                clearTimeout(autoProgressTimers.name);
-                clearTimeout(autoProgressTimers.phone);
-            });
-
-            document.getElementById('company').addEventListener('blur', function() {
-                checkStep2AutoProgress();
-            });
-
             // 付款方式選擇
             document.getElementById('payment').addEventListener('change', function() {
                 if (this.value === '簽單') {
@@ -871,73 +808,6 @@ v1.0 - 初始版本
                         return;
                     }
                 }
-                checkStep2AutoProgress();
-            });
-
-            // 日期時間選擇
-            initDateTimeInputs();
-            
-            // 地點輸入
-            initLocationInputs();
-            
-            // 備註輸入
-            initRemarksInput();
-        }
-
-        /**
-         * 初始化日期時間輸入
-         */
-        function initDateTimeInputs() {
-            document.getElementById('date').addEventListener('change', function() {
-                clearTimeout(autoProgressTimers.datetime);
-                if (this.value) {
-                    if (document.getElementById('time').value) {
-                        startAutoProgressTimer('datetime');
-                    } else {
-                        setTimeout(() => {
-                            document.getElementById('time').focus();
-                        }, 200);
-                    }
-                }
-            });
-
-            document.getElementById('time').addEventListener('change', function() {
-                clearTimeout(autoProgressTimers.datetime);
-                if (this.value && document.getElementById('date').value) {
-                    startAutoProgressTimer('datetime');
-                }
-            });
-        }
-
-        /**
-         * 初始化地點輸入
-         */
-        function initLocationInputs() {
-            ['pickup', 'midstop', 'dropoff'].forEach(fieldId => {
-                document.getElementById(fieldId).addEventListener('input', function() {
-                    clearTimeout(autoProgressTimers.location);
-                    clearTimeout(autoProgressTimers.defaultAccept);
-                    
-                    if (validateStep3Core()) {
-                        checkLocationProgress();
-                    }
-                });
-            });
-        }
-
-        /**
-         * 初始化備註輸入
-         */
-        function initRemarksInput() {
-            document.getElementById('remarks').addEventListener('input', function() {
-                clearTimeout(autoProgressTimers.location);
-                clearTimeout(autoProgressTimers.defaultAccept);
-            });
-
-            document.getElementById('remarks').addEventListener('blur', function() {
-                if (validateStep3Core()) {
-                    startAutoProgressTimer('defaultAccept');
-                }
             });
         }
 
@@ -945,13 +815,7 @@ v1.0 - 初始版本
          * 初始化導航按鈕
          */
         function initNavigationButtons() {
-            document.getElementById('next1').addEventListener('click', () => goToStep(2));
-            document.getElementById('prev2').addEventListener('click', () => goToStep(1));
-            document.getElementById('next2').addEventListener('click', () => goToStep(3));
-            document.getElementById('prev3').addEventListener('click', () => goToStep(2));
-            document.getElementById('next3').addEventListener('click', () => goToStep(4));
-            document.getElementById('prev4').addEventListener('click', () => goToStep(3));
-            document.getElementById('submit').addEventListener('click', submitForm);
+            // 按鈕事件已在HTML中定義
         }
 
         /**
@@ -976,15 +840,10 @@ v1.0 - 初始版本
         }
 
         /**
-         * 步驟導航主函數
+         * 步驟導航主函數 - 修正項目3：移除自動跳轉
          */
         function goToStep(step) {
             console.log(`正在前往步驟 ${step}`);
-            
-            // 清除所有自動進行計時器
-            Object.keys(autoProgressTimers).forEach(key => {
-                clearTimeout(autoProgressTimers[key]);
-            });
             
             // 向前進行時驗證當前步驟
             if (step > currentStep) {
@@ -1004,21 +863,6 @@ v1.0 - 初始版本
             // 特殊步驟處理
             if (step === 4) generateSummary();
             currentStep = step;
-            
-            // 設定焦點和提示
-            switch(step) {
-                case 2:
-                    setTimeout(() => document.getElementById('phone').focus(), 100);
-                    showToast('請填寫基本資訊', 'info');
-                    break;
-                case 3:
-                    setTimeout(() => document.getElementById('date').focus(), 100);
-                    showToast('請選擇時間與地點', 'info');
-                    break;
-                case 4:
-                    showToast('請確認預約資訊', 'info');
-                    break;
-            }
         }
 
         /**
@@ -1090,12 +934,27 @@ v1.0 - 初始版本
         }
 
         /**
-         * 生成確認頁面摘要
+         * 生成確認頁面摘要 - 修正項目4：顯示完整輸入資料
          */
         function generateSummary() {
             const summary = document.getElementById('summary');
             const remarksValue = document.getElementById('remarks').value.trim();
             const midstopValue = document.getElementById('midstop').value.trim();
+            const flightValue = document.getElementById('flight').value.trim();
+            const companyValue = document.getElementById('company').value.trim();
+            const emailValue = document.getElementById('email').value.trim();
+            const proxyEmailValue = document.getElementById('proxyEmail').value.trim();
+            const costCenterValue = document.getElementById('costCenter').value.trim();
+            
+            // 根據服務類型設定時間標籤 - 修正項目1
+            let timeLabel = '時間';
+            if (selectedService === '送機') {
+                timeLabel = '登車時間';
+            } else if (selectedService === '接機') {
+                timeLabel = '抵達時間';
+            } else {
+                timeLabel = '出發時間';
+            }
             
             let summaryHTML = `
                 <div class="summary-item">
@@ -1107,16 +966,16 @@ v1.0 - 初始版本
                     <span class="summary-value">${formatDate(document.getElementById('date').value)}</span>
                 </div>
                 <div class="summary-item">
-                    <span class="summary-label">出發時間：</span>
+                    <span class="summary-label">${timeLabel}：</span>
                     <span class="summary-value">${document.getElementById('time').value}</span>
                 </div>
             `;
             
-            if (document.getElementById('flight').value) {
+            if (flightValue) {
                 summaryHTML += `
                     <div class="summary-item">
                         <span class="summary-label">航班編號：</span>
-                        <span class="summary-value">${document.getElementById('flight').value}</span>
+                        <span class="summary-value">${flightValue}</span>
                     </div>
                 `;
             }
@@ -1152,11 +1011,38 @@ v1.0 - 初始版本
                 </div>
             `;
             
-            if (document.getElementById('company').value) {
+            if (companyValue) {
                 summaryHTML += `
                     <div class="summary-item">
                         <span class="summary-label">公司名稱：</span>
-                        <span class="summary-value">${document.getElementById('company').value}</span>
+                        <span class="summary-value">${companyValue}</span>
+                    </div>
+                `;
+            }
+            
+            if (emailValue) {
+                summaryHTML += `
+                    <div class="summary-item">
+                        <span class="summary-label">電郵信箱：</span>
+                        <span class="summary-value">${emailValue}</span>
+                    </div>
+                `;
+            }
+            
+            if (proxyEmailValue) {
+                summaryHTML += `
+                    <div class="summary-item">
+                        <span class="summary-label">代理信箱：</span>
+                        <span class="summary-value">${proxyEmailValue}</span>
+                    </div>
+                `;
+            }
+            
+            if (costCenterValue) {
+                summaryHTML += `
+                    <div class="summary-item">
+                        <span class="summary-label">成本中心：</span>
+                        <span class="summary-value">${costCenterValue}</span>
                     </div>
                 `;
             }
@@ -1184,27 +1070,31 @@ v1.0 - 初始版本
          * 提交表單
          */
         async function submitForm() {
-            const btn = document.getElementById('submit');
-            btn.disabled = true;
-            btn.textContent = '處理中...';
-            
             try {
+                // 使用台灣時區處理日期時間 - 修正項目2
+                const dateInput = document.getElementById('date').value;
+                const timeInput = document.getElementById('time').value;
+                
+                // 建立台灣時區的日期時間
+                const taiwanDateTime = new Date(`${dateInput}T${timeInput}:00+08:00`);
+                
                 const formData = {
-                    '服務項目': selectedService,
-                    '手機號碼': document.getElementById('phone').value,
-                    '姓名': document.getElementById('name').value,
-                    '公司名稱': document.getElementById('company').value,
-                    '電郵信箱': document.getElementById('email').value,
-                    '代理信箱': document.getElementById('proxyEmail').value,
-                    '成本中心': document.getElementById('costCenter').value,
-                    '日期': document.getElementById('date').value,
-                    '時間': document.getElementById('time').value,
-                    '航班編號': document.getElementById('flight').value,
-                    '上車點': document.getElementById('pickup').value,
-                    '中停點': document.getElementById('midstop').value,
-                    '下車點': document.getElementById('dropoff').value,
-                    '備註': document.getElementById('remarks').value,
-                    '費用支付': document.getElementById('payment').value
+                    'service': selectedService,
+                    'company': document.getElementById('company').value,
+                    'phone': document.getElementById('phone').value,
+                    'name': document.getElementById('name').value,
+                    'email': document.getElementById('email').value,
+                    'proxyEmail': document.getElementById('proxyEmail').value,
+                    'costCenter': document.getElementById('costCenter').value,
+                    'date': dateInput,
+                    'time': timeInput,
+                    'taiwanDateTime': taiwanDateTime.toISOString(), // 包含時區資訊
+                    'flight': document.getElementById('flight').value,
+                    'pickup': document.getElementById('pickup').value,
+                    'midstop': document.getElementById('midstop').value,
+                    'dropoff': document.getElementById('dropoff').value,
+                    'remarks': document.getElementById('remarks').value,
+                    'payment': document.getElementById('payment').value
                 };
                 
                 const response = await apiCall('createBooking', formData);
@@ -1217,7 +1107,7 @@ v1.0 - 初始版本
                     // 更新步驟指示器
                     updateStepIndicator(5);
                     
-                    // 顯示預約詳情
+                    // 顯示預約詳情（不包含預估費用 - 修正項目5）
                     displayBookingDetails(response.data);
                     showToast('預約建立成功！', 'success');
                 } else {
@@ -1227,18 +1117,27 @@ v1.0 - 初始版本
             } catch (error) {
                 console.error('提交錯誤:', error);
                 showToast('預約失敗，請稍後再試', 'error');
-                btn.disabled = false;
-                btn.textContent = '確認預約';
             }
         }
 
         /**
-         * 顯示預約詳情
+         * 顯示預約詳情（修正項目5：移除預估費用）
          */
         function displayBookingDetails(bookingData) {
             const detailsElement = document.getElementById('booking-details');
             const midstopValue = document.getElementById('midstop').value.trim();
             const remarksValue = document.getElementById('remarks').value.trim();
+            const flightValue = document.getElementById('flight').value.trim();
+            
+            // 根據服務類型設定時間標籤
+            let timeLabel = '時間';
+            if (selectedService === '送機') {
+                timeLabel = '登車時間';
+            } else if (selectedService === '接機') {
+                timeLabel = '抵達時間';
+            } else {
+                timeLabel = '出發時間';
+            }
             
             let detailsHTML = `
                 <div class="summary-item">
@@ -1254,9 +1153,21 @@ v1.0 - 初始版本
                     <span class="summary-value">${formatDate(document.getElementById('date').value)}</span>
                 </div>
                 <div class="summary-item">
-                    <span class="summary-label">出發時間：</span>
+                    <span class="summary-label">${timeLabel}：</span>
                     <span class="summary-value">${document.getElementById('time').value}</span>
                 </div>
+            `;
+            
+            if (flightValue) {
+                detailsHTML += `
+                    <div class="summary-item">
+                        <span class="summary-label">航班編號：</span>
+                        <span class="summary-value">${flightValue}</span>
+                    </div>
+                `;
+            }
+            
+            detailsHTML += `
                 <div class="summary-item">
                     <span class="summary-label">上車地點：</span>
                     <span class="summary-value">${document.getElementById('pickup').value}</span>
@@ -1312,14 +1223,7 @@ v1.0 - 初始版本
                 `;
             }
             
-            if (bookingData?.estimatedFee) {
-                detailsHTML += `
-                    <div class="summary-item" style="border-top: 2px solid #667eea; padding-top: 12px; margin-top: 12px;">
-                        <span class="summary-label">預估費用：</span>
-                        <span class="summary-value" style="color: #667eea; font-weight: 600;">NT$ ${bookingData.estimatedFee}</span>
-                    </div>
-                `;
-            }
+            // 修正項目5：不顯示預估費用
             
             detailsElement.innerHTML = detailsHTML;
         }
@@ -1332,7 +1236,7 @@ v1.0 - 初始版本
             loadingElement.className = 'loading show';
             
             try {
-                // 傳遞當前選擇的服務類型
+                // 傳送當前選擇的服務類型
                 const response = await apiCall('getUserDataByPhone', { 
                     phone: phone,
                     serviceType: selectedService 
@@ -1371,7 +1275,7 @@ v1.0 - 初始版本
         /**
          * API調用主函數
          */
-        async function apiCall(action, data, attempt = 1) {
+        async function apiCall(action, data) {
             try {
                 const requestData = {
                     action: action,
@@ -1387,164 +1291,14 @@ v1.0 - 初始版本
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    throw new Error(`HTTP錯誤: ${response.status}`);
                 }
 
-                const result = await response.json();
-                retryCount = 0; // 重置重試計數
-                return result;
+                return await response.json();
 
             } catch (error) {
-                console.error(`API調用失敗 (嘗試 ${attempt}):`, error);
-                
-                if (attempt <= MAX_RETRY) {
-                    // 自動重試
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    return apiCall(action, data, attempt + 1);
-                } else {
-                    // 顯示錯誤
-                    showError(getErrorMessage(error), () => apiCall(action, data, 1));
-                    throw error;
-                }
-            }
-        }
-
-        /**
-         * 錯誤訊息處理
-         */
-        function getErrorMessage(error) {
-            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                return '連線不穩定，請檢查網路後重試';
-            } else if (error.message.includes('403') || error.message.includes('401')) {
-                return '系統暫時無法存取，請稍後再試或聯絡管理員';
-            } else if (error.message.includes('400')) {
-                return '請檢查輸入資料格式';
-            } else {
-                return '系統暫時無法處理您的請求，請稍後再試';
-            }
-        }
-
-        /**
-         * 顯示錯誤訊息
-         */
-        function showError(message, retryCallback) {
-            const errorContainer = document.getElementById('error-container');
-            errorContainer.innerHTML = `
-                <div class="error-message">
-                    <strong>操作失敗：</strong>${message}
-                    <button class="btn btn-outline retry-btn" onclick="handleRetry()">重新嘗試</button>
-                </div>
-            `;
-            errorContainer.style.display = 'block';
-            window.currentRetryCallback = retryCallback;
-        }
-
-        /**
-         * 處理重試
-         */
-        function handleRetry() {
-            document.getElementById('error-container').style.display = 'none';
-            if (window.currentRetryCallback) {
-                window.currentRetryCallback();
-            }
-        }
-
-        /**
-         * 自動進行計時器管理
-         */
-        function startAutoProgressTimer(type) {
-            clearTimeout(autoProgressTimers[type]);
-            
-            let delay, action;
-            
-            switch(type) {
-                case 'phone':
-                    delay = AUTO_PROGRESS_DELAYS.phoneComplete;
-                    action = () => {
-                        if (validateStep2Core()) {
-                            showProgressHint('即將自動進入下一步...', () => {
-                                if (validateStep()) goToStep(3);
-                            });
-                        }
-                    };
-                    break;
-                    
-                case 'name':
-                    delay = AUTO_PROGRESS_DELAYS.nameComplete;
-                    action = () => {
-                        if (validateStep2Core()) {
-                            showProgressHint('即將自動進入下一步...', () => {
-                                if (validateStep()) goToStep(3);
-                            });
-                        }
-                    };
-                    break;
-                    
-                case 'datetime':
-                    delay = AUTO_PROGRESS_DELAYS.dateTime;
-                    action = () => {
-                        showProgressHint('時間已確認，即將進入地點設定...', () => {
-                            document.getElementById('pickup').focus();
-                            showToast('請填寫上車地點', 'info');
-                        });
-                    };
-                    break;
-                    
-                case 'location':
-                    delay = AUTO_PROGRESS_DELAYS.location;
-                    action = () => {
-                        if (validateStep3Core()) {
-                            showProgressHint('地點已確認，即將進入確認頁面...', () => {
-                                if (validateStep()) goToStep(4);
-                            });
-                        }
-                    };
-                    break;
-                    
-                case 'defaultAccept':
-                    delay = AUTO_PROGRESS_DELAYS.defaultAcceptance;
-                    action = () => {
-                        if (validateStep3Core()) {
-                            showProgressHint('將使用預設設定進入確認頁面...', () => {
-                                if (validateStep()) goToStep(4);
-                            });
-                        }
-                    };
-                    break;
-            }
-            
-            if (action) {
-                autoProgressTimers[type] = setTimeout(action, delay);
-            }
-        }
-
-        function showProgressHint(message, callback) {
-            showToast(message, 'info');
-            setTimeout(callback, 1000);
-        }
-
-        function checkStep2AutoProgress() {
-            if (currentStep !== 2) return;
-            
-            if (validateStep2Core()) {
-                const activeElement = document.activeElement;
-                const inputElements = ['company', 'payment'];
-                const isUserTyping = inputElements.some(id => document.getElementById(id) === activeElement);
-                
-                if (!isUserTyping) {
-                    startAutoProgressTimer('name');
-                }
-            }
-        }
-
-        function checkLocationProgress() {
-            if (currentStep !== 3) return;
-            
-            if (validateStep3Core()) {
-                const remarksField = document.getElementById('remarks');
-                if (document.activeElement !== remarksField) {
-                    startAutoProgressTimer('location');
-                }
+                console.error('API調用失敗:', error);
+                throw error;
             }
         }
 
@@ -1578,7 +1332,7 @@ v1.0 - 初始版本
         function formatDate(dateString) {
             if (!dateString) return '';
             
-            const date = new Date(dateString);
+            const date = new Date(dateString + 'T00:00:00+08:00'); // 強制台灣時區
             if (isNaN(date.getTime())) return dateString;
             
             const year = date.getFullYear();
@@ -1589,33 +1343,6 @@ v1.0 - 初始版本
             const weekday = weekdays[date.getDay()];
             
             return `${year}年${month}月${day}日 (星期${weekday})`;
-        }
-
-        /**
-         * 除錯函數 (開發用)
-         */
-        function debugEvents() {
-            console.log('=== Doug Shuttle Service Debug Info ===');
-            console.log('當前步驟:', currentStep);
-            console.log('選擇服務:', selectedService);
-            console.log('表單資料:', {
-                phone: document.getElementById('phone').value,
-                name: document.getElementById('name').value,
-                company: document.getElementById('company').value,
-                payment: document.getElementById('payment').value,
-                date: document.getElementById('date').value,
-                time: document.getElementById('time').value,
-                pickup: document.getElementById('pickup').value,
-                dropoff: document.getElementById('dropoff').value
-            });
-            console.log('活動計時器:', Object.keys(autoProgressTimers).filter(key => autoProgressTimers[key]));
-        }
-
-        // 開發模式下啟用除錯
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            window.debugEvents = debugEvents;
-            console.log('Doug Shuttle Service - 開發模式已啟用');
-            console.log('使用 debugEvents() 查看系統狀態');
         }
     </script>
 </body>
