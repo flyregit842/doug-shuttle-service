@@ -1121,6 +1121,8 @@
                 const dateStr = document.getElementById('date').value; // MM/DD/YYYY
                 const timeStr = document.getElementById('time').value; // HH:MM
                 
+                console.log('原始日期時間:', dateStr, timeStr);
+                
                 // 轉換為標準格式
                 const dateParts = dateStr.split('/');
                 const month = dateParts[0].padStart(2, '0');
@@ -1128,45 +1130,58 @@
                 const year = dateParts[2];
                 
                 const standardDate = `${year}-${month}-${day}`;
-                const taiwanDateTime = new Date(`${standardDate}T${timeStr}:00+08:00`);
+                console.log('轉換後日期:', standardDate);
                 
-                // 使用你原本系統的欄位名稱
+                // 收集所有資料 - 使用確切的中文欄位名稱
                 const formData = {
                     '服務項目': selectedService,
-                    '公司名稱': document.getElementById('company').value,
-                    '手機號碼': document.getElementById('phone').value,
-                    '姓名': document.getElementById('name').value,
-                    '電郵信箱': document.getElementById('email').value,
-                    '代理信箱': document.getElementById('proxyEmail').value,
-                    '成本中心': document.getElementById('costCenter').value,
+                    '公司名稱': document.getElementById('company').value.trim(),
+                    '部門': '', // 你的新版本可能沒有這個欄位，給空值
+                    '手機號碼': document.getElementById('phone').value.trim(),
+                    '姓名': document.getElementById('name').value.trim(),
                     '日期': standardDate,
                     '時間': timeStr,
-                    '航班編號': document.getElementById('flight').value,
-                    '上車點': document.getElementById('pickup').value,
-                    '中停點': document.getElementById('midstop').value,
-                    '下車點': document.getElementById('dropoff').value,
-                    '備註': document.getElementById('remarks').value,
-                    '費用支付': document.getElementById('payment').value
+                    '機場/航班': document.getElementById('flight').value.trim(),
+                    '上車點': document.getElementById('pickup').value.trim(),
+                    '中停點': document.getElementById('midstop').value.trim(),
+                    '下車點': document.getElementById('dropoff').value.trim(),
+                    '備註': document.getElementById('remarks').value.trim(),
+                    '費用支付': document.getElementById('payment').value,
+                    '電郵信箱': document.getElementById('email').value.trim(),
+                    '代理信箱': document.getElementById('proxyEmail').value.trim(),
+                    '成本中心': document.getElementById('costCenter').value.trim()
                 };
                 
-                console.log('發送資料:', formData); // 除錯用
+                // 驗證必填欄位
+                const requiredFields = ['服務項目', '手機號碼', '姓名', '日期', '時間', '上車點', '下車點', '費用支付'];
+                const missingFields = [];
+                
+                requiredFields.forEach(field => {
+                    if (!formData[field] || formData[field].trim() === '') {
+                        missingFields.push(field);
+                    }
+                });
+                
+                if (missingFields.length > 0) {
+                    throw new Error(`前端驗證失敗，缺少: ${missingFields.join(', ')}`);
+                }
+                
+                console.log('準備發送的資料:', formData);
                 
                 const response = await apiCall('createBooking', formData);
                 
-                console.log('API回應:', response); // 除錯用
+                console.log('API回應:', response);
                 
                 if (response && response.success) {
-                    // 顯示成功頁面
                     showSuccessPage();
                     showToast('預約建立成功！', 'success');
                 } else {
-                    throw new Error(response?.message || '後端回應格式錯誤');
+                    throw new Error(response?.message || '後端回應success為false');
                 }
                 
             } catch (error) {
-                console.error('提交錯誤:', error);
+                console.error('提交錯誤詳情:', error);
                 
-                // 更詳細的錯誤訊息
                 let errorMessage = '預約失敗';
                 if (error.message.includes('Failed to fetch')) {
                     errorMessage = '網路連線失敗，請檢查網路後重試';
@@ -1174,14 +1189,27 @@
                     errorMessage = 'API存取被拒絕，請檢查API設定';
                 } else if (error.message.includes('404')) {
                     errorMessage = 'API端點不存在，請檢查API URL';
+                } else if (error.message.includes('前端驗證失敗')) {
+                    errorMessage = `前端檢查失敗: ${error.message}`;
                 } else if (error.message) {
                     errorMessage = `錯誤: ${error.message}`;
                 }
                 
                 showToast(errorMessage, 'error');
                 
-                // 顯示除錯資訊
-                alert(`除錯資訊:\nAPI URL: ${API_URL}\n錯誤: ${error.message}\n\n請檢查瀏覽器開發者工具的Console和Network標籤查看詳細錯誤`);
+                // 顯示更詳細的除錯資訊
+                console.log('=== 除錯資訊 ===');
+                console.log('選擇的服務:', selectedService);
+                console.log('表單資料:', {
+                    date: document.getElementById('date').value,
+                    time: document.getElementById('time').value,
+                    phone: document.getElementById('phone').value,
+                    name: document.getElementById('name').value,
+                    pickup: document.getElementById('pickup').value,
+                    dropoff: document.getElementById('dropoff').value,
+                    payment: document.getElementById('payment').value
+                });
+                
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '確認預約';
@@ -1251,10 +1279,17 @@
          */
         async function apiCall(action, data) {
             try {
+                // 根據你的後端期待，直接將所有資料放在頂層
                 const requestData = {
-                    action: action,
-                    ...data
+                    action: action
                 };
+                
+                // 將所有資料加入到 requestData 中
+                Object.keys(data).forEach(key => {
+                    requestData[key] = data[key];
+                });
+
+                console.log('發送到API的完整資料:', requestData);
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -1264,11 +1299,15 @@
                     body: new URLSearchParams(requestData)
                 });
 
+                console.log('API回應狀態:', response.status);
+
                 if (!response.ok) {
-                    throw new Error(`HTTP錯誤: ${response.status}`);
+                    throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
                 }
 
-                return await response.json();
+                const result = await response.json();
+                console.log('API回應內容:', result);
+                return result;
 
             } catch (error) {
                 console.error('API調用失敗:', error);
