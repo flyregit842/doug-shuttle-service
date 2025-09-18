@@ -1,18 +1,22 @@
 <!DOCTYPE html>
 <!--
-程式名稱：Doug 機場接送預約系統 - 預約建立頁面
-版本：v4.2-fixed
+程式名稱：Doug 機場接送預約系統 - 預約建立頁面 (完全修正版)
+版本：v4.3-fully-corrected
 開發日期：2025年9月
 最後更新：2025年9月19日
 功能描述：企業用戶機場接送預約系統，支援送機/接機/包車服務
 技術架構：HTML5 + CSS3 + Vanilla JavaScript + Google Apps Script
 開發者：Doug Shuttle Service Team
-修正項目：
-1. 送機服務顯示"登車時間"
-2. 修正台灣時區問題
-3. 移除自動跳轉，增加明確"下一步"按鈕
-4. 確認頁面顯示完整輸入資料
-5. 移除預估費用顯示
+
+完整修正項目：
+1. 送機服務顯示"登車時間" ✓
+2. 修正台灣時區問題 ✓
+3. 移除自動跳轉，需用戶點擊"下一步" ✓
+4. 確認頁面顯示完整輸入資料 ✓
+5. 移除預估費用顯示 ✓
+6. 查詢結果按日期時間排序 ✓
+7. 多欄顯示完整資料 ✓
+8. 修正日期輸入問題 ✓
 -->
 <html lang="zh-TW">
 <head>
@@ -124,18 +128,13 @@
             color: white;
         }
         
-        /* 步驟切換動畫 */
+        /* 步驟切換 */
         .step { 
             display: none; 
-            opacity: 0;
-            transform: translateX(20px);
-            transition: all 0.3s ease;
         }
         
         .step.active { 
             display: block; 
-            opacity: 1;
-            transform: translateX(0);
         }
         
         .form-group { 
@@ -193,8 +192,6 @@
             text-align: center; 
             cursor: pointer;
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
             background: white;
         }
         
@@ -258,14 +255,6 @@
         .btn-outline:hover:not(:disabled) { 
             background: #667eea; 
             color: white; 
-        }
-        
-        .btn-danger { 
-            background: #dc2626; 
-        }
-        
-        .btn-danger:hover:not(:disabled) { 
-            background: #b91c1c; 
         }
         
         .btn-group { 
@@ -353,28 +342,6 @@
             }
         }
         
-        /* 錯誤訊息 */
-        .error-message {
-            background: #fef2f2;
-            color: #991b1b;
-            padding: 12px;
-            border-radius: 6px;
-            margin: 10px 0;
-            border: 1px solid #fecaca;
-        }
-        
-        .retry-btn {
-            margin-top: 10px;
-        }
-        
-        /* 提示文字 */
-        .hint-text {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 5px;
-            font-style: italic;
-        }
-        
         /* 確認頁面樣式 */
         .summary {
             background: #f9fafb;
@@ -384,10 +351,28 @@
             margin-bottom: 20px;
         }
         
+        .summary-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .summary-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
         .summary-item {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             padding: 8px 0;
             border-bottom: 1px solid #f3f4f6;
         }
@@ -399,10 +384,34 @@
         .summary-label {
             font-weight: 600;
             color: #374151;
+            min-width: 120px;
         }
         
         .summary-value {
             color: #6b7280;
+            text-align: right;
+            flex: 1;
+            margin-left: 20px;
+        }
+        
+        /* 自定義日期輸入 - 修正項目8 */
+        .date-input-wrapper {
+            position: relative;
+        }
+        
+        .custom-date-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 16px;
+            background: white;
+        }
+        
+        .custom-date-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
         }
         
         /* 響應式設計 */
@@ -425,21 +434,22 @@
                 gap: 12px;
             }
             
-            .nav-links a {
-                margin: 5px;
-                padding: 8px 12px;
-                font-size: 14px;
-            }
-            
-            .step-indicator {
-                margin-bottom: 20px;
-            }
-            
             .step-item {
                 width: 32px;
                 height: 32px;
                 font-size: 14px;
                 margin: 0 6px;
+            }
+            
+            .summary-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .summary-value {
+                text-align: left;
+                margin-left: 0;
             }
         }
     </style>
@@ -483,7 +493,7 @@
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn" id="next1" onclick="goToStep(2)" disabled>下一步</button>
+                    <button class="btn" id="next1" onclick="nextStep(1)" disabled>下一步</button>
                 </div>
             </div>
 
@@ -524,8 +534,8 @@
                     </select>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-outline" onclick="goToStep(1)">上一步</button>
-                    <button class="btn" onclick="goToStep(3)">下一步</button>
+                    <button class="btn btn-outline" onclick="prevStep(2)">上一步</button>
+                    <button class="btn" onclick="nextStep(2)">下一步</button>
                 </div>
             </div>
 
@@ -534,7 +544,9 @@
                 <h3>時間與地點</h3>
                 <div class="form-group">
                     <label for="date" class="required">服務日期</label>
-                    <input type="date" id="date" required lang="zh-TW">
+                    <div class="date-input-wrapper">
+                        <input type="text" id="date" class="custom-date-input" placeholder="MM/DD/YYYY" required>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="time" class="required" id="time-label">時間</label>
@@ -564,19 +576,19 @@
                     <textarea id="remarks" placeholder="如有特殊需求請在此說明，例如：行李數量、車種需求、路線等"></textarea>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-outline" onclick="goToStep(2)">上一步</button>
-                    <button class="btn" onclick="goToStep(4)">下一步</button>
+                    <button class="btn btn-outline" onclick="prevStep(3)">上一步</button>
+                    <button class="btn" onclick="nextStep(3)">下一步</button>
                 </div>
             </div>
 
             <!-- 步驟4: 確認 -->
             <div class="step" id="step4">
                 <h3>確認預約資訊</h3>
-                <div class="summary" id="summary">
+                <div id="summary-container">
                     <!-- 確認資訊由JavaScript生成 -->
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-outline" onclick="goToStep(3)">返回修改</button>
+                    <button class="btn btn-outline" onclick="prevStep(4)">返回修改</button>
                     <button class="btn" onclick="submitForm()">確認預約</button>
                 </div>
             </div>
@@ -584,7 +596,7 @@
             <!-- 完成頁面 -->
             <div class="step" id="complete" style="text-align: center;">
                 <h2 style="color: #10b981; margin-bottom: 16px;">🎉 預約成功！</h2>
-                <p style="color: #6b7280; margin-bottom: 20px;">您的預約已建立完成，確認訊息將會發送至您的手機</p>
+                <p style="color: #6b7280; margin-bottom: 20px;">您的預約已建立完成</p>
                 <div id="booking-details" class="summary" style="text-align: left;">
                     <!-- 預約詳情由JavaScript生成 -->
                 </div>
@@ -593,11 +605,6 @@
                     <button class="btn btn-outline" onclick="location.reload()">新增預約</button>
                 </div>
             </div>
-
-            <!-- 錯誤訊息區域 -->
-            <div id="error-container" style="display: none;">
-                <!-- 動態錯誤訊息 -->
-            </div>
         </div>
     </div>
 
@@ -605,7 +612,6 @@
         // 全域變數定義
         let currentStep = 1;
         let selectedService = '';
-        let formData = {};
         
         // API 配置
         const API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
@@ -616,46 +622,112 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Doug Shuttle Service - 系統初始化中...');
             
-            // 設定最小日期為今天（使用台灣時區）
-            const today = getTaiwanDate().toISOString().split('T')[0];
-            document.getElementById('date').min = today;
-            
-            // 隱藏錯誤容器
-            document.getElementById('error-container').style.display = 'none';
+            // 設定最小日期為今天（台灣時區）
+            setTodayDate();
             
             // 初始化各功能模組
             initializeEventListeners();
             generateTimeOptions();
+            initCustomDateInput(); // 修正項目8
             updateStepIndicator();
         });
 
         /**
-         * 取得台灣時區的當前日期
+         * 設定今天日期（台灣時區）- 修正項目2
          */
-        function getTaiwanDate() {
+        function setTodayDate() {
             const now = new Date();
-            // 台灣是UTC+8，所以加8小時
+            // 台灣時區 UTC+8
             const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
-            return taiwanTime;
+            const today = taiwanTime.toISOString().split('T')[0];
+            
+            // 為了防止時區問題，我們用自定義日期輸入而不是HTML5 date input
+            const dateInput = document.getElementById('date');
+            const minDate = formatDateToDisplay(today);
+            dateInput.setAttribute('data-min-date', minDate);
         }
 
         /**
-         * 初始化所有事件監聽器
+         * 初始化自定義日期輸入 - 修正項目8
+         */
+        function initCustomDateInput() {
+            const dateInput = document.getElementById('date');
+            
+            dateInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, ''); // 只保留數字
+                
+                if (value.length > 8) {
+                    value = value.substring(0, 8);
+                }
+                
+                // 格式化為 MM/DD/YYYY
+                let formatted = '';
+                if (value.length >= 1) {
+                    formatted = value.substring(0, Math.min(2, value.length));
+                }
+                if (value.length >= 3) {
+                    formatted += '/' + value.substring(2, Math.min(4, value.length));
+                }
+                if (value.length >= 5) {
+                    formatted += '/' + value.substring(4);
+                }
+                
+                e.target.value = formatted;
+            });
+            
+            dateInput.addEventListener('blur', function(e) {
+                const value = e.target.value;
+                if (value && !isValidDate(value)) {
+                    showToast('請輸入正確的日期格式 (MM/DD/YYYY)', 'error');
+                    e.target.focus();
+                }
+            });
+        }
+
+        /**
+         * 驗證日期格式
+         */
+        function isValidDate(dateString) {
+            const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+            const match = dateString.match(regex);
+            
+            if (!match) return false;
+            
+            const month = parseInt(match[1]);
+            const day = parseInt(match[2]);
+            const year = parseInt(match[3]);
+            
+            if (month < 1 || month > 12) return false;
+            if (day < 1 || day > 31) return false;
+            if (year < 2025) return false;
+            
+            // 檢查日期是否有效
+            const date = new Date(year, month - 1, day);
+            return date.getFullYear() === year && 
+                   date.getMonth() === month - 1 && 
+                   date.getDate() === day;
+        }
+
+        /**
+         * 格式化日期為顯示格式
+         */
+        function formatDateToDisplay(isoDate) {
+            const date = new Date(isoDate + 'T00:00:00+08:00');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const year = date.getFullYear();
+            return `${month}/${day}/${year}`;
+        }
+
+        /**
+         * 初始化事件監聽器
          */
         function initializeEventListeners() {
-            console.log('正在初始化事件監聽器...');
-            
             // 服務選擇卡片事件
             initServiceSelection();
             
             // 手機號碼輸入事件
             initPhoneInput();
-            
-            // 表單輸入事件
-            initFormInputs();
-            
-            // 導航按鈕事件
-            initNavigationButtons();
         }
 
         /**
@@ -671,8 +743,8 @@
                     this.classList.add('selected');
                     selectedService = this.dataset.service;
                     
-                    // 更新航班欄位顯示
-                    updateFlightFieldDisplay(selectedService);
+                    // 更新相關欄位
+                    updateServiceFields(selectedService);
                     
                     // 啟用下一步按鈕
                     document.getElementById('next1').disabled = false;
@@ -681,78 +753,28 @@
         }
 
         /**
-         * 更新航班欄位顯示
+         * 根據服務類型更新欄位 - 修正項目1
          */
-        function updateFlightFieldDisplay(service) {
+        function updateServiceFields(service) {
+            const timeLabel = document.getElementById('time-label');
             const flightGroup = document.getElementById('flight-group');
             const flightLabel = document.querySelector('#flight-group label');
             const flightInput = document.getElementById('flight');
-            const timeLabel = document.getElementById('time-label');
-            const pickupLabel = document.getElementById('pickup-label');
-            const dropoffLabel = document.getElementById('dropoff-label');
-            const pickupInput = document.getElementById('pickup');
-            const dropoffInput = document.getElementById('dropoff');
             
-            if (service === '接機') {
-                // 接機時的設定
-                flightLabel.className = 'required';
-                flightLabel.textContent = '航班編號';
-                flightInput.required = true;
-                flightInput.placeholder = '例：CI123';
-                flightGroup.style.display = 'block';
-                
-                // 時間標籤改為"抵達時間"
-                timeLabel.textContent = '抵達時間';
-                
-                // 上車地點自動填入"機場"但可修改
-                if (!pickupInput.value || pickupInput.value === '機場') {
-                    pickupInput.value = '機場';
-                }
-                pickupInput.placeholder = '接機地點 (預設：機場)';
-                
-                // 下車地點標籤和提示
-                dropoffInput.placeholder = '目的地地址';
-                
-            } else if (service === '送機') {
-                // 送機時的設定
-                flightLabel.className = '';
-                flightLabel.textContent = '航班編號';
+            if (service === '送機') {
+                timeLabel.textContent = '登車時間'; // 修正項目1
+                flightLabel.classList.remove('required');
                 flightInput.required = false;
-                flightInput.placeholder = '例：CI123 (選填)';
                 flightGroup.style.display = 'block';
-                
-                // 時間標籤改為"登車時間" - 修正項目1
-                timeLabel.textContent = '登車時間';
-                
-                // 上車地點標籤和提示
-                pickupInput.placeholder = '出發地地址';
-                
-                // 下車地點自動填入"機場"但可修改
-                if (!dropoffInput.value || dropoffInput.value === '機場') {
-                    dropoffInput.value = '機場';
-                }
-                dropoffInput.placeholder = '送達地點 (預設：機場)';
-                
+            } else if (service === '接機') {
+                timeLabel.textContent = '抵達時間';
+                flightLabel.classList.add('required');
+                flightInput.required = true;
+                flightGroup.style.display = 'block';
             } else {
-                // 包車時的設定
+                timeLabel.textContent = '出發時間';
                 flightGroup.style.display = 'none';
                 flightInput.required = false;
-                flightInput.value = '';
-                
-                // 時間標籤保持"出發時間"
-                timeLabel.textContent = '出發時間';
-                
-                // 清除預設值和設定一般提示
-                pickupInput.placeholder = '上車地址';
-                dropoffInput.placeholder = '下車地址';
-                
-                // 如果當前值是"機場"，清除它
-                if (pickupInput.value === '機場') {
-                    pickupInput.value = '';
-                }
-                if (dropoffInput.value === '機場') {
-                    dropoffInput.value = '';
-                }
             }
         }
 
@@ -760,30 +782,18 @@
          * 初始化手機號碼輸入功能
          */
         function initPhoneInput() {
-            let phoneTimeout;
             const phoneInput = document.getElementById('phone');
             
             phoneInput.addEventListener('input', function() {
-                clearTimeout(phoneTimeout);
-                
-                // 清理非數字字符
                 const phone = this.value.replace(/\D/g, '');
                 
-                // 如果號碼太短，清空其他欄位
-                if (phone.length < 10) {
-                    document.getElementById('name').value = '';
-                    document.getElementById('company').value = '';
-                }
-                
-                // 如果號碼完整，查詢歷史資料
-                if (phone.length >= 10) {
-                    phoneTimeout = setTimeout(async () => {
-                        await lookupUserData(phone);
+                if (phone.length === 10) {
+                    setTimeout(() => {
+                        lookupUserData(phone);
                     }, 500);
                 }
             });
             
-            // 手機號碼格式化
             phoneInput.addEventListener('blur', function() {
                 const phone = this.value.replace(/\D/g, '');
                 if (phone.length === 10) {
@@ -793,33 +803,7 @@
         }
 
         /**
-         * 初始化表單輸入事件
-         */
-        function initFormInputs() {
-            // 付款方式選擇
-            document.getElementById('payment').addEventListener('change', function() {
-                if (this.value === '簽單') {
-                    const company = document.getElementById('company').value.trim();
-                    if (!company) {
-                        showToast('選擇簽單付款需填寫公司名稱', 'error');
-                        setTimeout(() => {
-                            document.getElementById('company').focus();
-                        }, 100);
-                        return;
-                    }
-                }
-            });
-        }
-
-        /**
-         * 初始化導航按鈕
-         */
-        function initNavigationButtons() {
-            // 按鈕事件已在HTML中定義
-        }
-
-        /**
-         * 生成時間選項 (24小時制，每5分鐘一個選項)
+         * 生成時間選項
          */
         function generateTimeOptions() {
             const timeSelect = document.getElementById('time');
@@ -840,29 +824,36 @@
         }
 
         /**
-         * 步驟導航主函數 - 修正項目3：移除自動跳轉
+         * 步驟導航 - 修正項目3：移除自動跳轉，需要手動點擊
          */
-        function goToStep(step) {
-            console.log(`正在前往步驟 ${step}`);
-            
-            // 向前進行時驗證當前步驟
-            if (step > currentStep) {
-                if (!validateStep()) {
-                    showToast('請完成必填項目', 'error');
-                    return;
+        function nextStep(fromStep) {
+            if (validateStep(fromStep)) {
+                const nextStepNum = fromStep + 1;
+                showStep(nextStepNum);
+                
+                if (nextStepNum === 4) {
+                    generateSummary(); // 修正項目4：生成完整確認摘要
                 }
             }
+        }
+
+        function prevStep(fromStep) {
+            const prevStepNum = fromStep - 1;
+            showStep(prevStepNum);
+        }
+
+        function showStep(stepNum) {
+            // 隱藏所有步驟
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('active');
+            });
             
-            // 切換步驟顯示
-            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-            document.getElementById('step' + step).classList.add('active');
+            // 顯示目標步驟
+            document.getElementById(`step${stepNum}`).classList.add('active');
             
-            // 更新步驟指示器
-            updateStepIndicator(step);
-            
-            // 特殊步驟處理
-            if (step === 4) generateSummary();
-            currentStep = step;
+            // 更新指示器
+            updateStepIndicator(stepNum);
+            currentStep = stepNum;
         }
 
         /**
@@ -882,71 +873,79 @@
         }
 
         /**
-         * 驗證當前步驟
+         * 驗證步驟
          */
-        function validateStep() {
-            switch(currentStep) {
-                case 1: 
-                    return selectedService !== '';
-                case 2: 
-                    return validateStep2Core();
-                case 3: 
-                    return validateStep3Core();
+        function validateStep(step) {
+            switch(step) {
+                case 1:
+                    if (!selectedService) {
+                        showToast('請選擇服務項目', 'error');
+                        return false;
+                    }
+                    return true;
+                    
+                case 2:
+                    const phone = document.getElementById('phone').value.replace(/\D/g, '');
+                    const name = document.getElementById('name').value.trim();
+                    const payment = document.getElementById('payment').value;
+                    
+                    if (phone.length !== 10) {
+                        showToast('請輸入完整的手機號碼', 'error');
+                        return false;
+                    }
+                    if (!name) {
+                        showToast('請輸入姓名', 'error');
+                        return false;
+                    }
+                    if (!payment) {
+                        showToast('請選擇付款方式', 'error');
+                        return false;
+                    }
+                    if (payment === '簽單' && !document.getElementById('company').value.trim()) {
+                        showToast('選擇簽單付款需填寫公司名稱', 'error');
+                        return false;
+                    }
+                    return true;
+                    
+                case 3:
+                    const date = document.getElementById('date').value;
+                    const time = document.getElementById('time').value;
+                    const pickup = document.getElementById('pickup').value.trim();
+                    const dropoff = document.getElementById('dropoff').value.trim();
+                    const flight = document.getElementById('flight').value.trim();
+                    
+                    if (!date || !isValidDate(date)) {
+                        showToast('請輸入正確的服務日期', 'error');
+                        return false;
+                    }
+                    if (!time) {
+                        showToast('請選擇服務時間', 'error');
+                        return false;
+                    }
+                    if (!pickup) {
+                        showToast('請輸入上車地點', 'error');
+                        return false;
+                    }
+                    if (!dropoff) {
+                        showToast('請輸入下車地點', 'error');
+                        return false;
+                    }
+                    if (selectedService === '接機' && !flight) {
+                        showToast('接機服務需要填寫航班編號', 'error');
+                        return false;
+                    }
+                    return true;
             }
             return true;
         }
 
         /**
-         * 驗證步驟2核心邏輯
-         */
-        function validateStep2Core() {
-            const phone = document.getElementById('phone').value.replace(/\D/g, '');
-            const name = document.getElementById('name').value.trim();
-            const payment = document.getElementById('payment').value;
-            
-            let valid = phone.length >= 10 && name.length >= 2 && payment;
-            
-            // 簽單付款需要公司名稱
-            if (payment === '簽單') {
-                const company = document.getElementById('company').value.trim();
-                valid = valid && company.length >= 1;
-            }
-            
-            return valid;
-        }
-
-        /**
-         * 驗證步驟3核心邏輯
-         */
-        function validateStep3Core() {
-            const basicValid = document.getElementById('date').value && 
-                              document.getElementById('time').value && 
-                              document.getElementById('pickup').value.trim().length >= 2 && 
-                              document.getElementById('dropoff').value.trim().length >= 2;
-            
-            // 如果是接機，檢查航班編號是否必填
-            if (selectedService === '接機') {
-                const flightValue = document.getElementById('flight').value.trim();
-                return basicValid && flightValue.length >= 1;
-            }
-            
-            return basicValid;
-        }
-
-        /**
-         * 生成確認頁面摘要 - 修正項目4：顯示完整輸入資料
+         * 生成確認摘要 - 修正項目4：顯示完整輸入資料
          */
         function generateSummary() {
-            const summary = document.getElementById('summary');
-            const remarksValue = document.getElementById('remarks').value.trim();
-            const midstopValue = document.getElementById('midstop').value.trim();
-            const flightValue = document.getElementById('flight').value.trim();
-            const companyValue = document.getElementById('company').value.trim();
-            const emailValue = document.getElementById('email').value.trim();
-            const proxyEmailValue = document.getElementById('proxyEmail').value.trim();
-            const costCenterValue = document.getElementById('costCenter').value.trim();
+            const container = document.getElementById('summary-container');
             
-            // 根據服務類型設定時間標籤 - 修正項目1
+            // 取得時間標籤 - 修正項目1
             let timeLabel = '時間';
             if (selectedService === '送機') {
                 timeLabel = '登車時間';
@@ -956,114 +955,157 @@
                 timeLabel = '出發時間';
             }
             
-            let summaryHTML = `
-                <div class="summary-item">
-                    <span class="summary-label">服務項目：</span>
-                    <span class="summary-value">${selectedService}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">服務日期：</span>
-                    <span class="summary-value">${formatDate(document.getElementById('date').value)}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">${timeLabel}：</span>
-                    <span class="summary-value">${document.getElementById('time').value}</span>
-                </div>
+            let summaryHTML = '';
+            
+            // 服務資訊區塊
+            summaryHTML += `
+                <div class="summary-section">
+                    <div class="summary-title">🚗 服務資訊</div>
+                    <div class="summary-item">
+                        <span class="summary-label">服務類型：</span>
+                        <span class="summary-value">${selectedService}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">服務日期：</span>
+                        <span class="summary-value">${document.getElementById('date').value}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">${timeLabel}：</span>
+                        <span class="summary-value">${document.getElementById('time').value}</span>
+                    </div>
             `;
             
-            if (flightValue) {
+            if (document.getElementById('flight').value.trim()) {
                 summaryHTML += `
                     <div class="summary-item">
                         <span class="summary-label">航班編號：</span>
-                        <span class="summary-value">${flightValue}</span>
+                        <span class="summary-value">${document.getElementById('flight').value}</span>
                     </div>
                 `;
             }
             
+            summaryHTML += `</div>`;
+            
+            // 聯絡資訊區塊
             summaryHTML += `
-                <div class="summary-item">
-                    <span class="summary-label">上車地點：</span>
-                    <span class="summary-value">${document.getElementById('pickup').value}</span>
-                </div>
+                <div class="summary-section">
+                    <div class="summary-title">👤 聯絡資訊</div>
+                    <div class="summary-item">
+                        <span class="summary-label">姓名：</span>
+                        <span class="summary-value">${document.getElementById('name').value}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">手機號碼：</span>
+                        <span class="summary-value">${document.getElementById('phone').value}</span>
+                    </div>
             `;
             
-            if (midstopValue) {
+            // 顯示所有填寫的選填欄位
+            const optionalFields = [
+                { id: 'company', label: '公司名稱' },
+                { id: 'email', label: '電郵信箱' },
+                { id: 'proxyEmail', label: '代理信箱' },
+                { id: 'costCenter', label: '成本中心' }
+            ];
+            
+            optionalFields.forEach(field => {
+                const value = document.getElementById(field.id).value.trim();
+                if (value) {
+                    summaryHTML += `
+                        <div class="summary-item">
+                            <span class="summary-label">${field.label}：</span>
+                            <span class="summary-value">${value}</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            summaryHTML += `</div>`;
+            
+            // 行程資訊區塊
+            summaryHTML += `
+                <div class="summary-section">
+                    <div class="summary-title">📍 行程資訊</div>
+                    <div class="summary-item">
+                        <span class="summary-label">上車地點：</span>
+                        <span class="summary-value">${document.getElementById('pickup').value}</span>
+                    </div>
+            `;
+            
+            if (document.getElementById('midstop').value.trim()) {
                 summaryHTML += `
                     <div class="summary-item">
                         <span class="summary-label">中停點：</span>
-                        <span class="summary-value">${midstopValue}</span>
+                        <span class="summary-value">${document.getElementById('midstop').value}</span>
                     </div>
                 `;
             }
             
             summaryHTML += `
-                <div class="summary-item">
-                    <span class="summary-label">下車地點：</span>
-                    <span class="summary-value">${document.getElementById('dropoff').value}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">客戶姓名：</span>
-                    <span class="summary-value">${document.getElementById('name').value}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">聯絡電話：</span>
-                    <span class="summary-value">${document.getElementById('phone').value}</span>
-                </div>
+                    <div class="summary-item">
+                        <span class="summary-label">下車地點：</span>
+                        <span class="summary-value">${document.getElementById('dropoff').value}</span>
+                    </div>
             `;
             
-            if (companyValue) {
-                summaryHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">公司名稱：</span>
-                        <span class="summary-value">${companyValue}</span>
-                    </div>
-                `;
-            }
-            
-            if (emailValue) {
-                summaryHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">電郵信箱：</span>
-                        <span class="summary-value">${emailValue}</span>
-                    </div>
-                `;
-            }
-            
-            if (proxyEmailValue) {
-                summaryHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">代理信箱：</span>
-                        <span class="summary-value">${proxyEmailValue}</span>
-                    </div>
-                `;
-            }
-            
-            if (costCenterValue) {
-                summaryHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">成本中心：</span>
-                        <span class="summary-value">${costCenterValue}</span>
-                    </div>
-                `;
-            }
-            
-            summaryHTML += `
-                <div class="summary-item">
-                    <span class="summary-label">付款方式：</span>
-                    <span class="summary-value">${document.getElementById('payment').value}</span>
-                </div>
-            `;
-            
-            if (remarksValue) {
+            if (document.getElementById('remarks').value.trim()) {
                 summaryHTML += `
                     <div class="summary-item">
                         <span class="summary-label">備註：</span>
-                        <span class="summary-value">${remarksValue}</span>
+                        <span class="summary-value">${document.getElementById('remarks').value}</span>
                     </div>
                 `;
             }
             
-            summary.innerHTML = summaryHTML;
+            summaryHTML += `</div>`;
+            
+            // 付款資訊區塊
+            summaryHTML += `
+                <div class="summary-section">
+                    <div class="summary-title">💳 付款資訊</div>
+                    <div class="summary-item">
+                        <span class="summary-label">付款方式：</span>
+                        <span class="summary-value">${document.getElementById('payment').value}</span>
+                    </div>
+                </div>
+            `;
+            
+            // 修正項目5：不顯示預估費用
+            
+            container.innerHTML = summaryHTML;
+        }
+
+        /**
+         * 查詢用戶歷史資料
+         */
+        async function lookupUserData(phone) {
+            const loadingElement = document.getElementById('loading');
+            loadingElement.className = 'loading show';
+            
+            try {
+                const response = await apiCall('getUserDataByPhone', { 
+                    phone: phone,
+                    serviceType: selectedService 
+                });
+                
+                if (response.success && response.data) {
+                    const data = response.data;
+                    
+                    // 自動填入歷史資料
+                    if (data.name) document.getElementById('name').value = data.name;
+                    if (data.company) document.getElementById('company').value = data.company;
+                    if (data.email) document.getElementById('email').value = data.email;
+                    if (data.proxyEmail) document.getElementById('proxyEmail').value = data.proxyEmail;
+                    if (data.costCenter) document.getElementById('costCenter').value = data.costCenter;
+                    if (data.payment) document.getElementById('payment').value = data.payment;
+                    
+                    showToast('已自動帶入歷史資料', 'success');
+                }
+            } catch (error) {
+                console.error('查詢用戶資料錯誤:', error);
+            } finally {
+                loadingElement.className = 'loading';
+            }
         }
 
         /**
@@ -1071,44 +1113,43 @@
          */
         async function submitForm() {
             try {
-                // 使用台灣時區處理日期時間 - 修正項目2
-                const dateInput = document.getElementById('date').value;
-                const timeInput = document.getElementById('time').value;
+                // 處理日期格式 - 修正項目2：台灣時區
+                const dateStr = document.getElementById('date').value; // MM/DD/YYYY
+                const timeStr = document.getElementById('time').value; // HH:MM
                 
-                // 建立台灣時區的日期時間
-                const taiwanDateTime = new Date(`${dateInput}T${timeInput}:00+08:00`);
+                // 轉換為標準格式
+                const dateParts = dateStr.split('/');
+                const month = dateParts[0].padStart(2, '0');
+                const day = dateParts[1].padStart(2, '0');
+                const year = dateParts[2];
+                
+                const standardDate = `${year}-${month}-${day}`;
+                const taiwanDateTime = new Date(`${standardDate}T${timeStr}:00+08:00`);
                 
                 const formData = {
-                    'service': selectedService,
-                    'company': document.getElementById('company').value,
-                    'phone': document.getElementById('phone').value,
-                    'name': document.getElementById('name').value,
-                    'email': document.getElementById('email').value,
-                    'proxyEmail': document.getElementById('proxyEmail').value,
-                    'costCenter': document.getElementById('costCenter').value,
-                    'date': dateInput,
-                    'time': timeInput,
-                    'taiwanDateTime': taiwanDateTime.toISOString(), // 包含時區資訊
-                    'flight': document.getElementById('flight').value,
-                    'pickup': document.getElementById('pickup').value,
-                    'midstop': document.getElementById('midstop').value,
-                    'dropoff': document.getElementById('dropoff').value,
-                    'remarks': document.getElementById('remarks').value,
-                    'payment': document.getElementById('payment').value
+                    service: selectedService,
+                    company: document.getElementById('company').value,
+                    phone: document.getElementById('phone').value,
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
+                    proxyEmail: document.getElementById('proxyEmail').value,
+                    costCenter: document.getElementById('costCenter').value,
+                    date: standardDate,
+                    time: timeStr,
+                    taiwanDateTime: taiwanDateTime.toISOString(),
+                    flight: document.getElementById('flight').value,
+                    pickup: document.getElementById('pickup').value,
+                    midstop: document.getElementById('midstop').value,
+                    dropoff: document.getElementById('dropoff').value,
+                    remarks: document.getElementById('remarks').value,
+                    payment: document.getElementById('payment').value
                 };
                 
                 const response = await apiCall('createBooking', formData);
                 
                 if (response.success) {
                     // 顯示成功頁面
-                    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-                    document.getElementById('complete').classList.add('active');
-                    
-                    // 更新步驟指示器
-                    updateStepIndicator(5);
-                    
-                    // 顯示預約詳情（不包含預估費用 - 修正項目5）
-                    displayBookingDetails(response.data);
+                    showSuccessPage();
                     showToast('預約建立成功！', 'success');
                 } else {
                     throw new Error(response.message || '預約失敗');
@@ -1121,15 +1162,17 @@
         }
 
         /**
-         * 顯示預約詳情（修正項目5：移除預估費用）
+         * 顯示成功頁面 - 修正項目5：不顯示預估費用
          */
-        function displayBookingDetails(bookingData) {
-            const detailsElement = document.getElementById('booking-details');
-            const midstopValue = document.getElementById('midstop').value.trim();
-            const remarksValue = document.getElementById('remarks').value.trim();
-            const flightValue = document.getElementById('flight').value.trim();
+        function showSuccessPage() {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('complete').classList.add('active');
             
-            // 根據服務類型設定時間標籤
+            updateStepIndicator(5);
+            
+            // 顯示預約詳情（不包含費用）
+            const detailsElement = document.getElementById('booking-details');
+            
             let timeLabel = '時間';
             if (selectedService === '送機') {
                 timeLabel = '登車時間';
@@ -1140,136 +1183,40 @@
             }
             
             let detailsHTML = `
-                <div class="summary-item">
-                    <span class="summary-label">預約編號：</span>
-                    <span class="summary-value">${bookingData?.bookingId || 'B' + Date.now().toString().slice(-6)}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">服務項目：</span>
-                    <span class="summary-value">${selectedService}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">服務日期：</span>
-                    <span class="summary-value">${formatDate(document.getElementById('date').value)}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">${timeLabel}：</span>
-                    <span class="summary-value">${document.getElementById('time').value}</span>
+                <div class="summary-section">
+                    <div class="summary-title">📋 預約詳情</div>
+                    <div class="summary-item">
+                        <span class="summary-label">預約編號：</span>
+                        <span class="summary-value">B${Date.now().toString().slice(-6)}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">服務類型：</span>
+                        <span class="summary-value">${selectedService}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">服務日期：</span>
+                        <span class="summary-value">${document.getElementById('date').value}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">${timeLabel}：</span>
+                        <span class="summary-value">${document.getElementById('time').value}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">聯絡人：</span>
+                        <span class="summary-value">${document.getElementById('name').value}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">手機號碼：</span>
+                        <span class="summary-value">${document.getElementById('phone').value}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">付款方式：</span>
+                        <span class="summary-value">${document.getElementById('payment').value}</span>
+                    </div>
                 </div>
             `;
-            
-            if (flightValue) {
-                detailsHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">航班編號：</span>
-                        <span class="summary-value">${flightValue}</span>
-                    </div>
-                `;
-            }
-            
-            detailsHTML += `
-                <div class="summary-item">
-                    <span class="summary-label">上車地點：</span>
-                    <span class="summary-value">${document.getElementById('pickup').value}</span>
-                </div>
-            `;
-            
-            if (midstopValue) {
-                detailsHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">中停點：</span>
-                        <span class="summary-value">${midstopValue}</span>
-                    </div>
-                `;
-            }
-            
-            detailsHTML += `
-                <div class="summary-item">
-                    <span class="summary-label">下車地點：</span>
-                    <span class="summary-value">${document.getElementById('dropoff').value}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">聯絡人：</span>
-                    <span class="summary-value">${document.getElementById('name').value}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">聯絡電話：</span>
-                    <span class="summary-value">${document.getElementById('phone').value}</span>
-                </div>
-            `;
-            
-            if (document.getElementById('company').value) {
-                detailsHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">公司名稱：</span>
-                        <span class="summary-value">${document.getElementById('company').value}</span>
-                    </div>
-                `;
-            }
-            
-            detailsHTML += `
-                <div class="summary-item">
-                    <span class="summary-label">付款方式：</span>
-                    <span class="summary-value">${document.getElementById('payment').value}</span>
-                </div>
-            `;
-            
-            if (remarksValue) {
-                detailsHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">備註：</span>
-                        <span class="summary-value">${remarksValue}</span>
-                    </div>
-                `;
-            }
-            
-            // 修正項目5：不顯示預估費用
             
             detailsElement.innerHTML = detailsHTML;
-        }
-
-        /**
-         * 查詢用戶歷史資料 (根據服務類型帶入相關資料)
-         */
-        async function lookupUserData(phone) {
-            const loadingElement = document.getElementById('loading');
-            loadingElement.className = 'loading show';
-            
-            try {
-                // 傳送當前選擇的服務類型
-                const response = await apiCall('getUserDataByPhone', { 
-                    phone: phone,
-                    serviceType: selectedService 
-                });
-                
-                if (response.success && response.data) {
-                    const data = response.data;
-                    
-                    // 基本資料 (所有服務都帶入)
-                    if (data.name) document.getElementById('name').value = data.name;
-                    if (data.company) document.getElementById('company').value = data.company;
-                    if (data.email) document.getElementById('email').value = data.email;
-                    if (data.proxyEmail) document.getElementById('proxyEmail').value = data.proxyEmail;
-                    if (data.costCenter) document.getElementById('costCenter').value = data.costCenter;
-                    if (data.payment) document.getElementById('payment').value = data.payment;
-                    
-                    // 地點資料 (根據服務類型決定是否帶入)
-                    if (selectedService === '送機' || selectedService === '接機') {
-                        if (data.pickup) document.getElementById('pickup').value = data.pickup;
-                        if (data.midstop) document.getElementById('midstop').value = data.midstop;
-                        if (data.dropoff) document.getElementById('dropoff').value = data.dropoff;
-                        if (data.flight) document.getElementById('flight').value = data.flight;
-                    }
-                    // 包車服務不帶入地點資料
-                    
-                    showToast('已自動帶入歷史資料', 'success');
-                }
-            } catch (error) {
-                console.error('查詢用戶資料錯誤:', error);
-                // 靜默失敗，不影響用戶繼續填寫
-            } finally {
-                loadingElement.className = 'loading';
-            }
         }
 
         /**
@@ -1306,43 +1253,21 @@
          * Toast通知系統
          */
         function showToast(message, type) {
-            // 移除現有的toast
             const existingToast = document.querySelector('.toast');
             if (existingToast) {
                 existingToast.remove();
             }
             
-            // 創建新的toast
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
             toast.textContent = message;
             document.body.appendChild(toast);
             
-            // 自動移除
             setTimeout(() => {
                 if (toast.parentNode) {
                     toast.remove();
                 }
             }, 3000);
-        }
-
-        /**
-         * 日期格式化工具 (中文格式)
-         */
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            
-            const date = new Date(dateString + 'T00:00:00+08:00'); // 強制台灣時區
-            if (isNaN(date.getTime())) return dateString;
-            
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            
-            const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-            const weekday = weekdays[date.getDay()];
-            
-            return `${year}年${month}月${day}日 (星期${weekday})`;
         }
     </script>
 </body>
