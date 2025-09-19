@@ -1,22 +1,8 @@
 <!DOCTYPE html>
 <!--
-程式名稱：Doug 機場接送預約系統 - 預約建立頁面 (完全修正版)
-版本：v4.3-fully-corrected
-開發日期：2025年9月
-最後更新：2025年9月19日
-功能描述：企業用戶機場接送預約系統，支援送機/接機/包車服務
-技術架構：HTML5 + CSS3 + Vanilla JavaScript + Google Apps Script
-開發者：Doug Shuttle Service Team
-
-完整修正項目：
-1. 送機服務顯示"登車時間" ✓
-2. 修正台灣時區問題 ✓
-3. 移除自動跳轉，需用戶點擊"下一步" ✓
-4. 確認頁面顯示完整輸入資料 ✓
-5. 移除預估費用顯示 ✓
-6. 查詢結果按日期時間排序 ✓
-7. 多欄顯示完整資料 ✓
-8. 修正日期輸入問題 ✓
+index.html - Doug Shuttle Service Booking System
+機場接送預約系統主頁面，支援多步驟預約流程、資料自動填入、台灣時區處理、LINE通知整合準備
+版本: v5.0 | 最後更新: 2025-09-20 | 開發者: Doug Shuttle Service Team
 -->
 <html lang="zh-TW">
 <head>
@@ -24,434 +10,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doug Shuttle Service - 機場接送預約</title>
     <style>
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-        }
-        
-        body { 
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
-            background: #f5f5f5; 
-            padding: 20px; 
-            line-height: 1.6;
-        }
-        
-        .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background: white; 
-            border-radius: 10px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-            overflow: hidden;
-        }
-        
-        .header { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; 
-            padding: 30px 20px; 
-            text-align: center; 
-        }
-        
-        .header h1 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1rem;
-        }
-        
-        .content { 
-            padding: 20px; 
-        }
-        
-        /* 導航連結 */
-        .nav-links { 
-            text-align: center; 
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .nav-links a { 
-            margin: 0 10px; 
-            padding: 10px 16px; 
-            text-decoration: none; 
-            color: #667eea; 
-            border: 1px solid #667eea; 
-            border-radius: 6px;
-            transition: all 0.2s ease;
-            display: inline-block;
-        }
-        
-        .nav-links a:hover { 
-            background: #667eea; 
-            color: white; 
-            transform: translateY(-1px);
-        }
-        
-        .nav-links a.active { 
-            background: #667eea; 
-            color: white; 
-        }
-        
-        /* 步驟指示器 */
-        .step-indicator {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-        
-        .step-item {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #e5e7eb;
-            color: #6b7280;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin: 0 10px;
-            transition: all 0.3s ease;
-        }
-        
-        .step-item.active {
-            background: #667eea;
-            color: white;
-        }
-        
-        .step-item.completed {
-            background: #10b981;
-            color: white;
-        }
-        
-        /* 步驟切換 */
-        .step { 
-            display: none; 
-        }
-        
-        .step.active { 
-            display: block; 
-        }
-        
-        .form-group { 
-            margin-bottom: 20px; 
-        }
-        
-        label { 
-            display: block; 
-            margin-bottom: 8px; 
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        /* 必填欄位標示 */
-        .required::after {
-            content: " *";
-            color: #dc2626;
-            font-weight: bold;
-        }
-        
-        input, select, textarea { 
-            width: 100%; 
-            padding: 12px; 
-            border: 2px solid #e5e7eb; 
-            border-radius: 6px; 
-            font-size: 16px;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-        
-        /* 聚焦效果 */
-        input:focus, select:focus, textarea:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
-        
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-        
-        /* 服務選擇網格 */
-        .service-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
-            gap: 15px; 
-            margin-top: 15px;
-        }
-        
-        .service-card { 
-            padding: 20px; 
-            border: 2px solid #e5e7eb; 
-            border-radius: 8px; 
-            text-align: center; 
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: white;
-        }
-        
-        .service-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-            border-color: #d1d5db;
-        }
-        
-        .service-card.selected { 
-            border-color: #667eea; 
-            background: #f0f4ff; 
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-        }
-        
-        .service-card h4 {
-            font-size: 1.1rem;
-            margin-bottom: 8px;
-            color: #374151;
-        }
-        
-        .service-card p {
-            color: #6b7280;
-            font-size: 0.9rem;
-        }
-        
-        /* 按鈕樣式 */
-        .btn { 
-            padding: 12px 24px; 
-            background: #667eea; 
-            color: white; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 16px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .btn:hover:not(:disabled) { 
-            background: #5a67d8; 
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-        
-        .btn-outline { 
-            background: transparent; 
-            border: 2px solid #667eea; 
-            color: #667eea; 
-        }
-        
-        .btn-outline:hover:not(:disabled) { 
-            background: #667eea; 
-            color: white; 
-        }
-        
-        .btn-group { 
-            display: flex; 
-            gap: 12px; 
-            justify-content: center; 
-            margin-top: 30px; 
-        }
-        
-        /* 載入狀態 */
-        .loading { 
-            display: none; 
-            text-align: center; 
-            color: #667eea;
-            padding: 10px;
-            background: #f0f4ff;
-            border-radius: 6px;
-            font-size: 14px;
-            margin-top: 8px;
-        }
-        
-        .loading.show {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        
-        .loading::before {
-            content: '';
-            width: 16px;
-            height: 16px;
-            border: 2px solid #667eea;
-            border-top: 2px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Toast 通知 */
-        .toast { 
-            position: fixed; 
-            top: 20px; 
-            right: 20px; 
-            padding: 16px 20px; 
-            border-radius: 6px; 
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
-            min-width: 280px;
-            max-width: 400px;
-            font-weight: 500;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        .toast-success { 
-            background: #d1fae5; 
-            color: #065f46; 
-            border: 1px solid #a7f3d0; 
-        }
-        
-        .toast-error { 
-            background: #fef2f2; 
-            color: #991b1b; 
-            border: 1px solid #fecaca; 
-        }
-        
-        .toast-info { 
-            background: #dbeafe; 
-            color: #1e40af; 
-            border: 1px solid #93c5fd; 
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        /* 確認頁面樣式 */
-        .summary {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .summary-section {
-            margin-bottom: 25px;
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .summary-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 8px 0;
-            border-bottom: 1px solid #f3f4f6;
-        }
-        
-        .summary-item:last-child {
-            border-bottom: none;
-        }
-        
-        .summary-label {
-            font-weight: 600;
-            color: #374151;
-            min-width: 120px;
-        }
-        
-        .summary-value {
-            color: #6b7280;
-            text-align: right;
-            flex: 1;
-            margin-left: 20px;
-        }
-        
-        /* 自定義日期輸入 - 修正項目8 */
-        .date-input-wrapper {
-            position: relative;
-        }
-        
-        .custom-date-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e5e7eb;
-            border-radius: 6px;
-            font-size: 16px;
-            background: white;
-        }
-        
-        .custom-date-input:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
-        
-        /* 響應式設計 */
-        @media (max-width: 600px) { 
-            .container { 
-                margin: 10px; 
-                border-radius: 0;
-            } 
-            
-            .content {
-                padding: 15px;
-            }
-            
-            .btn-group { 
-                flex-direction: column; 
-            }
-            
-            .service-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-            
-            .step-item {
-                width: 32px;
-                height: 32px;
-                font-size: 14px;
-                margin: 0 6px;
-            }
-            
-            .summary-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-            
-            .summary-value {
-                text-align: left;
-                margin-left: 0;
-            }
-        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f5;padding:20px;line-height:1.6}
+        .container{max-width:600px;margin:0 auto;background:white;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);overflow:hidden}
+        .header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px 20px;text-align:center}
+        .header h1{font-size:2rem;margin-bottom:0.5rem}
+        .header p{opacity:0.9;font-size:1.1rem}
+        .content{padding:20px}
+        .nav-links{text-align:center;margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #e5e7eb}
+        .nav-links a{margin:0 10px;padding:10px 16px;text-decoration:none;color:#667eea;border:1px solid #667eea;border-radius:6px;transition:all 0.2s ease;display:inline-block}
+        .nav-links a:hover,.nav-links a.active{background:#667eea;color:white;transform:translateY(-1px)}
+        .step-indicator{display:flex;justify-content:center;margin-bottom:30px}
+        .step-item{width:40px;height:40px;border-radius:50%;background:#e5e7eb;color:#6b7280;display:flex;align-items:center;justify-content:center;font-weight:bold;margin:0 10px;transition:all 0.3s ease}
+        .step-item.active{background:#667eea;color:white}
+        .step-item.completed{background:#10b981;color:white}
+        .step{display:none}
+        .step.active{display:block}
+        .form-group{margin-bottom:20px}
+        label{display:block;margin-bottom:8px;font-weight:600;color:#374151}
+        .required::after{content:" *";color:#dc2626;font-weight:bold}
+        input,select,textarea{width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:6px;font-size:16px;transition:all 0.3s ease;font-family:inherit}
+        input:focus,select:focus,textarea:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1);outline:none}
+        textarea{resize:vertical;min-height:80px}
+        .service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;margin-top:15px}
+        .service-card{padding:20px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;cursor:pointer;transition:all 0.3s ease;background:white}
+        .service-card:hover{transform:translateY(-2px);box-shadow:0 8px 16px rgba(0,0,0,0.1);border-color:#d1d5db}
+        .service-card.selected{border-color:#667eea;background:#f0f4ff;box-shadow:0 4px 12px rgba(102,126,234,0.2)}
+        .service-card h4{font-size:1.1rem;margin-bottom:8px;color:#374151}
+        .service-card p{color:#6b7280;font-size:0.9rem}
+        .btn{padding:12px 24px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;font-weight:500;transition:all 0.2s ease;text-decoration:none;display:inline-block}
+        .btn:hover:not(:disabled){background:#5a67d8;transform:translateY(-1px);box-shadow:0 4px 8px rgba(0,0,0,0.1)}
+        .btn:disabled{opacity:0.6;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+        .btn-outline{background:transparent;border:2px solid #667eea;color:#667eea}
+        .btn-outline:hover:not(:disabled){background:#667eea;color:white}
+        .btn-group{display:flex;gap:12px;justify-content:center;margin-top:30px}
+        .loading{display:none;text-align:center;color:#667eea;padding:10px;background:#f0f4ff;border-radius:6px;font-size:14px;margin-top:8px}
+        .loading.show{display:flex;align-items:center;justify-content:center;gap:10px}
+        .loading::before{content:'';width:16px;height:16px;border:2px solid #667eea;border-top:2px solid transparent;border-radius:50%;animation:spin 1s linear infinite}
+        @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+        .toast{position:fixed;top:20px;right:20px;padding:16px 20px;border-radius:6px;z-index:1000;animation:slideIn 0.3s ease-out;min-width:280px;max-width:400px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+        .toast-success{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}
+        .toast-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+        .toast-info{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+        @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+        .summary{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px;margin-bottom:20px}
+        .summary-section{margin-bottom:25px;padding:15px;background:white;border-radius:8px;border-left:4px solid #667eea}
+        .summary-title{font-size:18px;font-weight:600;color:#2c3e50;margin-bottom:15px;display:flex;align-items:center;gap:8px}
+        .summary-item{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid #f3f4f6}
+        .summary-item:last-child{border-bottom:none}
+        .summary-label{font-weight:600;color:#374151;min-width:120px}
+        .summary-value{color:#6b7280;text-align:right;flex:1;margin-left:20px}
+        .line-invitation{background:#f0f9ff;border:1px solid #0ea5e9;border-radius:8px;padding:20px;margin:20px 0;text-align:center}
+        .line-invitation h4{color:#0c4a6e;margin-bottom:10px}
+        .line-invitation p{color:#075985;margin-bottom:15px}
+        .btn-line{background:#00b900;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;margin:10px 0;transition:all 0.2s ease}
+        .btn-line:hover{background:#009400;transform:translateY(-1px)}
+        .binding-instruction{font-size:0.9rem;color:#0369a1;margin-top:10px}
+        @media (max-width:600px){.container{margin:10px;border-radius:0}.content{padding:15px}.btn-group{flex-direction:column}.service-grid{grid-template-columns:1fr;gap:12px}.step-item{width:32px;height:32px;font-size:14px;margin:0 6px}.summary-item{flex-direction:column;align-items:flex-start;gap:5px}.summary-value{text-align:left;margin-left:0}}
     </style>
 </head>
 <body>
@@ -467,7 +82,6 @@
                 <a href="query.html">查詢預約</a>
             </div>
             
-            <!-- 步驟指示器 -->
             <div class="step-indicator">
                 <div class="step-item active" id="indicator-1">1</div>
                 <div class="step-item" id="indicator-2">2</div>
@@ -544,15 +158,12 @@
                 <h3>時間與地點</h3>
                 <div class="form-group">
                     <label for="date" class="required">服務日期</label>
-                    <div class="date-input-wrapper">
-                        <input type="text" id="date" class="custom-date-input" placeholder="MM/DD/YYYY" required>
-                    </div>
+                    <input type="text" id="date" placeholder="MM/DD/YYYY" required>
                 </div>
                 <div class="form-group">
                     <label for="time" class="required" id="time-label">時間</label>
                     <select id="time" required>
                         <option value="">請選擇時間</option>
-                        <!-- 選項由JavaScript動態生成 -->
                     </select>
                 </div>
                 <div class="form-group" id="flight-group">
@@ -560,7 +171,7 @@
                     <input type="text" id="flight" placeholder="例：CI123">
                 </div>
                 <div class="form-group">
-                    <label for="pickup" class="required" id="pickup-label">上車地點</label>
+                    <label for="pickup" class="required">上車地點</label>
                     <input type="text" id="pickup" required>
                 </div>
                 <div class="form-group">
@@ -568,12 +179,12 @@
                     <input type="text" id="midstop">
                 </div>
                 <div class="form-group">
-                    <label for="dropoff" class="required" id="dropoff-label">下車地點</label>
+                    <label for="dropoff" class="required">下車地點</label>
                     <input type="text" id="dropoff" required>
                 </div>
                 <div class="form-group">
                     <label for="remarks">備註</label>
-                    <textarea id="remarks" placeholder="如有特殊需求請在此說明，例如：行李數量、車種需求、路線等"></textarea>
+                    <textarea id="remarks" placeholder="如有特殊需求請在此說明"></textarea>
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-outline" onclick="prevStep(3)">上一步</button>
@@ -584,9 +195,7 @@
             <!-- 步驟4: 確認 -->
             <div class="step" id="step4">
                 <h3>確認預約資訊</h3>
-                <div id="summary-container">
-                    <!-- 確認資訊由JavaScript生成 -->
-                </div>
+                <div id="summary-container"></div>
                 <div class="btn-group">
                     <button class="btn btn-outline" onclick="prevStep(4)">返回修改</button>
                     <button class="btn" onclick="submitForm()">確認預約</button>
@@ -597,9 +206,15 @@
             <div class="step" id="complete" style="text-align: center;">
                 <h2 style="color: #10b981; margin-bottom: 16px;">🎉 預約成功！</h2>
                 <p style="color: #6b7280; margin-bottom: 20px;">您的預約已建立完成</p>
-                <div id="booking-details" class="summary" style="text-align: left;">
-                    <!-- 預約詳情由JavaScript生成 -->
+                <div id="booking-details" class="summary" style="text-align: left;"></div>
+                
+                <div class="line-invitation" id="line-invitation" style="display: none;">
+                    <h4>接收預約提醒</h4>
+                    <p>加入 LINE 官方帳號，即可收到預約確認及出發提醒</p>
+                    <a href="https://line.me/R/ti/p/@doug_shuttle" class="btn-line">加入 LINE 官方帳號</a>
+                    <p class="binding-instruction">加入後請傳送您的手機號碼：<strong id="user-phone-display"></strong></p>
                 </div>
+                
                 <div class="btn-group">
                     <a href="query.html" class="btn">查看預約</a>
                     <button class="btn btn-outline" onclick="location.reload()">新增預約</button>
@@ -609,74 +224,186 @@
     </div>
 
     <script>
-        // 全域變數定義
-        let currentStep = 1;
-        let selectedService = '';
-        
-        // API 配置
+        let currentStep = 1, selectedService = '';
         const API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
 
-        /**
-         * DOM 載入完成初始化
-         */
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Doug Shuttle Service - 系統初始化中...');
-            
-            // 設定最小日期為今天（台灣時區）
             setTodayDate();
-            
-            // 初始化各功能模組
             initializeEventListeners();
             generateTimeOptions();
-            initCustomDateInput(); // 修正項目8
+            initCustomDateInput();
             updateStepIndicator();
         });
 
-        /**
-         * 設定今天日期（台灣時區）- 修正項目2
-         */
         function setTodayDate() {
             const now = new Date();
-            // 台灣時區 UTC+8
             const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
             const today = taiwanTime.toISOString().split('T')[0];
-            
-            // 為了防止時區問題，我們用自定義日期輸入而不是HTML5 date input
             const dateInput = document.getElementById('date');
             const minDate = formatDateToDisplay(today);
             dateInput.setAttribute('data-min-date', minDate);
         }
 
-        /**
-         * 初始化自定義日期輸入 - 修正項目8
-         */
         function initCustomDateInput() {
             const dateInput = document.getElementById('date');
-            
             dateInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, ''); // 只保留數字
-                
-                if (value.length > 8) {
-                    value = value.substring(0, 8);
-                }
-                
-                // 格式化為 MM/DD/YYYY
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 8) value = value.substring(0, 8);
                 let formatted = '';
-                if (value.length >= 1) {
-                    formatted = value.substring(0, Math.min(2, value.length));
-                }
-                if (value.length >= 3) {
-                    formatted += '/' + value.substring(2, Math.min(4, value.length));
-                }
-                if (value.length >= 5) {
-                    formatted += '/' + value.substring(4);
-                }
-                
+                if (value.length >= 1) formatted = value.substring(0, Math.min(2, value.length));
+                if (value.length >= 3) formatted += '/' + value.substring(2, Math.min(4, value.length));
+                if (value.length >= 5) formatted += '/' + value.substring(4);
                 e.target.value = formatted;
             });
-            
             dateInput.addEventListener('blur', function(e) {
-                const value = e.target.value;
+                const dateStr = document.getElementById('date').value;
+                const timeStr = document.getElementById('time').value;
+                const dateParts = dateStr.split('/');
+                if (dateParts.length !== 3) throw new Error('日期格式錯誤，請使用 MM/DD/YYYY');
+                const month = dateParts[0].padStart(2, '0');
+                const day = dateParts[1].padStart(2, '0');
+                const year = dateParts[2];
+                const standardDate = `${year}-${month}-${day}`;
+                
+                const formData = {
+                    '服務項目': selectedService,
+                    '公司名稱': document.getElementById('company').value.trim(),
+                    '手機號碼': document.getElementById('phone').value.trim(),
+                    '姓名': document.getElementById('name').value.trim(),
+                    '日期': standardDate,
+                    '時間': timeStr,
+                    '航班編號': document.getElementById('flight').value.trim(),
+                    '上車點': document.getElementById('pickup').value.trim(),
+                    '中停點': document.getElementById('midstop').value.trim(),
+                    '下車點': document.getElementById('dropoff').value.trim(),
+                    '備註': document.getElementById('remarks').value.trim(),
+                    '費用支付': document.getElementById('payment').value,
+                    '電郵信箱': document.getElementById('email').value.trim(),
+                    '代理信箱': document.getElementById('proxyEmail').value.trim(),
+                    '成本中心': document.getElementById('costCenter').value.trim()
+                };
+                
+                const response = await apiCall('createBooking', formData);
+                if (response && response.success) {
+                    showSuccessPage();
+                    showToast('預約建立成功！', 'success');
+                } else {
+                    throw new Error(response?.message || '後端回應success為false');
+                }
+                
+            } catch (error) {
+                console.error('提交錯誤詳情:', error);
+                showToast(error.message || '預約失敗，請稍後再試', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '確認預約';
+            }
+        }
+
+        function showSuccessPage() {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('complete').classList.add('active');
+            updateStepIndicator(5);
+            
+            const detailsElement = document.getElementById('booking-details');
+            let timeLabel = '時間';
+            if (selectedService === '送機') timeLabel = '登車時間';
+            else if (selectedService === '接機') timeLabel = '抵達時間';
+            else timeLabel = '出發時間';
+            
+            let detailsHTML = `
+                <div class="summary-section">
+                    <div class="summary-title">📋 預約詳情</div>
+                    <div class="summary-item"><span class="summary-label">預約編號：</span><span class="summary-value">B${Date.now().toString().slice(-6)}</span></div>
+                    <div class="summary-item"><span class="summary-label">服務類型：</span><span class="summary-value">${selectedService}</span></div>
+                    <div class="summary-item"><span class="summary-label">服務日期：</span><span class="summary-value">${document.getElementById('date').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">${timeLabel}：</span><span class="summary-value">${document.getElementById('time').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">聯絡人：</span><span class="summary-value">${document.getElementById('name').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">手機號碼：</span><span class="summary-value">${document.getElementById('phone').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">付款方式：</span><span class="summary-value">${document.getElementById('payment').value}</span></div>
+                </div>`;
+            
+            detailsElement.innerHTML = detailsHTML;
+            
+            // 檢查是否需要顯示LINE邀請
+            const phoneNumber = document.getElementById('phone').value.replace(/\D/g, '');
+            checkLineBinding(phoneNumber);
+        }
+
+        async function checkLineBinding(phoneNumber) {
+            try {
+                const response = await apiCall('getBookingsByPhone', { phone: phoneNumber });
+                if (response.success && response.data && response.data.length > 0) {
+                    const hasLineBinding = response.data.some(booking => booking.lineUserId && booking.lineUserId.trim() !== '');
+                    if (!hasLineBinding) {
+                        document.getElementById('line-invitation').style.display = 'block';
+                        document.getElementById('user-phone-display').textContent = phoneNumber;
+                    }
+                }
+            } catch (error) {
+                // 如果檢查失敗，還是顯示LINE邀請
+                document.getElementById('line-invitation').style.display = 'block';
+                document.getElementById('user-phone-display').textContent = phoneNumber;
+            }
+        }
+
+        async function apiCall(action, data) {
+            try {
+                const requestData = { action: action };
+                Object.keys(data).forEach(key => {
+                    requestData[key] = data[key];
+                });
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(requestData)
+                });
+
+                if (!response.ok) throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
+                return await response.json();
+            } catch (error) {
+                console.error('API調用失敗:', error);
+                throw error;
+            }
+        }
+
+        function showToast(message, type) {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 3000);
+        }
+
+        function isValidDate(dateString) {
+            const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+            const match = dateString.match(regex);
+            if (!match) return false;
+            const month = parseInt(match[1]);
+            const day = parseInt(match[2]);
+            const year = parseInt(match[3]);
+            if (month < 1 || month > 12) return false;
+            if (day < 1 || day > 31) return false;
+            if (year < 2025) return false;
+            const date = new Date(year, month - 1, day);
+            return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+        }
+
+        function formatDateToDisplay(isoDate) {
+            const date = new Date(isoDate + 'T00:00:00+08:00');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const year = date.getFullYear();
+            return `${month}/${day}/${year}`;
+        } value = e.target.value;
                 if (value && !isValidDate(value)) {
                     showToast('請輸入正確的日期格式 (MM/DD/YYYY)', 'error');
                     e.target.focus();
@@ -684,77 +411,32 @@
             });
         }
 
-        /**
-         * 驗證日期格式
-         */
-        function isValidDate(dateString) {
-            const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
-            const match = dateString.match(regex);
-            
-            if (!match) return false;
-            
-            const month = parseInt(match[1]);
-            const day = parseInt(match[2]);
-            const year = parseInt(match[3]);
-            
-            if (month < 1 || month > 12) return false;
-            if (day < 1 || day > 31) return false;
-            if (year < 2025) return false;
-            
-            // 檢查日期是否有效
-            const date = new Date(year, month - 1, day);
-            return date.getFullYear() === year && 
-                   date.getMonth() === month - 1 && 
-                   date.getDate() === day;
-        }
-
-        /**
-         * 格式化日期為顯示格式
-         */
-        function formatDateToDisplay(isoDate) {
-            const date = new Date(isoDate + 'T00:00:00+08:00');
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            const year = date.getFullYear();
-            return `${month}/${day}/${year}`;
-        }
-
-        /**
-         * 初始化事件監聽器
-         */
         function initializeEventListeners() {
-            // 服務選擇卡片事件
-            initServiceSelection();
-            
-            // 手機號碼輸入事件
-            initPhoneInput();
-        }
-
-        /**
-         * 初始化服務選擇功能
-         */
-        function initServiceSelection() {
             document.querySelectorAll('.service-card').forEach(card => {
                 card.addEventListener('click', function() {
-                    // 移除其他選中狀態
                     document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
-                    
-                    // 設定當前選中
                     this.classList.add('selected');
                     selectedService = this.dataset.service;
-                    
-                    // 更新相關欄位
                     updateServiceFields(selectedService);
-                    
-                    // 啟用下一步按鈕
                     document.getElementById('next1').disabled = false;
                 });
             });
+
+            const phoneInput = document.getElementById('phone');
+            phoneInput.addEventListener('input', function() {
+                const phone = this.value.replace(/\D/g, '');
+                if (phone.length === 10) {
+                    setTimeout(() => lookupUserData(phone), 500);
+                }
+            });
+            phoneInput.addEventListener('blur', function() {
+                const phone = this.value.replace(/\D/g, '');
+                if (phone.length === 10) {
+                    this.value = phone.substring(0, 4) + '-' + phone.substring(4, 7) + '-' + phone.substring(7);
+                }
+            });
         }
 
-        /**
-         * 根據服務類型更新欄位 - 修正項目1
-         */
         function updateServiceFields(service) {
             const timeLabel = document.getElementById('time-label');
             const flightGroup = document.getElementById('flight-group');
@@ -762,7 +444,7 @@
             const flightInput = document.getElementById('flight');
             
             if (service === '送機') {
-                timeLabel.textContent = '登車時間'; // 修正項目1
+                timeLabel.textContent = '登車時間';
                 flightLabel.classList.remove('required');
                 flightInput.required = false;
                 flightGroup.style.display = 'block';
@@ -778,43 +460,14 @@
             }
         }
 
-        /**
-         * 初始化手機號碼輸入功能
-         */
-        function initPhoneInput() {
-            const phoneInput = document.getElementById('phone');
-            
-            phoneInput.addEventListener('input', function() {
-                const phone = this.value.replace(/\D/g, '');
-                
-                if (phone.length === 10) {
-                    setTimeout(() => {
-                        lookupUserData(phone);
-                    }, 500);
-                }
-            });
-            
-            phoneInput.addEventListener('blur', function() {
-                const phone = this.value.replace(/\D/g, '');
-                if (phone.length === 10) {
-                    this.value = phone.substring(0, 4) + '-' + phone.substring(4, 7) + '-' + phone.substring(7);
-                }
-            });
-        }
-
-        /**
-         * 生成時間選項
-         */
         function generateTimeOptions() {
             const timeSelect = document.getElementById('time');
             timeSelect.innerHTML = '<option value="">請選擇時間</option>';
-            
             for (let hour = 0; hour < 24; hour++) {
                 for (let minute = 0; minute < 60; minute += 5) {
                     const hourStr = hour.toString().padStart(2, '0');
                     const minuteStr = minute.toString().padStart(2, '0');
                     const timeValue = `${hourStr}:${minuteStr}`;
-                    
                     const option = document.createElement('option');
                     option.value = timeValue;
                     option.textContent = timeValue;
@@ -823,58 +476,34 @@
             }
         }
 
-        /**
-         * 步驟導航 - 修正項目3：移除自動跳轉，需要手動點擊
-         */
         function nextStep(fromStep) {
             if (validateStep(fromStep)) {
                 const nextStepNum = fromStep + 1;
                 showStep(nextStepNum);
-                
-                if (nextStepNum === 4) {
-                    generateSummary(); // 修正項目4：生成完整確認摘要
-                }
+                if (nextStepNum === 4) generateSummary();
             }
         }
 
         function prevStep(fromStep) {
-            const prevStepNum = fromStep - 1;
-            showStep(prevStepNum);
+            showStep(fromStep - 1);
         }
 
         function showStep(stepNum) {
-            // 隱藏所有步驟
-            document.querySelectorAll('.step').forEach(step => {
-                step.classList.remove('active');
-            });
-            
-            // 顯示目標步驟
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
             document.getElementById(`step${stepNum}`).classList.add('active');
-            
-            // 更新指示器
             updateStepIndicator(stepNum);
             currentStep = stepNum;
         }
 
-        /**
-         * 更新步驟指示器
-         */
         function updateStepIndicator(step = currentStep) {
             for (let i = 1; i <= 4; i++) {
                 const indicator = document.getElementById(`indicator-${i}`);
                 indicator.classList.remove('active', 'completed');
-                
-                if (i < step) {
-                    indicator.classList.add('completed');
-                } else if (i === step) {
-                    indicator.classList.add('active');
-                }
+                if (i < step) indicator.classList.add('completed');
+                else if (i === step) indicator.classList.add('active');
             }
         }
 
-        /**
-         * 驗證步驟
-         */
         function validateStep(step) {
             switch(step) {
                 case 1:
@@ -883,12 +512,10 @@
                         return false;
                     }
                     return true;
-                    
                 case 2:
                     const phone = document.getElementById('phone').value.replace(/\D/g, '');
                     const name = document.getElementById('name').value.trim();
                     const payment = document.getElementById('payment').value;
-                    
                     if (phone.length !== 10) {
                         showToast('請輸入完整的手機號碼', 'error');
                         return false;
@@ -906,14 +533,12 @@
                         return false;
                     }
                     return true;
-                    
                 case 3:
                     const date = document.getElementById('date').value;
                     const time = document.getElementById('time').value;
                     const pickup = document.getElementById('pickup').value.trim();
                     const dropoff = document.getElementById('dropoff').value.trim();
                     const flight = document.getElementById('flight').value.trim();
-                    
                     if (!date || !isValidDate(date)) {
                         showToast('請輸入正確的服務日期', 'error');
                         return false;
@@ -939,68 +564,31 @@
             return true;
         }
 
-        /**
-         * 生成確認摘要 - 修正項目4：顯示完整輸入資料
-         */
         function generateSummary() {
             const container = document.getElementById('summary-container');
-            
-            // 取得時間標籤 - 修正項目1
             let timeLabel = '時間';
-            if (selectedService === '送機') {
-                timeLabel = '登車時間';
-            } else if (selectedService === '接機') {
-                timeLabel = '抵達時間';
-            } else {
-                timeLabel = '出發時間';
-            }
+            if (selectedService === '送機') timeLabel = '登車時間';
+            else if (selectedService === '接機') timeLabel = '抵達時間';
+            else timeLabel = '出發時間';
             
-            let summaryHTML = '';
-            
-            // 服務資訊區塊
-            summaryHTML += `
+            let summaryHTML = `
                 <div class="summary-section">
                     <div class="summary-title">🚗 服務資訊</div>
-                    <div class="summary-item">
-                        <span class="summary-label">服務類型：</span>
-                        <span class="summary-value">${selectedService}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">服務日期：</span>
-                        <span class="summary-value">${document.getElementById('date').value}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">${timeLabel}：</span>
-                        <span class="summary-value">${document.getElementById('time').value}</span>
-                    </div>
-            `;
+                    <div class="summary-item"><span class="summary-label">服務類型：</span><span class="summary-value">${selectedService}</span></div>
+                    <div class="summary-item"><span class="summary-label">服務日期：</span><span class="summary-value">${document.getElementById('date').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">${timeLabel}：</span><span class="summary-value">${document.getElementById('time').value}</span></div>`;
             
             if (document.getElementById('flight').value.trim()) {
-                summaryHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">航班編號：</span>
-                        <span class="summary-value">${document.getElementById('flight').value}</span>
-                    </div>
-                `;
+                summaryHTML += `<div class="summary-item"><span class="summary-label">航班編號：</span><span class="summary-value">${document.getElementById('flight').value}</span></div>`;
             }
-            
             summaryHTML += `</div>`;
             
-            // 聯絡資訊區塊
             summaryHTML += `
                 <div class="summary-section">
                     <div class="summary-title">👤 聯絡資訊</div>
-                    <div class="summary-item">
-                        <span class="summary-label">姓名：</span>
-                        <span class="summary-value">${document.getElementById('name').value}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">手機號碼：</span>
-                        <span class="summary-value">${document.getElementById('phone').value}</span>
-                    </div>
-            `;
+                    <div class="summary-item"><span class="summary-label">姓名：</span><span class="summary-value">${document.getElementById('name').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">手機號碼：</span><span class="summary-value">${document.getElementById('phone').value}</span></div>`;
             
-            // 顯示所有填寫的選填欄位
             const optionalFields = [
                 { id: 'company', label: '公司名稱' },
                 { id: 'email', label: '電郵信箱' },
@@ -1011,94 +599,49 @@
             optionalFields.forEach(field => {
                 const value = document.getElementById(field.id).value.trim();
                 if (value) {
-                    summaryHTML += `
-                        <div class="summary-item">
-                            <span class="summary-label">${field.label}：</span>
-                            <span class="summary-value">${value}</span>
-                        </div>
-                    `;
+                    summaryHTML += `<div class="summary-item"><span class="summary-label">${field.label}：</span><span class="summary-value">${value}</span></div>`;
                 }
             });
-            
             summaryHTML += `</div>`;
             
-            // 行程資訊區塊
             summaryHTML += `
                 <div class="summary-section">
                     <div class="summary-title">📍 行程資訊</div>
-                    <div class="summary-item">
-                        <span class="summary-label">上車地點：</span>
-                        <span class="summary-value">${document.getElementById('pickup').value}</span>
-                    </div>
-            `;
+                    <div class="summary-item"><span class="summary-label">上車地點：</span><span class="summary-value">${document.getElementById('pickup').value}</span></div>`;
             
             if (document.getElementById('midstop').value.trim()) {
-                summaryHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">中停點：</span>
-                        <span class="summary-value">${document.getElementById('midstop').value}</span>
-                    </div>
-                `;
+                summaryHTML += `<div class="summary-item"><span class="summary-label">中停點：</span><span class="summary-value">${document.getElementById('midstop').value}</span></div>`;
             }
             
-            summaryHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">下車地點：</span>
-                        <span class="summary-value">${document.getElementById('dropoff').value}</span>
-                    </div>
-            `;
+            summaryHTML += `<div class="summary-item"><span class="summary-label">下車地點：</span><span class="summary-value">${document.getElementById('dropoff').value}</span></div>`;
             
             if (document.getElementById('remarks').value.trim()) {
-                summaryHTML += `
-                    <div class="summary-item">
-                        <span class="summary-label">備註：</span>
-                        <span class="summary-value">${document.getElementById('remarks').value}</span>
-                    </div>
-                `;
+                summaryHTML += `<div class="summary-item"><span class="summary-label">備註：</span><span class="summary-value">${document.getElementById('remarks').value}</span></div>`;
             }
-            
             summaryHTML += `</div>`;
             
-            // 付款資訊區塊
             summaryHTML += `
                 <div class="summary-section">
                     <div class="summary-title">💳 付款資訊</div>
-                    <div class="summary-item">
-                        <span class="summary-label">付款方式：</span>
-                        <span class="summary-value">${document.getElementById('payment').value}</span>
-                    </div>
-                </div>
-            `;
-            
-            // 修正項目5：不顯示預估費用
+                    <div class="summary-item"><span class="summary-label">付款方式：</span><span class="summary-value">${document.getElementById('payment').value}</span></div>
+                </div>`;
             
             container.innerHTML = summaryHTML;
         }
 
-        /**
-         * 查詢用戶歷史資料
-         */
         async function lookupUserData(phone) {
             const loadingElement = document.getElementById('loading');
             loadingElement.className = 'loading show';
-            
             try {
-                const response = await apiCall('getUserDataByPhone', { 
-                    phone: phone,
-                    serviceType: selectedService 
-                });
-                
+                const response = await apiCall('getUserDataByPhone', { phone: phone, serviceType: selectedService });
                 if (response.success && response.data) {
                     const data = response.data;
-                    
-                    // 自動填入歷史資料
                     if (data.name) document.getElementById('name').value = data.name;
                     if (data.company) document.getElementById('company').value = data.company;
                     if (data.email) document.getElementById('email').value = data.email;
                     if (data.proxyEmail) document.getElementById('proxyEmail').value = data.proxyEmail;
                     if (data.costCenter) document.getElementById('costCenter').value = data.costCenter;
                     if (data.payment) document.getElementById('payment').value = data.payment;
-                    
                     showToast('已自動帶入歷史資料', 'success');
                 }
             } catch (error) {
@@ -1108,266 +651,15 @@
             }
         }
 
-        /**
-         * 提交表單
-         */
         async function submitForm() {
             const submitBtn = document.querySelector('#step4 .btn:last-child');
             submitBtn.disabled = true;
             submitBtn.textContent = '提交中...';
             
             try {
-                // 先檢查所有前端狀態
-                console.log('=== 提交前檢查 ===');
-                console.log('selectedService:', selectedService);
-                console.log('currentStep:', currentStep);
-                
-                // 檢查基本欄位值
-                const basicValues = {
-                    service: selectedService,
-                    phone: document.getElementById('phone').value,
-                    name: document.getElementById('name').value,
-                    date: document.getElementById('date').value,
-                    time: document.getElementById('time').value,
-                    pickup: document.getElementById('pickup').value,
-                    dropoff: document.getElementById('dropoff').value,
-                    payment: document.getElementById('payment').value
-                };
-                
-                console.log('基本欄位值:', basicValues);
-                
-                // 如果 selectedService 為空，嘗試從已選中的卡片獲取
                 if (!selectedService) {
                     const selectedCard = document.querySelector('.service-card.selected');
-                    if (selectedCard) {
-                        selectedService = selectedCard.dataset.service;
-                        console.log('從選中卡片重新獲取服務:', selectedService);
-                    }
+                    if (selectedCard) selectedService = selectedCard.dataset.service;
                 }
                 
-                // 再次檢查必填欄位
-                if (!selectedService) {
-                    throw new Error('請選擇服務項目');
-                }
-                if (!document.getElementById('phone').value.trim()) {
-                    throw new Error('請輸入手機號碼');
-                }
-                if (!document.getElementById('name').value.trim()) {
-                    throw new Error('請輸入姓名');
-                }
-                if (!document.getElementById('date').value.trim()) {
-                    throw new Error('請輸入日期');
-                }
-                if (!document.getElementById('time').value) {
-                    throw new Error('請選擇時間');
-                }
-                if (!document.getElementById('pickup').value.trim()) {
-                    throw new Error('請輸入上車地點');
-                }
-                if (!document.getElementById('dropoff').value.trim()) {
-                    throw new Error('請輸入下車地點');
-                }
-                if (!document.getElementById('payment').value) {
-                    throw new Error('請選擇付款方式');
-                }
-                
-                // 處理日期格式
-                const dateStr = document.getElementById('date').value;
-                const timeStr = document.getElementById('time').value;
-                
-                console.log('原始日期時間:', dateStr, timeStr);
-                
-                // 轉換為標準格式
-                const dateParts = dateStr.split('/');
-                if (dateParts.length !== 3) {
-                    throw new Error('日期格式錯誤，請使用 MM/DD/YYYY');
-                }
-                
-                const month = dateParts[0].padStart(2, '0');
-                const day = dateParts[1].padStart(2, '0');
-                const year = dateParts[2];
-                
-                const standardDate = `${year}-${month}-${day}`;
-                console.log('轉換後日期:', standardDate);
-                
-                // 收集所有資料 - 使用正確的欄位名稱匹配你的Google Sheets
-                const formData = {
-                    '服務項目': selectedService,
-                    '公司名稱': document.getElementById('company').value.trim(),
-                    '部門': '', 
-                    '手機': document.getElementById('phone').value.trim(),  // 修正：手機號碼 → 手機
-                    '姓名': document.getElementById('name').value.trim(),
-                    '日期': standardDate,
-                    '時間': timeStr,
-                    '航班編號': document.getElementById('flight').value.trim(),  // 修正：機場/航班 → 航班編號
-                    '上車點': document.getElementById('pickup').value.trim(),
-                    '中停點': document.getElementById('midstop').value.trim(),
-                    '下車點': document.getElementById('dropoff').value.trim(),
-                    '備註': document.getElementById('remarks').value.trim(),
-                    '費用支付': document.getElementById('payment').value,
-                    '電郵信箱': document.getElementById('email').value.trim(),
-                    '代理信箱': document.getElementById('proxyEmail').value.trim(),
-                    '成本中心': document.getElementById('costCenter').value.trim(),
-                    '金額': '',  // 新增：對應你的Google Sheets欄位
-                    '資料異動追蹤': ''  // 新增：對應你的Google Sheets欄位
-                };
-                
-                console.log('準備發送的資料:', formData);
-                
-                // 最終驗證
-                const requiredFields = ['服務項目', '手機號碼', '姓名', '日期', '時間', '上車點', '下車點', '費用支付'];
-                const missingFields = [];
-                
-                requiredFields.forEach(field => {
-                    if (!formData[field] || formData[field].toString().trim() === '') {
-                        missingFields.push(field);
-                    }
-                });
-                
-                if (missingFields.length > 0) {
-                    console.log('缺少的欄位:', missingFields);
-                    throw new Error(`缺少必填欄位: ${missingFields.join(', ')}`);
-                }
-                
-                const response = await apiCall('createBooking', formData);
-                
-                console.log('API回應:', response);
-                
-                if (response && response.success) {
-                    showSuccessPage();
-                    showToast('預約建立成功！', 'success');
-                } else {
-                    throw new Error(response?.message || '後端回應success為false');
-                }
-                
-            } catch (error) {
-                console.error('提交錯誤詳情:', error);
-                showToast(error.message || '預約失敗，請稍後再試', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '確認預約';
-            }
-        }
-
-        /**
-         * 顯示成功頁面 - 修正項目5：不顯示預估費用
-         */
-        function showSuccessPage() {
-            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-            document.getElementById('complete').classList.add('active');
-            
-            updateStepIndicator(5);
-            
-            // 顯示預約詳情（不包含費用）
-            const detailsElement = document.getElementById('booking-details');
-            
-            let timeLabel = '時間';
-            if (selectedService === '送機') {
-                timeLabel = '登車時間';
-            } else if (selectedService === '接機') {
-                timeLabel = '抵達時間';
-            } else {
-                timeLabel = '出發時間';
-            }
-            
-            let detailsHTML = `
-                <div class="summary-section">
-                    <div class="summary-title">📋 預約詳情</div>
-                    <div class="summary-item">
-                        <span class="summary-label">預約編號：</span>
-                        <span class="summary-value">B${Date.now().toString().slice(-6)}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">服務類型：</span>
-                        <span class="summary-value">${selectedService}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">服務日期：</span>
-                        <span class="summary-value">${document.getElementById('date').value}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">${timeLabel}：</span>
-                        <span class="summary-value">${document.getElementById('time').value}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">聯絡人：</span>
-                        <span class="summary-value">${document.getElementById('name').value}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">手機號碼：</span>
-                        <span class="summary-value">${document.getElementById('phone').value}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">付款方式：</span>
-                        <span class="summary-value">${document.getElementById('payment').value}</span>
-                    </div>
-                </div>
-            `;
-            
-            detailsElement.innerHTML = detailsHTML;
-        }
-
-        /**
-         * API調用主函數
-         */
-        async function apiCall(action, data) {
-            try {
-                // 根據你的後端期待，直接將所有資料放在頂層
-                const requestData = {
-                    action: action
-                };
-                
-                // 將所有資料加入到 requestData 中
-                Object.keys(data).forEach(key => {
-                    requestData[key] = data[key];
-                });
-
-                console.log('發送到API的完整資料:', requestData);
-
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams(requestData)
-                });
-
-                console.log('API回應狀態:', response.status);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
-                }
-
-                const result = await response.json();
-                console.log('API回應內容:', result);
-                return result;
-
-            } catch (error) {
-                console.error('API調用失敗:', error);
-                throw error;
-            }
-        }
-
-        /**
-         * Toast通知系統
-         */
-        function showToast(message, type) {
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) {
-                existingToast.remove();
-            }
-            
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.remove();
-                }
-            }, 3000);
-        }
-    </script>
-</body>
-</html>
+                const
