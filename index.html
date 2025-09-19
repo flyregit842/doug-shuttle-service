@@ -350,15 +350,18 @@ index.html - Doug Shuttle Service Booking System
 
         async function apiCall(action, data) {
             try {
-                const requestData = { action: action };
+                const formData = new URLSearchParams();
+                formData.append('action', action);
+                
+                // 將所有資料加入 formData
                 Object.keys(data).forEach(key => {
-                    requestData[key] = data[key];
+                    formData.append(key, data[key]);
                 });
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams(requestData)
+                    body: formData
                 });
 
                 if (!response.ok) throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
@@ -419,6 +422,8 @@ index.html - Doug Shuttle Service Booking System
                     selectedService = this.dataset.service;
                     updateServiceFields(selectedService);
                     document.getElementById('next1').disabled = false;
+                    // 自動進入下一步
+                    setTimeout(() => nextStep(1), 300);
                 });
             });
 

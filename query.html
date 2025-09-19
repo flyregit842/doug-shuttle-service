@@ -409,7 +409,7 @@ query.html - Doug Shuttle Service Query System
             }
         }
 
-        function showEditForm(booking) {
+        async function showEditForm(booking) {
             const today = getTaiwanDateTime().toISOString().split('T')[0];
             document.getElementById('edit-date').min = today;
             
@@ -444,12 +444,31 @@ query.html - Doug Shuttle Service Query System
                 }
             }
             
+            // 查詢該用戶的歷史地點資料
+            try {
+                const phone = booking.phone.replace(/\D/g, '');
+                const response = await apiCall('getUserDataByPhone', { phone: phone });
+                let defaultPickup = booking.pickup || '';
+                let defaultDropoff = booking.dropoff || '';
+                
+                if (response.success && response.data && response.data.length > 0) {
+                    // 使用最近的上下車地點作為預設值
+                    const recentBooking = response.data[response.data.length - 1];
+                    defaultPickup = recentBooking.pickup || booking.pickup || '';
+                    defaultDropoff = recentBooking.dropoff || booking.dropoff || '';
+                }
+                
+                document.getElementById('edit-pickup').value = defaultPickup;
+                document.getElementById('edit-dropoff').value = defaultDropoff;
+            } catch (error) {
+                document.getElementById('edit-pickup').value = booking.pickup || '';
+                document.getElementById('edit-dropoff').value = booking.dropoff || '';
+            }
+            
             document.getElementById('edit-date').value = dateValue;
             document.getElementById('edit-time').value = timeValue;
             document.getElementById('edit-flight').value = booking.airport || '';
-            document.getElementById('edit-pickup').value = booking.pickup || '';
             document.getElementById('edit-midstop').value = booking.midstop || '';
-            document.getElementById('edit-dropoff').value = booking.dropoff || '';
             document.getElementById('edit-remarks').value = booking.remarks || '';
             
             document.getElementById('edit-form').className = 'edit-form show';
@@ -535,13 +554,18 @@ query.html - Doug Shuttle Service Query System
 
         async function apiCall(action, data, attempt = 1) {
             try {
-                const requestData = { action: action };
-                for (let key in data) requestData[key] = data[key];
+                const formData = new URLSearchParams();
+                formData.append('action', action);
+                
+                // 將所有資料加入 formData
+                Object.keys(data).forEach(key => {
+                    formData.append(key, data[key]);
+                });
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams(requestData)
+                    body: formData
                 });
 
                 if (!response.ok) throw new Error('HTTP ' + response.status + ': ' + response.statusText);
