@@ -1190,16 +1190,16 @@
                 const standardDate = `${year}-${month}-${day}`;
                 console.log('轉換後日期:', standardDate);
                 
-                // 收集所有資料
+                // 收集所有資料 - 使用正確的欄位名稱匹配你的Google Sheets
                 const formData = {
                     '服務項目': selectedService,
                     '公司名稱': document.getElementById('company').value.trim(),
                     '部門': '', 
-                    '手機號碼': document.getElementById('phone').value.trim(),
+                    '手機': document.getElementById('phone').value.trim(),  // 修正：手機號碼 → 手機
                     '姓名': document.getElementById('name').value.trim(),
                     '日期': standardDate,
                     '時間': timeStr,
-                    '機場/航班': document.getElementById('flight').value.trim(),
+                    '航班編號': document.getElementById('flight').value.trim(),  // 修正：機場/航班 → 航班編號
                     '上車點': document.getElementById('pickup').value.trim(),
                     '中停點': document.getElementById('midstop').value.trim(),
                     '下車點': document.getElementById('dropoff').value.trim(),
@@ -1207,7 +1207,9 @@
                     '費用支付': document.getElementById('payment').value,
                     '電郵信箱': document.getElementById('email').value.trim(),
                     '代理信箱': document.getElementById('proxyEmail').value.trim(),
-                    '成本中心': document.getElementById('costCenter').value.trim()
+                    '成本中心': document.getElementById('costCenter').value.trim(),
+                    '金額': '',  // 新增：對應你的Google Sheets欄位
+                    '資料異動追蹤': ''  // 新增：對應你的Google Sheets欄位
                 };
                 
                 console.log('準備發送的資料:', formData);
