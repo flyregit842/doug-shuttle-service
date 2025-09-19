@@ -268,9 +268,10 @@ index.html - Doug Shuttle Service Booking System
                 
                 const formData = {
                     '服務項目': selectedService,
-                    '公司名稱': document.getElementById('company').value.trim(),
                     '手機號碼': document.getElementById('phone').value.trim(),
                     '姓名': document.getElementById('name').value.trim(),
+                    '公司名稱': document.getElementById('company').value.trim(),
+                    '部門': '', // 如果有部門欄位請修改
                     '日期': standardDate,
                     '時間': timeStr,
                     '航班編號': document.getElementById('flight').value.trim(),
