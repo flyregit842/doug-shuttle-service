@@ -348,24 +348,28 @@ index.html - Doug Shuttle Service Booking System
             }
         }
 
-    async function apiCall(action, data) {
-    try {
-        const body = `action=${action}&` + Object.keys(data).map(key => 
-            `${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`
-        ).join('&');
+        async function apiCall(action, data) {
+            try {
+                // 手動建立URL編碼字符串，避免觸發CORS預檢
+                const params = Object.keys(data)
+                    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key] || '')}`)
+                    .join('&');
+                
+                const body = `action=${encodeURIComponent(action)}&${params}`;
 
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            body: body
-        });
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: body
+                    // 關鍵：不設置任何headers避免CORS預檢
+                });
 
-        if (!response.ok) throw new Error(`HTTP錯誤: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('API調用失敗:', error);
-        throw error;
-    }
-}
+                if (!response.ok) throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
+                return await response.json();
+            } catch (error) {
+                console.error('API調用失敗:', error);
+                throw error;
+            }
+        }
 
         function showToast(message, type) {
             const existingToast = document.querySelector('.toast');
