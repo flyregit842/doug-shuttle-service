@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-index.html - Doug Shuttle Service Booking System
-機場接送預約系統主頁面，支援多步驟預約流程、資料自動填入、台灣時區處理、LINE通知整合準備
-版本: v5.0 | 最後更新: 2025-09-20 | 開發者: Doug Shuttle Service Team
+index.html - Doug Shuttle Service Booking System (修正版)
+修正submitForm函數中斷問題，確保資料正確傳送至Google Sheets
+版本: v5.1 | 修正日期: 2025-09-20
 -->
 <html lang="zh-TW">
 <head>
@@ -257,156 +257,7 @@ index.html - Doug Shuttle Service Booking System
                 e.target.value = formatted;
             });
             dateInput.addEventListener('blur', function(e) {
-                const dateStr = document.getElementById('date').value;
-                const timeStr = document.getElementById('time').value;
-                const dateParts = dateStr.split('/');
-                if (dateParts.length !== 3) throw new Error('日期格式錯誤，請使用 MM/DD/YYYY');
-                const month = dateParts[0].padStart(2, '0');
-                const day = dateParts[1].padStart(2, '0');
-                const year = dateParts[2];
-                const standardDate = `${year}-${month}-${day}`;
-                
-                const formData = {
-                    '服務項目': selectedService,
-                    '手機號碼': document.getElementById('phone').value.trim(),
-                    '姓名': document.getElementById('name').value.trim(),
-                    '公司名稱': document.getElementById('company').value.trim(),
-                    '部門': '', // 如果有部門欄位請修改
-                    '日期': standardDate,
-                    '時間': timeStr,
-                    '航班編號': document.getElementById('flight').value.trim(),
-                    '上車點': document.getElementById('pickup').value.trim(),
-                    '中停點': document.getElementById('midstop').value.trim(),
-                    '下車點': document.getElementById('dropoff').value.trim(),
-                    '備註': document.getElementById('remarks').value.trim(),
-                    '費用支付': document.getElementById('payment').value,
-                    '電郵信箱': document.getElementById('email').value.trim(),
-                    '代理信箱': document.getElementById('proxyEmail').value.trim(),
-                    '成本中心': document.getElementById('costCenter').value.trim()
-                };
-                
-                const response = await apiCall('createBooking', formData);
-                if (response && response.success) {
-                    showSuccessPage();
-                    showToast('預約建立成功！', 'success');
-                } else {
-                    throw new Error(response?.message || '後端回應success為false');
-                }
-                
-            } catch (error) {
-                console.error('提交錯誤詳情:', error);
-                showToast(error.message || '預約失敗，請稍後再試', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '確認預約';
-            }
-        }
-
-        function showSuccessPage() {
-            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-            document.getElementById('complete').classList.add('active');
-            updateStepIndicator(5);
-            
-            const detailsElement = document.getElementById('booking-details');
-            let timeLabel = '時間';
-            if (selectedService === '送機') timeLabel = '登車時間';
-            else if (selectedService === '接機') timeLabel = '抵達時間';
-            else timeLabel = '出發時間';
-            
-            let detailsHTML = `
-                <div class="summary-section">
-                    <div class="summary-title">📋 預約詳情</div>
-                    <div class="summary-item"><span class="summary-label">預約編號：</span><span class="summary-value">B${Date.now().toString().slice(-6)}</span></div>
-                    <div class="summary-item"><span class="summary-label">服務類型：</span><span class="summary-value">${selectedService}</span></div>
-                    <div class="summary-item"><span class="summary-label">服務日期：</span><span class="summary-value">${document.getElementById('date').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">${timeLabel}：</span><span class="summary-value">${document.getElementById('time').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">聯絡人：</span><span class="summary-value">${document.getElementById('name').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">手機號碼：</span><span class="summary-value">${document.getElementById('phone').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">付款方式：</span><span class="summary-value">${document.getElementById('payment').value}</span></div>
-                </div>`;
-            
-            detailsElement.innerHTML = detailsHTML;
-            
-            // 檢查是否需要顯示LINE邀請
-            const phoneNumber = document.getElementById('phone').value.replace(/\D/g, '');
-            checkLineBinding(phoneNumber);
-        }
-
-        async function checkLineBinding(phoneNumber) {
-            try {
-                const response = await apiCall('getBookingsByPhone', { phone: phoneNumber });
-                if (response.success && response.data && response.data.length > 0) {
-                    const hasLineBinding = response.data.some(booking => booking.lineUserId && booking.lineUserId.trim() !== '');
-                    if (!hasLineBinding) {
-                        document.getElementById('line-invitation').style.display = 'block';
-                        document.getElementById('user-phone-display').textContent = phoneNumber;
-                    }
-                }
-            } catch (error) {
-                // 如果檢查失敗，還是顯示LINE邀請
-                document.getElementById('line-invitation').style.display = 'block';
-                document.getElementById('user-phone-display').textContent = phoneNumber;
-            }
-        }
-
-        async function apiCall(action, data) {
-            try {
-                // 手動建立URL編碼字符串，避免觸發CORS預檢
-                const params = Object.keys(data)
-                    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key] || '')}`)
-                    .join('&');
-                
-                const body = `action=${encodeURIComponent(action)}&${params}`;
-
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: body
-                    // 關鍵：不設置任何headers避免CORS預檢
-                });
-
-                if (!response.ok) throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
-                return await response.json();
-            } catch (error) {
-                console.error('API調用失敗:', error);
-                throw error;
-            }
-        }
-
-        function showToast(message, type) {
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) existingToast.remove();
-            
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 3000);
-        }
-
-        function isValidDate(dateString) {
-            const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
-            const match = dateString.match(regex);
-            if (!match) return false;
-            const month = parseInt(match[1]);
-            const day = parseInt(match[2]);
-            const year = parseInt(match[3]);
-            if (month < 1 || month > 12) return false;
-            if (day < 1 || day > 31) return false;
-            if (year < 2025) return false;
-            const date = new Date(year, month - 1, day);
-            return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
-        }
-
-        function formatDateToDisplay(isoDate) {
-            const date = new Date(isoDate + 'T00:00:00+08:00');
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            const year = date.getFullYear();
-            return `${month}/${day}/${year}`;
-        } value = e.target.value;
+                const value = e.target.value;
                 if (value && !isValidDate(value)) {
                     showToast('請輸入正確的日期格式 (MM/DD/YYYY)', 'error');
                     e.target.focus();
@@ -422,7 +273,6 @@ index.html - Doug Shuttle Service Booking System
                     selectedService = this.dataset.service;
                     updateServiceFields(selectedService);
                     document.getElementById('next1').disabled = false;
-                    // 自動進入下一步
                     setTimeout(() => nextStep(1), 300);
                 });
             });
@@ -667,4 +517,151 @@ index.html - Doug Shuttle Service Booking System
                     if (selectedCard) selectedService = selectedCard.dataset.service;
                 }
                 
-                const
+                const dateStr = document.getElementById('date').value;
+                const dateParts = dateStr.split('/');
+                if (dateParts.length !== 3) throw new Error('日期格式錯誤，請使用 MM/DD/YYYY');
+                const month = dateParts[0].padStart(2, '0');
+                const day = dateParts[1].padStart(2, '0');
+                const year = dateParts[2];
+                const standardDate = `${year}-${month}-${day}`;
+                
+                const formData = {
+                    '服務項目': selectedService,
+                    '手機號碼': document.getElementById('phone').value.replace(/\D/g, ''),
+                    '姓名': document.getElementById('name').value.trim(),
+                    '公司名稱': document.getElementById('company').value.trim(),
+                    '部門': '',
+                    '日期': standardDate,
+                    '時間': document.getElementById('time').value,
+                    '航班編號': document.getElementById('flight').value.trim(),
+                    '上車點': document.getElementById('pickup').value.trim(),
+                    '中停點': document.getElementById('midstop').value.trim(),
+                    '下車點': document.getElementById('dropoff').value.trim(),
+                    '備註': document.getElementById('remarks').value.trim(),
+                    '費用支付': document.getElementById('payment').value,
+                    '電郵信箱': document.getElementById('email').value.trim(),
+                    '代理信箱': document.getElementById('proxyEmail').value.trim(),
+                    '成本中心': document.getElementById('costCenter').value.trim()
+                };
+                
+                const response = await apiCall('createBooking', formData);
+                if (response && response.success) {
+                    showSuccessPage();
+                    showToast('預約建立成功！', 'success');
+                } else {
+                    throw new Error(response?.message || '後端回應success為false');
+                }
+                
+            } catch (error) {
+                console.error('提交錯誤詳情:', error);
+                showToast(error.message || '預約失敗，請稍後再試', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '確認預約';
+            }
+        }
+
+        function showSuccessPage() {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('complete').classList.add('active');
+            updateStepIndicator(5);
+            
+            const detailsElement = document.getElementById('booking-details');
+            let timeLabel = '時間';
+            if (selectedService === '送機') timeLabel = '登車時間';
+            else if (selectedService === '接機') timeLabel = '抵達時間';
+            else timeLabel = '出發時間';
+            
+            let detailsHTML = `
+                <div class="summary-section">
+                    <div class="summary-title">📋 預約詳情</div>
+                    <div class="summary-item"><span class="summary-label">預約編號：</span><span class="summary-value">B${Date.now().toString().slice(-6)}</span></div>
+                    <div class="summary-item"><span class="summary-label">服務類型：</span><span class="summary-value">${selectedService}</span></div>
+                    <div class="summary-item"><span class="summary-label">服務日期：</span><span class="summary-value">${document.getElementById('date').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">${timeLabel}：</span><span class="summary-value">${document.getElementById('time').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">聯絡人：</span><span class="summary-value">${document.getElementById('name').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">手機號碼：</span><span class="summary-value">${document.getElementById('phone').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">付款方式：</span><span class="summary-value">${document.getElementById('payment').value}</span></div>
+                </div>`;
+            
+            detailsElement.innerHTML = detailsHTML;
+            
+            const phoneNumber = document.getElementById('phone').value.replace(/\D/g, '');
+            checkLineBinding(phoneNumber);
+        }
+
+        async function checkLineBinding(phoneNumber) {
+            try {
+                const response = await apiCall('getBookingsByPhone', { phone: phoneNumber });
+                if (response.success && response.data && response.data.length > 0) {
+                    const hasLineBinding = response.data.some(booking => booking.lineUserId && booking.lineUserId.trim() !== '');
+                    if (!hasLineBinding) {
+                        document.getElementById('line-invitation').style.display = 'block';
+                        document.getElementById('user-phone-display').textContent = phoneNumber;
+                    }
+                }
+            } catch (error) {
+                document.getElementById('line-invitation').style.display = 'block';
+                document.getElementById('user-phone-display').textContent = phoneNumber;
+            }
+        }
+
+        async function apiCall(action, data) {
+            try {
+                const params = Object.keys(data)
+                    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key] || '')}`)
+                    .join('&');
+                
+                const body = `action=${encodeURIComponent(action)}&${params}`;
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: body
+                });
+
+                if (!response.ok) throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
+                return await response.json();
+            } catch (error) {
+                console.error('API調用失敗:', error);
+                throw error;
+            }
+        }
+
+        function showToast(message, type) {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 3000);
+        }
+
+        function isValidDate(dateString) {
+            const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+            const match = dateString.match(regex);
+            if (!match) return false;
+            const month = parseInt(match[1]);
+            const day = parseInt(match[2]);
+            const year = parseInt(match[3]);
+            if (month < 1 || month > 12) return false;
+            if (day < 1 || day > 31) return false;
+            if (year < 2025) return false;
+            const date = new Date(year, month - 1, day);
+            return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+        }
+
+        function formatDateToDisplay(isoDate) {
+            const date = new Date(isoDate + 'T00:00:00+08:00');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const year = date.getFullYear();
+            return `${month}/${day}/${year}`;
+        }
+    </script>
+</body>
+</html>
