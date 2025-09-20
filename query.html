@@ -367,15 +367,15 @@ query.html - Doug Shuttle Service Fixed Query System
                 // 詳細資訊
                 html += '<div class="booking-details">';
                 html += `<div class="detail-row"><span class="detail-label">接送時間:</span><span class="detail-value">${formatTime(booking.time)}</span></div>`;
-                if (booking.airport && booking.airport.trim()) {
+                if (booking.airport && typeof booking.airport === 'string' && booking.airport.trim()) {
                     html += `<div class="detail-row"><span class="detail-label">航班:</span><span class="detail-value">${booking.airport}</span></div>`;
                 }
                 html += `<div class="detail-row"><span class="detail-label">上車點:</span><span class="detail-value">${booking.pickup || '-'}</span></div>`;
-                if (booking.midstop && booking.midstop.trim()) {
+                if (booking.midstop && typeof booking.midstop === 'string' && booking.midstop.trim()) {
                     html += `<div class="detail-row"><span class="detail-label">中停點:</span><span class="detail-value">${booking.midstop}</span></div>`;
                 }
                 html += `<div class="detail-row"><span class="detail-label">下車點:</span><span class="detail-value">${booking.dropoff || '-'}</span></div>`;
-                if (booking.remarks && booking.remarks.trim()) {
+                if (booking.remarks && typeof booking.remarks === 'string' && booking.remarks.trim()) {
                     html += `<div class="detail-row"><span class="detail-label">備註:</span><span class="detail-value">${booking.remarks}</span></div>`;
                 }
                 html += '</div>';
