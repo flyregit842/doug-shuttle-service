@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-index.html - Doug Shuttle Service Final Complete System
-最終完整系統：解決所有7個問題，簡化格式，完整確認頁面
-版本: v7.0 Final | 2025-09-20
+index.html - Doug Shuttle Service Fixed Version
+修正版本：統一用詞、格式修正、帶入功能完善
+版本: v8.0 Fixed | 2025-09-21
 -->
 <html lang="zh-TW">
 <head>
@@ -19,7 +19,7 @@ index.html - Doug Shuttle Service Final Complete System
         .nav-links a{margin:0 10px;padding:10px 16px;text-decoration:none;color:#667eea;border:1px solid #667eea;border-radius:6px;transition:all 0.2s ease;display:inline-block}
         .nav-links a:hover,.nav-links a.active{background:#667eea;color:white}
         .step-indicator{display:flex;justify-content:center;align-items:center;margin-bottom:30px}
-        .step-item{width:35px;height:35px;border-radius:50%;background:#e5e7eb;color:#6b7280;display:flex;align-items:center;justify-content:center;font-weight:bold;transition:all 0.3s ease;position:relative}
+        .step-item{width:35px;height:35px;border-radius:50%;background:#e5e7eb;color:#6b7280;display:flex;align-items:center;justify-content:center;font-weight:bold;transition:all 0.3s ease}
         .step-item.active{background:#667eea;color:white}
         .step-item.completed{background:#10b981;color:white}
         .step-line{flex:1;height:2px;background:#e5e7eb;margin:0 10px;transition:all 0.3s ease}
@@ -153,13 +153,13 @@ index.html - Doug Shuttle Service Final Complete System
 
             <!-- 步驟3: 時間與地點 -->
             <div class="step" id="step3">
-                <h3>時間與地點</h3>
+                <h3>接送資訊</h3>
                 <div class="form-group">
-                    <label for="date" class="required">服務日期</label>
+                    <label for="date" class="required">接送日期</label>
                     <input type="date" id="date" required>
                 </div>
                 <div class="form-group">
-                    <label for="time" class="required" id="time-label">時間</label>
+                    <label for="time" class="required">接送時間</label>
                     <input type="time" id="time" required>
                 </div>
                 <div class="form-group" id="flight-group">
@@ -249,35 +249,43 @@ index.html - Doug Shuttle Service Final Complete System
             const phoneInput = document.getElementById('phone');
             
             phoneInput.addEventListener('input', function() {
-                const phone = this.value.replace(/\D/g, '');
-                this.value = phone;
+                // 支援多種格式：純數字、xxxx-xxx-xxx
+                const value = this.value;
+                const phone = normalizePhone(value);
                 
-                if (phone.length === 10) {
+                if (phone && phone.length === 10) {
                     lookupUserData(phone);
                 }
             });
         }
 
+        function normalizePhone(input) {
+            if (!input) return '';
+            // 移除所有非數字字符，支援 xxxx-xxx-xxx 格式
+            let digits = input.replace(/\D/g, '');
+            // 處理國際格式
+            if (digits.startsWith('886')) {
+                digits = '0' + digits.substring(3);
+            }
+            return digits;
+        }
+
         function updateServiceFields() {
-            const timeLabel = document.getElementById('time-label');
             const flightGroup = document.getElementById('flight-group');
             const flightLabel = document.getElementById('flight-label');
             const flightInput = document.getElementById('flight');
             
-            if (selectedService === '送機') {
-                timeLabel.textContent = '登車時間';
+            if (selectedService === '送機' || selectedService === '接機') {
                 flightLabel.textContent = '航班編號';
-                flightLabel.classList.remove('required');
-                flightInput.required = false;
-                flightGroup.style.display = 'block';
-            } else if (selectedService === '接機') {
-                timeLabel.textContent = '抵達時間';
-                flightLabel.textContent = '航班編號';
-                flightLabel.classList.add('required');
-                flightInput.required = true;
+                if (selectedService === '接機') {
+                    flightLabel.classList.add('required');
+                    flightInput.required = true;
+                } else {
+                    flightLabel.classList.remove('required');
+                    flightInput.required = false;
+                }
                 flightGroup.style.display = 'block';
             } else if (selectedService === '包車') {
-                timeLabel.textContent = '出發時間';
                 flightGroup.style.display = 'none';
                 flightInput.required = false;
             }
@@ -313,6 +321,7 @@ index.html - Doug Shuttle Service Final Complete System
         }
 
         function fillUserData(data) {
+            // 帶入除接送日期、接送時間、航班編號、備註以外的所有欄位
             const fieldMapping = {
                 'name': 'name',
                 'company': 'company', 
@@ -323,8 +332,7 @@ index.html - Doug Shuttle Service Final Complete System
                 'payment': 'payment',
                 'pickup': 'pickup',
                 'midstop': 'midstop',
-                'dropoff': 'dropoff',
-                'remarks': 'remarks'
+                'dropoff': 'dropoff'
             };
             
             Object.entries(fieldMapping).forEach(([dataKey, fieldId]) => {
@@ -336,6 +344,7 @@ index.html - Doug Shuttle Service Final Complete System
                 }
             });
             
+            // 重新設定預設地點（可能會被歷史資料覆蓋）
             setDefaultLocations();
         }
 
@@ -389,7 +398,7 @@ index.html - Doug Shuttle Service Final Complete System
                     break;
                     
                 case 2:
-                    const phone = document.getElementById('phone').value.replace(/\D/g, '');
+                    const phone = normalizePhone(document.getElementById('phone').value);
                     const name = document.getElementById('name').value.trim();
                     const payment = document.getElementById('payment').value;
                     
@@ -419,11 +428,11 @@ index.html - Doug Shuttle Service Final Complete System
                     const flight = document.getElementById('flight').value.trim();
                     
                     if (!date) {
-                        showToast('請選擇服務日期', 'error');
+                        showToast('請選擇接送日期', 'error');
                         return false;
                     }
                     if (!time) {
-                        showToast('請選擇服務時間', 'error');
+                        showToast('請選擇接送時間', 'error');
                         return false;
                     }
                     if (!pickup) {
@@ -444,19 +453,33 @@ index.html - Doug Shuttle Service Final Complete System
             return true;
         }
 
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}/${month}/${day}`;
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            // 確保時間格式為 HH:MM
+            if (timeStr.includes('T')) {
+                return timeStr.split('T')[1].substring(0, 5);
+            }
+            return timeStr;
+        }
+
         function generateSummary() {
             const summaryDiv = document.getElementById('summary');
-            
-            let timeLabel = '時間';
-            if (selectedService === '送機') timeLabel = '登車時間';
-            else if (selectedService === '接機') timeLabel = '抵達時間';
-            else timeLabel = '出發時間';
             
             // 收集所有輸入項目進行確認
             const allFields = [
                 {label: '服務類型', value: selectedService},
-                {label: '服務日期', value: document.getElementById('date').value},
-                {label: timeLabel, value: document.getElementById('time').value},
+                {label: '接送日期', value: formatDate(document.getElementById('date').value)},
+                {label: '接送時間', value: formatTime(document.getElementById('time').value)},
                 {label: '航班編號', value: document.getElementById('flight').value || '-'},
                 {label: '上車地點', value: document.getElementById('pickup').value},
                 {label: '中停點', value: document.getElementById('midstop').value || '-'},
@@ -476,7 +499,7 @@ index.html - Doug Shuttle Service Final Complete System
             html += '<div class="summary-title">確認所有預約資訊</div>';
             
             allFields.forEach(field => {
-                if (field.label === '航班編號' && selectedService === '包車') return; // 包車不顯示航班
+                if (field.label === '航班編號' && selectedService === '包車') return;
                 html += `<div class="summary-item"><span class="summary-label">${field.label}:</span><span class="summary-value">${field.value}</span></div>`;
             });
             
@@ -494,10 +517,10 @@ index.html - Doug Shuttle Service Final Complete System
                     '服務項目': selectedService,
                     '公司名稱': document.getElementById('company').value.trim(),
                     '部門': document.getElementById('department').value.trim(),
-                    '手機號碼': document.getElementById('phone').value.replace(/\D/g, ''),
+                    '手機號碼': normalizePhone(document.getElementById('phone').value),
                     '姓名': document.getElementById('name').value.trim(),
-                    '日期': document.getElementById('date').value,
-                    '時間': document.getElementById('time').value,
+                    '接送日期': document.getElementById('date').value,
+                    '接送時間': document.getElementById('time').value,
                     '航班編號': document.getElementById('flight').value.trim(),
                     '上車點': document.getElementById('pickup').value.trim(),
                     '中停點': document.getElementById('midstop').value.trim(),
@@ -530,14 +553,13 @@ index.html - Doug Shuttle Service Final Complete System
             showStep(5);
             
             const detailsElement = document.getElementById('booking-details');
-            let timeLabel = selectedService === '送機' ? '登車時間' : selectedService === '接機' ? '抵達時間' : '出發時間';
             
             let html = '<div class="summary-section">';
             html += '<div class="summary-title">預約詳情</div>';
             html += `<div class="summary-item"><span class="summary-label">預約編號:</span><span class="summary-value">B${Date.now().toString().slice(-6)}</span></div>`;
             html += `<div class="summary-item"><span class="summary-label">服務類型:</span><span class="summary-value">${selectedService}</span></div>`;
-            html += `<div class="summary-item"><span class="summary-label">服務日期:</span><span class="summary-value">${document.getElementById('date').value}</span></div>`;
-            html += `<div class="summary-item"><span class="summary-label">${timeLabel}:</span><span class="summary-value">${document.getElementById('time').value}</span></div>`;
+            html += `<div class="summary-item"><span class="summary-label">接送日期:</span><span class="summary-value">${formatDate(document.getElementById('date').value)}</span></div>`;
+            html += `<div class="summary-item"><span class="summary-label">接送時間:</span><span class="summary-value">${formatTime(document.getElementById('time').value)}</span></div>`;
             html += `<div class="summary-item"><span class="summary-label">聯絡人:</span><span class="summary-value">${document.getElementById('name').value}</span></div>`;
             html += `<div class="summary-item"><span class="summary-label">手機號碼:</span><span class="summary-value">${document.getElementById('phone').value}</span></div>`;
             html += `<div class="summary-item"><span class="summary-label">付款方式:</span><span class="summary-value">${document.getElementById('payment').value}</span></div>`;
