@@ -105,9 +105,7 @@ index.html - Doug Shuttle Service UX Optimized
                         <p>客製行程</p>
                     </div>
                 </div>
-                <div class="btn-group">
-                    <button class="btn" onclick="goNext(1)" id="next1" disabled>下一步</button>
-                </div>
+
             </div>
 
             <!-- 步驟2: 基本資訊 -->
@@ -199,7 +197,7 @@ index.html - Doug Shuttle Service UX Optimized
                 </div>
                 <div class="form-group">
                     <label for="remarks">備註</label>
-                    <textarea id="remarks" placeholder="特殊需求或注意事項" rows="3"></textarea>
+                    <textarea id="remarks" placeholder="如有特別需求事項敬請註明" rows="3"></textarea>
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-outline" onclick="goPrev(3)">上一步</button>
@@ -276,10 +274,8 @@ index.html - Doug Shuttle Service UX Optimized
                     
                     updateServiceFields();
                     setDefaultLocations();
-                    document.getElementById('next1').disabled = false;
-                    saveFormProgress();
                     
-                    setTimeout(() => goNext(1), 500);
+                    setTimeout(() => goNext(1), 300); // 自動進入下一步
                 });
             });
         }
@@ -294,7 +290,7 @@ index.html - Doug Shuttle Service UX Optimized
                 const normalized = normalizePhone(this.value);
                 if (normalized && normalized.length === 10) {
                     document.getElementById('phone-hint').textContent = '✓';
-                    setTimeout(() => lookupUserData(normalized), 800);
+                    lookupUserData(normalized); // 立即搜尋，移除延遲
                 } else {
                     document.getElementById('phone-hint').textContent = '';
                     clearValidationError('phone');
@@ -430,23 +426,36 @@ index.html - Doug Shuttle Service UX Optimized
         }
 
         function fillUserData(data) {
-            // 根據服務類型填入相應的歷史資料
-            const fields = ['name', 'company', 'department', 'email', 'proxyEmail', 'costCenter', 'payment'];
+            // 根據服務類型填入最近一筆相同服務類型的所有欄位（除日期、時間、航班編號）
+            const excludeFields = ['date', 'time', 'flight']; // 排除這些欄位
+            const fieldMapping = {
+                'name': 'name',
+                'company': 'company', 
+                'department': 'department',
+                'email': 'email',
+                'proxyEmail': 'proxyEmail',
+                'costCenter': 'costCenter',
+                'payment': 'payment',
+                'pickup': 'pickup',
+                'midstop': 'midstop',
+                'dropoff': 'dropoff',
+                'remarks': 'remarks'
+            };
             
-            fields.forEach(field => {
-                if (data[field] && !document.getElementById(field).value) {
-                    document.getElementById(field).value = data[field];
+            Object.entries(fieldMapping).forEach(([dataKey, fieldId]) => {
+                if (!excludeFields.includes(dataKey) && data[dataKey]) {
+                    const element = document.getElementById(fieldId);
+                    if (element) {
+                        element.value = data[dataKey];
+                    }
                 }
             });
             
-            // 填入對應服務類型的地點資料（除了已預設的機場）
-            if (selectedService === '送機' && data.pickup && !document.getElementById('pickup').value.includes('機場')) {
+            // 針對服務類型覆蓋預設地點
+            if (selectedService === '送機' && data.pickup) {
                 document.getElementById('pickup').value = data.pickup;
-            } else if (selectedService === '接機' && data.dropoff && !document.getElementById('dropoff').value.includes('機場')) {
+            } else if (selectedService === '接機' && data.dropoff) {
                 document.getElementById('dropoff').value = data.dropoff;
-            } else if (selectedService === '包車') {
-                if (data.pickup) document.getElementById('pickup').value = data.pickup;
-                if (data.dropoff) document.getElementById('dropoff').value = data.dropoff;
             }
         }
 

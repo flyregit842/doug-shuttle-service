@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-query.html - Doug Shuttle Service Query System
-機場接送預約查詢管理頁面，支援查詢、編輯、取消現有預約，按日期時間排序顯示
-版本: v5.0 | 最後更新: 2025-09-20 | 開發者: Doug Shuttle Service Team
+query.html - Doug Shuttle Service Query System Fixed
+修正手機號碼搜尋問題，支援各種格式查詢，移除輸入提示文字
+版本: v6.1 Fixed | 2025-09-20
 -->
 <html lang="zh-TW">
 <head>
@@ -11,7 +11,7 @@ query.html - Doug Shuttle Service Query System
     <title>Doug Shuttle Service - 預約查詢</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f5;padding:20px;line-height:1.6}
+        body{font-family:system-ui,sans-serif;background:#f5f5f5;padding:20px;line-height:1.6}
         .container{max-width:1200px;margin:0 auto;background:white;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);overflow:hidden}
         .header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px 20px;text-align:center}
         .header h1{font-size:2rem;margin-bottom:0.5rem}
@@ -99,7 +99,7 @@ query.html - Doug Shuttle Service Query System
                 <div class="form-group">
                     <label for="phone-search">手機號碼查詢：</label>
                     <div class="search-group">
-                        <input type="tel" id="phone-search" maxlength="12" placeholder="請輸入手機號碼">
+                        <input type="tel" id="phone-search" maxlength="15">
                         <button class="btn" id="search-btn">查詢預約</button>
                     </div>
                 </div>
@@ -130,13 +130,11 @@ query.html - Doug Shuttle Service Query System
                 </div>
                 <div class="form-group">
                     <label for="edit-time" id="edit-time-label">時間：</label>
-                    <select id="edit-time">
-                        <option value="">請選擇時間</option>
-                    </select>
+                    <input type="time" id="edit-time">
                 </div>
                 <div class="form-group">
                     <label for="edit-flight">航班編號：</label>
-                    <input type="text" id="edit-flight" placeholder="例：CI123">
+                    <input type="text" id="edit-flight">
                 </div>
                 <div class="form-group">
                     <label for="edit-pickup">上車地點：</label>
@@ -176,77 +174,75 @@ query.html - Doug Shuttle Service Query System
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Doug Shuttle Service 查詢系統 - 初始化中...');
             bindEvents();
-            generateTimeOptions();
             showToast('請輸入手機號碼查詢預約記錄', 'info');
         });
 
         function bindEvents() {
             document.getElementById('search-btn').addEventListener('click', searchBookings);
             const phoneInput = document.getElementById('phone-search');
+            
             phoneInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') searchBookings();
             });
+            
             phoneInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 10) value = value.substring(0, 10);
-                let formatted = value;
-                if (value.length >= 8) {
-                    formatted = value.substring(0, 4) + '-' + value.substring(4, 7) + '-' + value.substring(7);
-                } else if (value.length >= 4) {
-                    formatted = value.substring(0, 4) + '-' + value.substring(4);
-                }
-                if (e.target.value !== formatted) e.target.value = formatted;
-                if (value.length === 10) {
+                let value = e.target.value.replace(/[^\d\-\+]/g, ''); // 允許數字、減號、加號
+                if (value.length > 15) value = value.substring(0, 15);
+                e.target.value = value;
+                
+                const normalized = normalizePhone(value);
+                if (normalized && normalized.length === 10) {
                     clearTimeout(window.autoSearchTimer);
                     window.autoSearchTimer = setTimeout(() => searchBookings(), 500);
                 }
             });
         }
 
-        function generateTimeOptions() {
-            const timeSelect = document.getElementById('edit-time');
-            timeSelect.innerHTML = '<option value="">請選擇時間</option>';
-            for (let hour = 0; hour < 24; hour++) {
-                for (let minute = 0; minute < 60; minute += 5) {
-                    const hourStr = hour.toString().padStart(2, '0');
-                    const minuteStr = minute.toString().padStart(2, '0');
-                    const timeValue = hourStr + ':' + minuteStr;
-                    const option = document.createElement('option');
-                    option.value = timeValue;
-                    option.textContent = timeValue;
-                    timeSelect.appendChild(option);
-                }
+        function normalizePhone(input) {
+            // 移除所有非數字字符
+            let digits = input.replace(/\D/g, '');
+            
+            // 處理國際格式 +886
+            if (digits.startsWith('886')) {
+                digits = '0' + digits.substring(3);
             }
+            
+            // 確保台灣手機格式
+            if (digits.length === 10 && digits.startsWith('09')) {
+                return digits;
+            }
+            
+            return null;
         }
 
         async function searchBookings() {
             const phoneInput = document.getElementById('phone-search');
-            const phone = phoneInput.value.replace(/\D/g, '');
+            const inputValue = phoneInput.value.trim();
             
-            if (!phone) {
+            if (!inputValue) {
                 showToast('請輸入手機號碼', 'error');
                 phoneInput.focus();
                 return;
             }
-            if (phone.length < 10) {
-                showToast('請輸入完整的10位手機號碼', 'error');
+            
+            const normalizedPhone = normalizePhone(inputValue);
+            if (!normalizedPhone) {
+                showToast('請輸入正確的手機號碼格式', 'error');
                 phoneInput.focus();
                 return;
             }
 
-            const cacheKey = 'search_' + phone;
+            const cacheKey = 'search_' + normalizedPhone;
             const cached = searchCache.get(cacheKey);
             if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-                console.log('使用快取結果');
                 displayResults(cached.data);
                 return;
             }
 
             showLoading(true);
             try {
-                const response = await apiCall('getBookingsByPhone', { phone: phone });
+                const response = await apiCall('getBookingsByPhone', { phone: normalizedPhone });
                 if (response.success) {
                     searchCache.set(cacheKey, { data: response.data || [], timestamp: Date.now() });
                     displayResults(response.data || []);
@@ -254,7 +250,6 @@ query.html - Doug Shuttle Service Query System
                     throw new Error(response.message || '查詢失敗');
                 }
             } catch (error) {
-                console.error('查詢錯誤:', error);
                 showToast('查詢失敗，請稍後再試', 'error');
                 displayResults([]);
             } finally {
@@ -444,31 +439,12 @@ query.html - Doug Shuttle Service Query System
                 }
             }
             
-            // 查詢該用戶的歷史地點資料
-            try {
-                const phone = booking.phone.replace(/\D/g, '');
-                const response = await apiCall('getUserDataByPhone', { phone: phone });
-                let defaultPickup = booking.pickup || '';
-                let defaultDropoff = booking.dropoff || '';
-                
-                if (response.success && response.data && response.data.length > 0) {
-                    // 使用最近的上下車地點作為預設值
-                    const recentBooking = response.data[response.data.length - 1];
-                    defaultPickup = recentBooking.pickup || booking.pickup || '';
-                    defaultDropoff = recentBooking.dropoff || booking.dropoff || '';
-                }
-                
-                document.getElementById('edit-pickup').value = defaultPickup;
-                document.getElementById('edit-dropoff').value = defaultDropoff;
-            } catch (error) {
-                document.getElementById('edit-pickup').value = booking.pickup || '';
-                document.getElementById('edit-dropoff').value = booking.dropoff || '';
-            }
-            
             document.getElementById('edit-date').value = dateValue;
             document.getElementById('edit-time').value = timeValue;
             document.getElementById('edit-flight').value = booking.airport || '';
+            document.getElementById('edit-pickup').value = booking.pickup || '';
             document.getElementById('edit-midstop').value = booking.midstop || '';
+            document.getElementById('edit-dropoff').value = booking.dropoff || '';
             document.getElementById('edit-remarks').value = booking.remarks || '';
             
             document.getElementById('edit-form').className = 'edit-form show';
@@ -516,7 +492,6 @@ query.html - Doug Shuttle Service Query System
                     throw new Error(response.message || '修改失敗');
                 }
             } catch (error) {
-                console.error('修改錯誤:', error);
                 showToast('修改失敗，請稍後再試', 'error');
             }
         }
@@ -547,14 +522,12 @@ query.html - Doug Shuttle Service Query System
                     throw new Error(response.message || '取消失敗');
                 }
             } catch (error) {
-                console.error('取消錯誤:', error);
                 showToast('取消失敗，請稍後再試', 'error');
             }
         }
 
         async function apiCall(action, data, attempt = 1) {
             try {
-                // 手動建立URL編碼字符串，避免觸發CORS預檢
                 const params = Object.keys(data)
                     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key] || '')}`)
                     .join('&');
@@ -564,13 +537,11 @@ query.html - Doug Shuttle Service Query System
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: body
-                    // 關鍵：不設置任何headers避免CORS預檢
                 });
 
                 if (!response.ok) throw new Error('HTTP ' + response.status + ': ' + response.statusText);
                 return await response.json();
             } catch (error) {
-                console.error(`API調用失敗 (嘗試 ${attempt}):`, error);
                 if (attempt <= 1) {
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     return apiCall(action, data, attempt + 1);
