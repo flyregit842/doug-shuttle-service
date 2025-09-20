@@ -114,7 +114,7 @@ index.html - Doug Shuttle Service UX Optimized
                 <div class="form-group">
                     <label for="phone" class="required">手機號碼</label>
                     <div class="input-group">
-                        <input type="tel" id="phone" placeholder="可輸入 0912345678 或 +886912345678" required>
+                        <input type="tel" id="phone" required>
                         <div class="input-hint" id="phone-hint"></div>
                     </div>
                     <div class="loading" id="loading">查詢歷史資料中...</div>
@@ -407,7 +407,8 @@ index.html - Doug Shuttle Service UX Optimized
             loadingElement.className = 'loading show';
             
             try {
-                const response = await apiCall('getUserDataByPhone', { phone: phone });
+                // 查詢該手機號碼相同服務類型的最新資料
+                const response = await apiCall('getUserDataByPhone', { phone: phone, serviceType: selectedService });
                 if (response.success && response.data) {
                     fillUserData(response.data);
                     showToast('已自動帶入歷史資料', 'success');
