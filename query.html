@@ -1,20 +1,8 @@
 <!DOCTYPE html>
 <!--
-程式名稱：Doug 機場接送預約系統 - 預約查詢管理頁面
-版本：v4.2-fixed-complete
-開發日期：2025年9月
-最後更新：2025年9月19日
-功能描述：查詢、編輯、取消現有預約，支援送機/接機/包車服務
-技術架構：HTML5 + CSS3 + Vanilla JavaScript + Google Apps Script
-開發者：Doug Shuttle Service Team
-修正項目：
-1. 送機服務顯示"登車時間"
-2. 修正台灣時區問題
-3. 確認頁面顯示完整輸入資料
-4. 移除預估費用顯示
-5. 優化編輯表單時間標籤顯示
-6. 按照"接送機的日期+時間"順序顯示
-7. 顯示完整預約資料，多欄顯示節省畫面
+query.html - Doug Shuttle Service Query Complete Fixed
+完全修正版：解決手機搜尋問題，移除提示文字
+版本: v6.2 Complete Fixed | 2025-09-20
 -->
 <html lang="zh-TW">
 <head>
@@ -22,543 +10,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doug Shuttle Service - 預約查詢</title>
     <style>
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-        }
-        
-        body { 
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
-            background: #f5f5f5; 
-            padding: 20px; 
-            line-height: 1.6;
-        }
-        
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            background: white; 
-            border-radius: 10px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-            overflow: hidden;
-        }
-        
-        .header { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; 
-            padding: 30px 20px; 
-            text-align: center; 
-        }
-        
-        .header h1 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1rem;
-        }
-        
-        .content { 
-            padding: 20px; 
-        }
-        
-        /* 導航連結 */
-        .nav-links { 
-            text-align: center; 
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .nav-links a { 
-            margin: 0 10px; 
-            padding: 10px 16px; 
-            text-decoration: none; 
-            color: #667eea; 
-            border: 1px solid #667eea; 
-            border-radius: 6px;
-            transition: all 0.2s ease;
-            display: inline-block;
-        }
-        
-        .nav-links a:hover { 
-            background: #667eea; 
-            color: white; 
-            transform: translateY(-1px);
-        }
-        
-        .nav-links a.active { 
-            background: #667eea; 
-            color: white; 
-        }
-        
-        /* 搜尋表單 */
-        .search-form { 
-            background: #f9fafb; 
-            padding: 25px; 
-            border-radius: 10px; 
-            margin-bottom: 30px;
-            border: 1px solid #e5e7eb;
-        }
-        
-        .form-group { 
-            margin-bottom: 20px; 
-        }
-        
-        label { 
-            display: block; 
-            margin-bottom: 8px; 
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        input { 
-            width: 100%; 
-            padding: 12px; 
-            border: 2px solid #e5e7eb; 
-            border-radius: 6px; 
-            font-size: 16px;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-        
-        input:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
-        
-        .search-group { 
-            display: flex; 
-            gap: 12px; 
-            align-items: flex-end; 
-        }
-        
-        .search-group input {
-            flex: 1;
-        }
-        
-        /* 按鈕樣式 */
-        .btn { 
-            padding: 12px 24px; 
-            background: #667eea; 
-            color: white; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 16px;
-            font-weight: 500;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            white-space: nowrap;
-            transition: all 0.2s ease;
-        }
-        
-        .btn:hover:not(:disabled) { 
-            background: #5a67d8; 
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-        
-        .btn-small { 
-            padding: 8px 16px; 
-            font-size: 14px; 
-        }
-        
-        .btn-outline { 
-            background: transparent; 
-            border: 2px solid #667eea; 
-            color: #667eea; 
-        }
-        
-        .btn-outline:hover:not(:disabled) { 
-            background: #667eea; 
-            color: white; 
-        }
-        
-        .btn-danger { 
-            background: #dc2626; 
-        }
-        
-        .btn-danger:hover:not(:disabled) { 
-            background: #b91c1c; 
-        }
-        
-        /* 載入狀態 */
-        .loading { 
-            display: none; 
-            text-align: center; 
-            padding: 30px; 
-            color: #667eea;
-        }
-        
-        .loading.show {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            background: #f0f4ff;
-            border-radius: 8px;
-            color: #667eea;
-        }
-        
-        .loading::before {
-            content: '';
-            width: 32px;
-            height: 32px;
-            border: 3px solid #667eea;
-            border-top: 3px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* 查詢結果 */
-        .results { 
-            display: none; 
-        }
-        
-        .results.show {
-            display: block;
-        }
-        
-        .results-header {
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e5e7eb;
-        }
-        
-        .results-count {
-            color: #374151;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-        
-        /* 預約卡片 - 修正項目7：多欄顯示節省畫面 */
-        .booking-card { 
-            background: #f9fafb; 
-            border: 1px solid #e5e7eb; 
-            border-radius: 10px; 
-            padding: 20px; 
-            margin-bottom: 20px; 
-            transition: all 0.2s ease;
-            position: relative;
-        }
-        
-        .booking-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-            border-color: #d1d5db;
-        }
-        
-        .booking-header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .booking-service-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .service-type {
-            background: #667eea;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        
-        .booking-status {
-            background: #10b981;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .booking-status.expired {
-            background: #ef4444;
-        }
-        
-        .booking-time {
-            color: #6b7280;
-            font-size: 13px;
-        }
-        
-        /* 預約詳細資訊 - 多欄佈局 */
-        .booking-details-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 15px;
-        }
-        
-        .detail-section {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #f0f0f0;
-        }
-        
-        .section-title {
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 10px;
-            font-size: 14px;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 5px;
-        }
-        
-        .detail-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        
-        .detail-label {
-            color: #6b7280;
-            font-weight: 500;
-            min-width: 80px;
-        }
-        
-        .detail-value {
-            color: #374151;
-            text-align: right;
-            flex: 1;
-            margin-left: 10px;
-        }
-        
-        .booking-actions { 
-            display: flex; 
-            gap: 10px; 
-            justify-content: flex-end;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        /* 無結果狀態 */
-        .no-results { 
-            text-align: center; 
-            padding: 60px 20px; 
-            color: #6b7280; 
-        }
-        
-        .no-results-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-        
-        .no-results h3 {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            color: #374151;
-        }
-        
-        .no-results p {
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-        
-        /* Toast 通知 */
-        .toast { 
-            position: fixed; 
-            top: 20px; 
-            right: 20px; 
-            padding: 16px 20px; 
-            border-radius: 6px; 
-            z-index: 1000; 
-            animation: slideIn 0.3s ease-out; 
-            min-width: 280px; 
-            max-width: 400px;
-            font-weight: 500;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        .toast-success { 
-            background: #d1fae5; 
-            color: #065f46; 
-            border: 1px solid #a7f3d0; 
-        }
-        
-        .toast-error { 
-            background: #fef2f2; 
-            color: #991b1b; 
-            border: 1px solid #fecaca; 
-        }
-        
-        .toast-info { 
-            background: #dbeafe; 
-            color: #1e40af; 
-            border: 1px solid #93c5fd; 
-        }
-        
-        /* 錯誤訊息 */
-        .error-message {
-            background: #fef2f2;
-            color: #991b1b;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border: 1px solid #fecaca;
-        }
-        
-        .retry-btn {
-            margin-top: 12px;
-        }
-        
-        /* 編輯表單 */
-        .edit-form {
-            display: none;
-            background: #fff;
-            border: 2px solid #667eea;
-            border-radius: 10px;
-            padding: 25px;
-            margin: 25px 0;
-            position: relative;
-        }
-        
-        .edit-form.show {
-            display: block;
-            animation: fadeIn 0.3s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .edit-form h4 {
-            margin-bottom: 20px;
-            color: #667eea;
-            font-size: 1.2rem;
-        }
-        
-        .edit-form .form-group {
-            margin-bottom: 18px;
-        }
-        
-        .edit-form label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        .edit-form input, 
-        .edit-form select, 
-        .edit-form textarea {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e5e7eb;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .edit-form input:focus,
-        .edit-form select:focus,
-        .edit-form textarea:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
-        
-        .edit-form textarea {
-            resize: vertical;
-            min-height: 60px;
-        }
-        
-        .edit-form .btn-group {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            margin-top: 25px;
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        /* 響應式設計 */
-        @media (max-width: 768px) { 
-            .container { 
-                margin: 10px; 
-                border-radius: 0;
-            }
-            
-            .content {
-                padding: 15px;
-            }
-            
-            .search-group { 
-                flex-direction: column; 
-                gap: 15px;
-            }
-            
-            .booking-details-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-            
-            .booking-actions { 
-                flex-direction: column; 
-            }
-            
-            .booking-header {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
-            }
-            
-            .nav-links a {
-                margin: 5px;
-                padding: 8px 12px;
-                font-size: 14px;
-            }
-            
-            .edit-form .btn-group {
-                flex-direction: column;
-            }
-            
-            .toast {
-                right: 10px;
-                left: 10px;
-                min-width: auto;
-            }
-        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:system-ui,sans-serif;background:#f5f5f5;padding:20px;line-height:1.6}
+        .container{max-width:1200px;margin:0 auto;background:white;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);overflow:hidden}
+        .header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px 20px;text-align:center}
+        .header h1{font-size:2rem;margin-bottom:0.5rem}
+        .header p{opacity:0.9;font-size:1.1rem}
+        .content{padding:20px}
+        .nav-links{text-align:center;margin-bottom:30px;padding-bottom:20px;border-bottom:1px solid #e5e7eb}
+        .nav-links a{margin:0 10px;padding:10px 16px;text-decoration:none;color:#667eea;border:1px solid #667eea;border-radius:6px;transition:all 0.2s ease;display:inline-block}
+        .nav-links a:hover,.nav-links a.active{background:#667eea;color:white;transform:translateY(-1px)}
+        .search-form{background:#f9fafb;padding:25px;border-radius:10px;margin-bottom:30px;border:1px solid #e5e7eb}
+        .form-group{margin-bottom:20px}
+        label{display:block;margin-bottom:8px;font-weight:600;color:#374151}
+        input{width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:6px;font-size:16px;transition:all 0.3s ease;font-family:inherit}
+        input:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1);outline:none}
+        .search-group{display:flex;gap:12px;align-items:flex-end}
+        .search-group input{flex:1}
+        .btn{padding:12px 24px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;font-weight:500;text-decoration:none;display:inline-block;text-align:center;white-space:nowrap;transition:all 0.2s ease}
+        .btn:hover:not(:disabled){background:#5a67d8;transform:translateY(-1px);box-shadow:0 4px 8px rgba(0,0,0,0.1)}
+        .btn:disabled{opacity:0.6;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+        .btn-small{padding:8px 16px;font-size:14px}
+        .btn-outline{background:transparent;border:2px solid #667eea;color:#667eea}
+        .btn-outline:hover:not(:disabled){background:#667eea;color:white}
+        .btn-danger{background:#dc2626}
+        .btn-danger:hover:not(:disabled){background:#b91c1c}
+        .loading{display:none;text-align:center;padding:30px;color:#667eea}
+        .loading.show{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;background:#f0f4ff;border-radius:8px;color:#667eea}
+        .loading::before{content:'';width:32px;height:32px;border:3px solid #667eea;border-top:3px solid transparent;border-radius:50%;animation:spin 1s linear infinite}
+        @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+        .results{display:none}
+        .results.show{display:block}
+        .results-header{margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #e5e7eb}
+        .results-count{color:#374151;font-size:1.1rem;font-weight:600}
+        .booking-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:20px;transition:all 0.2s ease;position:relative}
+        .booking-card:hover{transform:translateY(-2px);box-shadow:0 8px 16px rgba(0,0,0,0.1);border-color:#d1d5db}
+        .booking-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #e5e7eb}
+        .booking-service-info{display:flex;align-items:center;gap:15px}
+        .service-type{background:#667eea;color:white;padding:6px 12px;border-radius:20px;font-size:14px;font-weight:600}
+        .booking-status{background:#10b981;color:white;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500}
+        .booking-details-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:15px}
+        .detail-section{background:white;padding:15px;border-radius:8px;border:1px solid #f0f0f0}
+        .section-title{font-weight:600;color:#374151;margin-bottom:10px;font-size:14px;border-bottom:1px solid #e5e7eb;padding-bottom:5px}
+        .detail-item{display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px}
+        .detail-label{color:#6b7280;font-weight:500;min-width:80px}
+        .detail-value{color:#374151;text-align:right;flex:1;margin-left:10px}
+        .booking-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:15px;padding-top:15px;border-top:1px solid #e5e7eb}
+        .no-results{text-align:center;padding:60px 20px;color:#6b7280}
+        .no-results-icon{font-size:64px;margin-bottom:20px}
+        .no-results h3{font-size:1.5rem;margin-bottom:10px;color:#374151}
+        .no-results p{margin-bottom:30px;line-height:1.6}
+        .toast{position:fixed;top:20px;right:20px;padding:16px 20px;border-radius:6px;z-index:1000;animation:slideIn 0.3s ease-out;min-width:280px;max-width:400px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+        .toast-success{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}
+        .toast-error{background:#fef2f2;color:#991b1b;border:1px solid:#fecaca}
+        .toast-info{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+        .edit-form{display:none;background:#fff;border:2px solid #667eea;border-radius:10px;padding:25px;margin:25px 0;position:relative}
+        .edit-form.show{display:block;animation:fadeIn 0.3s ease-out}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .edit-form h4{margin-bottom:20px;color:#667eea;font-size:1.2rem}
+        .edit-form .form-group{margin-bottom:18px}
+        .edit-form label{display:block;margin-bottom:6px;font-weight:600;color:#374151}
+        .edit-form input,.edit-form select,.edit-form textarea{width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:6px;font-size:14px;transition:all 0.3s ease}
+        .edit-form input:focus,.edit-form select:focus,.edit-form textarea:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1);outline:none}
+        .edit-form textarea{resize:vertical;min-height:60px}
+        .edit-form .btn-group{display:flex;gap:12px;justify-content:flex-end;margin-top:25px}
+        @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+        @media (max-width:768px){.container{margin:10px;border-radius:0}.content{padding:15px}.search-group{flex-direction:column;gap:15px}.booking-details-grid{grid-template-columns:1fr;gap:15px}.booking-actions{flex-direction:column}.booking-header{flex-direction:column;gap:10px;text-align:center}.nav-links a{margin:5px;padding:8px 12px;font-size:14px}.edit-form .btn-group{flex-direction:column}.toast{right:10px;left:10px;min-width:auto}}
     </style>
 </head>
 <body>
@@ -574,45 +91,33 @@
                 <a href="#" class="active" onclick="location.reload()">查詢預約</a>
             </div>
 
-            <!-- 搜尋表單 -->
             <div class="search-form">
                 <div class="form-group">
                     <label for="phone-search">手機號碼查詢：</label>
                     <div class="search-group">
-                        <input type="tel" id="phone-search" maxlength="12" placeholder="請輸入手機號碼">
+                        <input type="tel" id="phone-search" maxlength="15">
                         <button class="btn" id="search-btn">查詢預約</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 載入狀態 -->
-            <div class="loading" id="loading">
-                正在查詢您的預約記錄，請稍候...
-            </div>
+            <div class="loading" id="loading">正在查詢您的預約記錄，請稍候...</div>
 
-            <!-- 查詢結果 -->
             <div class="results" id="results">
                 <div class="results-header">
                     <h3 class="results-count" id="results-count">查詢結果</h3>
                 </div>
 
-                <!-- 無結果狀態 -->
                 <div class="no-results" id="no-results" style="display: none;">
                     <div class="no-results-icon">😔</div>
                     <h3>未找到預約記錄</h3>
                     <p>請確認手機號碼是否正確，或是否有預約中的行程</p>
-                    <div>
-                        <a href="index.html" class="btn">建立新預約</a>
-                    </div>
+                    <div><a href="index.html" class="btn">建立新預約</a></div>
                 </div>
 
-                <!-- 結果列表 -->
-                <div id="results-list">
-                    <!-- 動態生成預約記錄 -->
-                </div>
+                <div id="results-list"></div>
             </div>
 
-            <!-- 編輯表單 -->
             <div class="edit-form" id="edit-form">
                 <h4>修改預約資訊</h4>
                 <div class="form-group">
@@ -621,14 +126,11 @@
                 </div>
                 <div class="form-group">
                     <label for="edit-time" id="edit-time-label">時間：</label>
-                    <select id="edit-time">
-                        <option value="">請選擇時間</option>
-                        <!-- 時間選項由JavaScript生成 -->
-                    </select>
+                    <input type="time" id="edit-time">
                 </div>
                 <div class="form-group">
                     <label for="edit-flight">航班編號：</label>
-                    <input type="text" id="edit-flight" placeholder="例：CI123">
+                    <input type="text" id="edit-flight">
                 </div>
                 <div class="form-group">
                     <label for="edit-pickup">上車地點：</label>
@@ -651,160 +153,93 @@
                     <button class="btn" onclick="saveEdit()">保存修改</button>
                 </div>
             </div>
-
-            <!-- 錯誤訊息區域 -->
-            <div id="error-container" style="display: none;">
-                <!-- 動態錯誤訊息 -->
-            </div>
         </div>
     </div>
 
     <script>
-        // 全域變數定義
         let searchCache = new Map();
         const CACHE_DURATION = 5 * 60 * 1000;
-        let retryCount = 0;
-        const MAX_RETRY = 1;
         let currentEditBooking = null;
-        
-        // API 配置
         const API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
 
-        /**
-         * 取得台灣時區的當前日期時間
-         */
-        function getTaiwanDateTime() {
-            const now = new Date();
-            // 台灣是UTC+8
-            const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
-            return taiwanTime;
-        }
-
-        /**
-         * DOM 載入完成初始化
-         */
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Doug Shuttle Service 查詢系統 - 初始化中...');
-            
             bindEvents();
-            generateTimeOptions();
-            showToast('請輸入手機號碼查詢預約記錄', 'info');
         });
 
-        /**
-         * 綁定所有事件監聽器
-         */
         function bindEvents() {
-            // 查詢按鈕點擊事件
             document.getElementById('search-btn').addEventListener('click', searchBookings);
-            
-            // 手機號碼輸入框事件
             const phoneInput = document.getElementById('phone-search');
             
-            // Enter鍵快速查詢
             phoneInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    searchBookings();
-                }
+                if (e.key === 'Enter') searchBookings();
             });
-
-            // 手機號碼格式化與自動查詢
-            phoneInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 10) value = value.substring(0, 10);
-                
-                // 格式化顯示
-                let formatted = value;
-                if (value.length >= 8) {
-                    formatted = value.substring(0, 4) + '-' + value.substring(4, 7) + '-' + value.substring(7);
-                } else if (value.length >= 4) {
-                    formatted = value.substring(0, 4) + '-' + value.substring(4);
-                }
-                
-                if (e.target.value !== formatted) {
-                    e.target.value = formatted;
-                }
-                
-                // 手機號碼完整時自動查詢
-                if (value.length === 10) {
-                    clearTimeout(window.autoSearchTimer);
-                    window.autoSearchTimer = setTimeout(() => {
-                        searchBookings();
-                    }, 500);
-                }
-            });
-        }
-
-        /**
-         * 生成時間選項
-         */
-        function generateTimeOptions() {
-            const timeSelect = document.getElementById('edit-time');
-            timeSelect.innerHTML = '<option value="">請選擇時間</option>';
             
-            for (let hour = 0; hour < 24; hour++) {
-                for (let minute = 0; minute < 60; minute += 5) {
-                    const hourStr = hour.toString().padStart(2, '0');
-                    const minuteStr = minute.toString().padStart(2, '0');
-                    const timeValue = hourStr + ':' + minuteStr;
-                    
-                    const option = document.createElement('option');
-                    option.value = timeValue;
-                    option.textContent = timeValue;
-                    timeSelect.appendChild(option);
+            phoneInput.addEventListener('input', function(e) {
+                // 智能格式化：保留原始輸入但清理無效字符
+                let value = e.target.value.replace(/[^\d\-\+]/g, '');
+                if (value.length > 15) value = value.substring(0, 15);
+                e.target.value = value;
+                
+                // 檢查是否為有效的10位數字
+                const normalized = normalizePhone(value);
+                if (normalized && normalized.length === 10) {
+                    clearTimeout(window.autoSearchTimer);
+                    window.autoSearchTimer = setTimeout(() => searchBookings(), 500);
                 }
-            }
+            });
         }
 
-        /**
-         * 查詢預約記錄主函數
-         */
+        function normalizePhone(input) {
+            // 移除所有非數字字符
+            let digits = input.replace(/\D/g, '');
+            
+            // 處理國際格式 +886
+            if (digits.startsWith('886')) {
+                digits = '0' + digits.substring(3);
+            }
+            
+            // 確保台灣手機格式
+            if (digits.length === 10 && digits.startsWith('09')) {
+                return digits;
+            }
+            
+            return null;
+        }
+
         async function searchBookings() {
             const phoneInput = document.getElementById('phone-search');
-            const phone = phoneInput.value.replace(/\D/g, '');
+            const inputValue = phoneInput.value.trim();
             
-            // 輸入驗證
-            if (!phone) {
+            if (!inputValue) {
                 showToast('請輸入手機號碼', 'error');
                 phoneInput.focus();
                 return;
             }
             
-            if (phone.length < 10) {
-                showToast('請輸入完整的10位手機號碼', 'error');
+            const normalizedPhone = normalizePhone(inputValue);
+            if (!normalizedPhone) {
+                showToast('請輸入正確的手機號碼格式', 'error');
                 phoneInput.focus();
                 return;
             }
 
-            // 檢查快取
-            const cacheKey = 'search_' + phone;
+            const cacheKey = 'search_' + normalizedPhone;
             const cached = searchCache.get(cacheKey);
             if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-                console.log('使用快取結果');
                 displayResults(cached.data);
                 return;
             }
 
-            // 顯示載入狀態
             showLoading(true);
-
             try {
-                const response = await apiCall('getBookingsByPhone', { phone: phone });
-                
+                const response = await apiCall('getBookingsByPhone', { phone: normalizedPhone });
                 if (response.success) {
-                    // 存入快取
-                    searchCache.set(cacheKey, {
-                        data: response.data || [],
-                        timestamp: Date.now()
-                    });
-                    
+                    searchCache.set(cacheKey, { data: response.data || [], timestamp: Date.now() });
                     displayResults(response.data || []);
                 } else {
                     throw new Error(response.message || '查詢失敗');
                 }
-                
             } catch (error) {
-                console.error('查詢錯誤:', error);
                 showToast('查詢失敗，請稍後再試', 'error');
                 displayResults([]);
             } finally {
@@ -812,25 +247,17 @@
             }
         }
 
-        /**
-         * 顯示/隱藏載入狀態
-         */
         function showLoading(show) {
             const loading = document.getElementById('loading');
             const results = document.getElementById('results');
-            
             if (show) {
                 loading.className = 'loading show';
                 results.classList.remove('show');
-                document.getElementById('error-container').style.display = 'none';
             } else {
                 loading.className = 'loading';
             }
         }
 
-        /**
-         * 顯示查詢結果
-         */
         function displayResults(results) {
             const resultsDiv = document.getElementById('results');
             const resultsCount = document.getElementById('results-count');
@@ -838,7 +265,6 @@
             const resultsList = document.getElementById('results-list');
             
             resultsDiv.classList.add('show');
-            
             if (results.length === 0) {
                 resultsCount.textContent = '查詢結果 (共0筆預約中)';
                 noResults.style.display = 'block';
@@ -851,42 +277,25 @@
             }
         }
 
-        /**
-         * 生成結果列表HTML - 修正項目6：按照日期時間排序，修正項目7：多欄顯示
-         */
         function generateResultsList(results) {
             const resultsList = document.getElementById('results-list');
-            
-            // 修正項目6：按照"接送機的日期+時間"順序排序
             const sortedResults = results.sort((a, b) => {
-                // 建立完整的日期時間字串來比較
                 const dateTimeA = `${a.date || ''} ${a.time || '00:00'}`;
                 const dateTimeB = `${b.date || ''} ${b.time || '00:00'}`;
-                
-                // 轉換為Date物件進行比較（使用台灣時區）
                 const dateA = new Date(dateTimeA.replace(' ', 'T') + '+08:00');
                 const dateB = new Date(dateTimeB.replace(' ', 'T') + '+08:00');
-                
-                return dateA - dateB; // 升序排列：最早的在前
+                return dateA - dateB;
             });
             
             let html = '';
             for (let i = 0; i < sortedResults.length; i++) {
                 const booking = sortedResults[i];
-                
-                // 根據服務類型設定時間標籤 - 修正項目1
                 let timeLabel = '時間';
-                if (booking.service === '送機') {
-                    timeLabel = '登車時間';
-                } else if (booking.service === '接機') {
-                    timeLabel = '抵達時間';
-                } else {
-                    timeLabel = '出發時間';
-                }
+                if (booking.service === '送機') timeLabel = '登車時間';
+                else if (booking.service === '接機') timeLabel = '抵達時間';
+                else timeLabel = '出發時間';
                 
                 html += `<div class="booking-card" data-booking-id="${booking.rowIndex}">`;
-                
-                // 預約標題列
                 html += '<div class="booking-header">';
                 html += '<div class="booking-service-info">';
                 html += `<div class="service-type">${booking.service}</div>`;
@@ -895,10 +304,7 @@
                 html += '<div class="booking-status">預約中</div>';
                 html += '</div>';
                 
-                // 修正項目7：多欄顯示完整預約資料
                 html += '<div class="booking-details-grid">';
-                
-                // 左欄：行程資訊
                 html += '<div class="detail-section">';
                 html += '<div class="section-title">行程資訊</div>';
                 html += `<div class="detail-item"><span class="detail-label">${timeLabel}:</span><span class="detail-value">${formatTime(booking.time)}</span></div>`;
@@ -912,7 +318,6 @@
                 }
                 html += '</div>';
                 
-                // 右欄：聯絡資訊
                 html += '<div class="detail-section">';
                 html += '<div class="section-title">聯絡資訊</div>';
                 html += `<div class="detail-item"><span class="detail-label">姓名:</span><span class="detail-value">${booking.name || '-'}</span></div>`;
@@ -920,369 +325,151 @@
                 if (booking.company && booking.company.trim()) {
                     html += `<div class="detail-item"><span class="detail-label">公司:</span><span class="detail-value">${booking.company}</span></div>`;
                 }
-                if (booking.email && booking.email.trim()) {
-                    html += `<div class="detail-item"><span class="detail-label">信箱:</span><span class="detail-value">${booking.email}</span></div>`;
-                }
                 if (booking.payment && booking.payment.trim()) {
                     html += `<div class="detail-item"><span class="detail-label">付款:</span><span class="detail-value">${booking.payment}</span></div>`;
                 }
-                html += `<div class="detail-item"><span class="detail-label">提交:</span><span class="detail-value">${formatDateWithAMPM(booking.submitTime)}</span></div>`;
+                html += '</div>';
                 html += '</div>';
                 
-                html += '</div>'; // 結束 booking-details-grid
-                
-                // 備註信息（如果有的話）
                 if (booking.remarks && booking.remarks.trim()) {
                     html += `<div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #667eea;">`;
                     html += `<strong>備註：</strong>${booking.remarks}`;
                     html += `</div>`;
                 }
                 
-                // 操作按鈕
                 html += '<div class="booking-actions">';
-                if (canModifyBooking(booking.date)) {
-                    html += `<button class="btn btn-small btn-outline" onclick="editBooking('${booking.rowIndex}')">修改</button>`;
-                }
+                html += `<button class="btn btn-small btn-outline" onclick="editBooking('${booking.rowIndex}')">修改</button>`;
                 html += `<button class="btn btn-small btn-danger" onclick="deleteBooking('${booking.rowIndex}')">取消</button>`;
                 html += '</div>';
-                
                 html += '</div>';
             }
-            
             resultsList.innerHTML = html;
         }
 
-        /**
-         * 檢查是否可以修改預約 (前一日18:00前)
-         */
-        function canModifyBooking(bookingDate) {
-            try {
-                // 使用台灣時區處理日期比較 - 修正項目2
-                const booking = new Date(bookingDate + 'T00:00:00+08:00');
-                const now = getTaiwanDateTime();
-                
-                // 設定前一日18:00（台灣時區）
-                const deadline = new Date(booking);
-                deadline.setDate(deadline.getDate() - 1);
-                deadline.setHours(18, 0, 0, 0);
-                
-                return now < deadline;
-            } catch (error) {
-                return false;
-            }
-        }
-
-        /**
-         * 編輯預約功能
-         */
         async function editBooking(id) {
-            // 從快取中找到對應的預約資料
             let foundBooking = null;
-            
-            // 首先從當前顯示的結果中查找
-            const resultsList = document.getElementById('results-list');
-            const bookingCards = resultsList.querySelectorAll('.booking-card');
-            
-            for (let card of bookingCards) {
-                if (card.dataset.bookingId === id) {
-                    // 從快取中找到完整資料
-                    for (let [cacheKey, cacheValue] of searchCache.entries()) {
-                        if (cacheValue.data) {
-                            foundBooking = cacheValue.data.find(booking => 
-                                booking.rowIndex && booking.rowIndex.toString() === id.toString()
-                            );
-                            if (foundBooking) break;
-                        }
-                    }
-                    break;
+            for (let [cacheKey, cacheValue] of searchCache.entries()) {
+                if (cacheValue.data) {
+                    foundBooking = cacheValue.data.find(booking => 
+                        booking.rowIndex && booking.rowIndex.toString() === id.toString()
+                    );
+                    if (foundBooking) break;
                 }
             }
             
             if (foundBooking) {
-                if (!canModifyBooking(foundBooking.date)) {
-                    showToast('已超過修改時間限制 (前一日18:00前)', 'error');
-                    return;
-                }
-                
                 currentEditBooking = foundBooking;
                 showEditForm(foundBooking);
             } else {
                 showToast('無法載入預約資料，請重新查詢', 'error');
-                // 嘗試重新查詢
-                const phoneInput = document.getElementById('phone-search');
-                if (phoneInput.value) {
-                    searchCache.clear();
-                    setTimeout(() => {
-                        searchBookings();
-                    }, 1000);
-                }
             }
         }
 
-        /**
-         * 顯示編輯表單
-         */
         function showEditForm(booking) {
-            // 設定最小日期（使用台灣時區）
-            const today = getTaiwanDateTime().toISOString().split('T')[0];
+            const today = new Date().toISOString().split('T')[0];
             document.getElementById('edit-date').min = today;
             
-            // 根據服務類型設定時間標籤 - 修正項目1
             const timeLabel = document.getElementById('edit-time-label');
-            if (booking.service === '送機') {
-                timeLabel.textContent = '登車時間：';
-            } else if (booking.service === '接機') {
-                timeLabel.textContent = '抵達時間：';
-            } else {
-                timeLabel.textContent = '出發時間：';
-            }
+            if (booking.service === '送機') timeLabel.textContent = '登車時間：';
+            else if (booking.service === '接機') timeLabel.textContent = '抵達時間：';
+            else timeLabel.textContent = '出發時間：';
             
-            // 填入當前資料 - 處理各種日期格式（修正項目2：台灣時區）
-            let dateValue = '';
-            if (booking.date) {
-                // 處理奇怪的日期格式
-                if (booking.date.includes('1899-12-30T')) {
-                    // 使用今天的日期作為默認值
-                    dateValue = today;
-                } else if (booking.date.includes('-')) {
-                    // 標準 YYYY-MM-DD 格式
-                    dateValue = booking.date;
-                } else {
-                    // 嘗試解析其他格式
-                    const parsed = new Date(booking.date + 'T00:00:00+08:00');
-                    if (!isNaN(parsed.getTime())) {
-                        dateValue = parsed.toISOString().split('T')[0];
-                    } else {
-                        dateValue = today;
-                    }
-                }
-            }
-            
-            // 處理時間格式
-            let timeValue = '';
-            if (booking.time) {
-                if (booking.time.includes('1899-12-30T')) {
-                    const timeMatch = booking.time.match(/T(\d{2}):(\d{2})/);
-                    if (timeMatch) {
-                        timeValue = `${timeMatch[1]}:${timeMatch[2]}`;
-                    }
-                } else {
-                    timeValue = booking.time;
-                }
-            }
-            
-            // 填入所有欄位的原始值
-            document.getElementById('edit-date').value = dateValue;
-            document.getElementById('edit-time').value = timeValue;
+            document.getElementById('edit-date').value = booking.date || '';
+            document.getElementById('edit-time').value = booking.time || '';
             document.getElementById('edit-flight').value = booking.airport || '';
             document.getElementById('edit-pickup').value = booking.pickup || '';
             document.getElementById('edit-midstop').value = booking.midstop || '';
             document.getElementById('edit-dropoff').value = booking.dropoff || '';
             document.getElementById('edit-remarks').value = booking.remarks || '';
             
-            // 顯示表單
             document.getElementById('edit-form').className = 'edit-form show';
-            
-            // 滾動到表單
             document.getElementById('edit-form').scrollIntoView({ behavior: 'smooth' });
-            
-            // 提示用戶
-            showToast('請修改需要變更的欄位', 'info');
         }
 
-        /**
-         * 取消編輯
-         */
         function cancelEdit() {
             document.getElementById('edit-form').className = 'edit-form';
             currentEditBooking = null;
         }
 
-        /**
-         * 保存修改
-         */
         async function saveEdit() {
             if (!currentEditBooking) return;
             
-            // 驗證必填欄位
-            const date = document.getElementById('edit-date').value;
-            const time = document.getElementById('edit-time').value;
-            const pickup = document.getElementById('edit-pickup').value.trim();
-            const dropoff = document.getElementById('edit-dropoff').value.trim();
-            
-            if (!date || !time || !pickup || !dropoff) {
-                showToast('請填寫所有必填欄位', 'error');
-                return;
-            }
-            
-            // 使用台灣時區處理更新資料 - 修正項目2
-            const taiwanDateTime = new Date(`${date}T${time}:00+08:00`);
-            
             const updatedData = {
                 bookingId: currentEditBooking.rowIndex,
-                date: date,
-                time: time,
-                taiwanDateTime: taiwanDateTime.toISOString(),
+                date: document.getElementById('edit-date').value,
+                time: document.getElementById('edit-time').value,
                 flight: document.getElementById('edit-flight').value,
-                pickup: pickup,
+                pickup: document.getElementById('edit-pickup').value,
                 midstop: document.getElementById('edit-midstop').value,
-                dropoff: dropoff,
+                dropoff: document.getElementById('edit-dropoff').value,
                 remarks: document.getElementById('edit-remarks').value
             };
             
             try {
                 const response = await apiCall('updateBooking', updatedData);
-                
                 if (response.success) {
                     showToast('預約修改成功', 'success');
                     cancelEdit();
-                    
-                    // 清除快取並重新查詢
                     searchCache.clear();
-                    setTimeout(() => {
-                        searchBookings();
-                    }, 1000);
+                    setTimeout(() => searchBookings(), 1000);
                 } else {
                     throw new Error(response.message || '修改失敗');
                 }
-                
             } catch (error) {
-                console.error('修改錯誤:', error);
                 showToast('修改失敗，請稍後再試', 'error');
             }
         }
 
-        /**
-         * 取消預約功能
-         */
         async function deleteBooking(id) {
-            if (!confirm('確定要取消這筆預約嗎？此操作無法復原。')) {
-                return;
-            }
+            if (!confirm('確定要取消這筆預約嗎？此操作無法復原。')) return;
             
             try {
                 const response = await apiCall('cancelBooking', { bookingId: id });
-                
                 if (response.success) {
                     showToast('預約取消成功', 'success');
-                    
-                    // 立即從頁面移除該預約卡片
                     const bookingCard = document.querySelector(`[data-booking-id="${id}"]`);
                     if (bookingCard) {
                         bookingCard.style.transition = 'opacity 0.3s ease';
                         bookingCard.style.opacity = '0';
                         setTimeout(() => {
                             bookingCard.remove();
-                            
-                            // 更新計數顯示
                             const remainingCards = document.querySelectorAll('.booking-card').length;
                             document.getElementById('results-count').textContent = `查詢結果 (共${remainingCards}筆預約中)`;
-                            
-                            // 如果沒有剩餘預約，顯示無結果頁面
                             if (remainingCards === 0) {
                                 document.getElementById('no-results').style.display = 'block';
                                 document.getElementById('results-list').style.display = 'none';
                             }
                         }, 300);
                     }
-                    
-                    // 清除快取
                     searchCache.clear();
                 } else {
                     throw new Error(response.message || '取消失敗');
                 }
-                
             } catch (error) {
-                console.error('取消錯誤:', error);
                 showToast('取消失敗，請稍後再試', 'error');
             }
         }
 
-        /**
-         * API調用主函數
-         */
-        async function apiCall(action, data, attempt = 1) {
+        async function apiCall(action, data) {
             try {
-                const requestData = {
-                    action: action
-                };
+                const params = Object.keys(data)
+                    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key] || '')}`)
+                    .join('&');
                 
-                for (let key in data) {
-                    requestData[key] = data[key];
-                }
+                const body = `action=${encodeURIComponent(action)}&${params}`;
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams(requestData)
+                    body: body
                 });
 
-                if (!response.ok) {
-                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-                }
-
-                const result = await response.json();
-                retryCount = 0;
-                return result;
-
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return await response.json();
             } catch (error) {
-                console.error(`API調用失敗 (嘗試 ${attempt}):`, error);
-                
-                if (attempt <= MAX_RETRY) {
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    return apiCall(action, data, attempt + 1);
-                } else {
-                    showError(getErrorMessage(error), () => apiCall(action, data, 1));
-                    throw error;
-                }
+                throw error;
             }
         }
 
-        /**
-         * 錯誤訊息處理
-         */
-        function getErrorMessage(error) {
-            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                return '連線不穩定，請檢查網路後重試';
-            } else if (error.message.includes('403') || error.message.includes('401')) {
-                return '系統暫時無法存取，請稍後再試或聯絡管理員';
-            } else if (error.message.includes('400')) {
-                return '請檢查輸入資料格式';
-            } else {
-                return '系統暫時無法處理您的請求，請稍後再試';
-            }
-        }
-
-        /**
-         * 顯示錯誤訊息
-         */
-        function showError(message, retryCallback) {
-            const errorContainer = document.getElementById('error-container');
-            errorContainer.innerHTML = `
-                <div class="error-message">
-                    <strong>查詢失敗：</strong>${message}
-                    <button class="btn btn-outline retry-btn" onclick="handleRetry()">重新嘗試</button>
-                </div>
-            `;
-            errorContainer.style.display = 'block';
-            window.currentRetryCallback = retryCallback;
-        }
-
-        /**
-         * 處理重試
-         */
-        function handleRetry() {
-            document.getElementById('error-container').style.display = 'none';
-            if (window.currentRetryCallback) {
-                window.currentRetryCallback();
-            }
-        }
-
-        /**
-         * Toast 通知系統
-         */
         function showToast(message, type) {
             const existingToast = document.querySelector('.toast');
             if (existingToast) existingToast.remove();
@@ -1297,117 +484,22 @@
             }, 3000);
         }
 
-        /**
-         * 格式化工具函數
-         */
-        
-        // 格式化日期 (mm/dd/yyyy) - 修正項目2：使用台灣時區
         function formatSimpleDate(dateString) {
             if (!dateString) return '';
-            
-            let date;
-            
-            // 處理各種日期格式，強制使用台灣時區
-            if (dateString.includes('1899-12-30T')) {
-                // 處理Excel錯誤格式，使用今天日期
-                date = getTaiwanDateTime();
-            } else if (dateString.includes('-')) {
-                // 標準 YYYY-MM-DD 格式，加上台灣時區
-                date = new Date(dateString + 'T00:00:00+08:00');
-            } else {
-                date = new Date(dateString);
-            }
-            
-            if (!date || isNaN(date.getTime())) {
-                return dateString;
-            }
-            
+            const date = new Date(dateString + 'T00:00:00+08:00');
+            if (isNaN(date.getTime())) return dateString;
             const year = date.getFullYear();
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
-            
             return `${month}/${day}/${year}`;
         }
 
-        // 格式化時間 (hh:mm)
         function formatTime(timeString) {
             if (!timeString) return '';
-            
-            // 處理奇怪的 1899-12-30T11:30:00.000Z 格式
-            if (timeString.includes('1899-12-30T')) {
-                const timeMatch = timeString.match(/T(\d{2}):(\d{2})/);
-                if (timeMatch) {
-                    return `${timeMatch[1]}:${timeMatch[2]}`;
-                }
-            }
-            
-            // 處理標準 HH:MM 格式
             if (timeString.includes(':')) {
-                const timeParts = timeString.split(':');
-                if (timeParts.length >= 2) {
-                    const hours = timeParts[0].padStart(2, '0');
-                    const minutes = timeParts[1].padStart(2, '0');
-                    return `${hours}:${minutes}`;
-                }
+                return timeString;
             }
-            
             return timeString;
-        }
-
-        // 格式化提交時間 (mm/dd/yyyy hh:mm AM/PM) - 修正項目2：台灣時區
-        function formatDateWithAMPM(dateString) {
-            if (!dateString) return '';
-            
-            // 確保使用台灣時區解析
-            let date;
-            if (dateString.includes('+08:00') || dateString.includes('Z')) {
-                date = new Date(dateString);
-            } else {
-                date = new Date(dateString + '+08:00');
-            }
-            
-            if (isNaN(date.getTime())) {
-                return dateString;
-            }
-            
-            // 轉換為台灣時區顯示
-            const taiwanTime = new Date(date.getTime() + (8 * 60 * 60 * 1000));
-            
-            const month = (taiwanTime.getMonth() + 1).toString().padStart(2, '0');
-            const day = taiwanTime.getDate().toString().padStart(2, '0');
-            const year = taiwanTime.getFullYear();
-            
-            let hours = taiwanTime.getHours();
-            const minutes = taiwanTime.getMinutes().toString().padStart(2, '0');
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            
-            hours = hours % 12;
-            hours = hours ? hours : 12;
-            const displayHours = hours.toString().padStart(2, '0');
-            
-            return `${month}/${day}/${year} ${displayHours}:${minutes} ${ampm}`;
-        }
-
-        /**
-         * 除錯函數 (開發用)
-         */
-        function debugSearch() {
-            console.log('=== Doug Shuttle Service 查詢系統 Debug Info ===');
-            console.log('快取項目數:', searchCache.size);
-            console.log('快取內容:');
-            for (let [key, value] of searchCache.entries()) {
-                console.log(`  ${key}:`, value.data.length, '筆記錄,', '快取時間:', new Date(value.timestamp));
-            }
-            console.log('當前編輯預約:', currentEditBooking);
-            console.log('API URL:', API_URL);
-            console.log('台灣時間:', getTaiwanDateTime().toISOString());
-        }
-
-        // 開發模式下啟用除錯
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            window.debugSearch = debugSearch;
-            console.log('Doug Shuttle Service 查詢系統 - 開發模式已啟用');
-            console.log('使用 debugSearch() 查看系統狀態');
         }
     </script>
 </body>
