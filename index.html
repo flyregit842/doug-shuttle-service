@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-index.html - Doug Shuttle Service Fixed
-修正資料傳送問題，確保所有欄位正確寫入Google Sheets
-版本: v5.4 Fixed | 2025-09-20
+index.html - Doug Shuttle Service Final Complete Version
+最終完整版，整合所有功能，欄位對應Google Sheets，支援查詢、編輯、LINE通知
+版本: v6.0 Final | 2025-09-20
 -->
 <html lang="zh-TW">
 <head>
@@ -15,8 +15,11 @@ index.html - Doug Shuttle Service Fixed
         .container{max-width:600px;margin:0 auto;background:white;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
         .header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px 20px;text-align:center;border-radius:10px 10px 0 0}
         .content{padding:20px}
+        .nav-links{text-align:center;margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #e5e7eb}
+        .nav-links a{margin:0 10px;padding:10px 16px;text-decoration:none;color:#667eea;border:1px solid #667eea;border-radius:6px;transition:all 0.2s ease;display:inline-block}
+        .nav-links a:hover,.nav-links a.active{background:#667eea;color:white}
         .step-indicator{display:flex;justify-content:center;margin-bottom:20px}
-        .step-item{width:35px;height:35px;border-radius:50%;background:#e5e7eb;color:#6b7280;display:flex;align-items:center;justify-content:center;font-weight:bold;margin:0 8px}
+        .step-item{width:35px;height:35px;border-radius:50%;background:#e5e7eb;color:#6b7280;display:flex;align-items:center;justify-content:center;font-weight:bold;margin:0 8px;transition:all 0.3s ease}
         .step-item.active{background:#667eea;color:white}
         .step-item.completed{background:#10b981;color:white}
         .step{display:none}
@@ -24,24 +27,41 @@ index.html - Doug Shuttle Service Fixed
         .form-group{margin-bottom:15px}
         label{display:block;margin-bottom:5px;font-weight:600;color:#374151}
         .required::after{content:" *";color:#dc2626}
-        input,select,textarea{width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:6px;font-size:16px}
-        input:focus,select:focus,textarea:focus{border-color:#667eea;outline:none}
+        input,select,textarea{width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:6px;font-size:16px;transition:all 0.3s ease}
+        input:focus,select:focus,textarea:focus{border-color:#667eea;outline:none;box-shadow:0 0 0 3px rgba(102,126,234,0.1)}
+        textarea{resize:vertical;min-height:80px}
         .service-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0}
-        .service-card{padding:15px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;cursor:pointer;background:white}
-        .service-card:hover{border-color:#667eea}
-        .service-card.selected{border-color:#667eea;background:#f0f4ff}
-        .btn{padding:12px 24px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:500;text-decoration:none;display:inline-block}
-        .btn:hover:not(:disabled){background:#5a67d8}
-        .btn:disabled{opacity:0.6;cursor:not-allowed}
+        .service-card{padding:15px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;cursor:pointer;background:white;transition:all 0.3s ease}
+        .service-card:hover{border-color:#667eea;transform:translateY(-2px)}
+        .service-card.selected{border-color:#667eea;background:#f0f4ff;box-shadow:0 4px 12px rgba(102,126,234,0.2)}
+        .btn{padding:12px 24px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:500;text-decoration:none;display:inline-block;transition:all 0.2s ease}
+        .btn:hover:not(:disabled){background:#5a67d8;transform:translateY(-1px)}
+        .btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
         .btn-outline{background:transparent;border:2px solid #667eea;color:#667eea}
         .btn-outline:hover:not(:disabled){background:#667eea;color:white}
-        .btn-group{display:flex;gap:10px;justify-content:center;margin-top:20px}
+        .btn-group{display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+        .loading{display:none;text-align:center;color:#667eea;padding:10px;background:#f0f4ff;border-radius:6px;font-size:14px;margin-top:8px}
+        .loading.show{display:flex;align-items:center;justify-content:center;gap:10px}
+        .loading::before{content:'';width:16px;height:16px;border:2px solid #667eea;border-top:2px solid transparent;border-radius:50%;animation:spin 1s linear infinite}
+        @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
         .summary{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:15px;margin:15px 0}
+        .summary-section{margin-bottom:20px;padding:15px;background:white;border-radius:8px;border-left:4px solid #667eea}
+        .summary-title{font-size:16px;font-weight:600;color:#2c3e50;margin-bottom:10px}
         .summary-item{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e5e7eb}
         .summary-item:last-child{border-bottom:none}
-        .toast{position:fixed;top:20px;right:20px;padding:15px;border-radius:6px;z-index:1000;min-width:250px;font-weight:500}
+        .summary-label{font-weight:600;color:#374151;min-width:100px}
+        .summary-value{color:#6b7280;text-align:right;flex:1;margin-left:15px}
+        .toast{position:fixed;top:20px;right:20px;padding:15px;border-radius:6px;z-index:1000;min-width:250px;font-weight:500;animation:slideIn 0.3s ease}
         .toast-success{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}
         .toast-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+        .toast-info{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+        @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+        .line-invitation{background:#f0f9ff;border:1px solid #0ea5e9;border-radius:8px;padding:20px;margin:20px 0;text-align:center}
+        .line-invitation h4{color:#0c4a6e;margin-bottom:10px}
+        .line-invitation p{color:#075985;margin-bottom:15px;font-size:14px}
+        .btn-line{background:#00b900;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;margin:10px 0;transition:all 0.2s ease}
+        .btn-line:hover{background:#009400;transform:translateY(-1px)}
+        @media (max-width:600px){.container{margin:10px;border-radius:0}.content{padding:15px}.btn-group{flex-direction:column}.service-grid{grid-template-columns:1fr;gap:8px}.summary-item{flex-direction:column;align-items:flex-start;gap:5px}.summary-value{text-align:left;margin-left:0}}
     </style>
 </head>
 <body>
@@ -52,6 +72,11 @@ index.html - Doug Shuttle Service Fixed
         </div>
         
         <div class="content">
+            <div class="nav-links">
+                <a href="#" class="active" onclick="location.reload()">新增預約</a>
+                <a href="query.html">查詢預約</a>
+            </div>
+            
             <div class="step-indicator">
                 <div class="step-item active" id="step-1">1</div>
                 <div class="step-item" id="step-2">2</div>
@@ -87,18 +112,31 @@ index.html - Doug Shuttle Service Fixed
                 <div class="form-group">
                     <label for="phone" class="required">手機號碼</label>
                     <input type="tel" id="phone" placeholder="0912345678" required>
+                    <div class="loading" id="loading">查詢歷史資料中...</div>
                 </div>
                 <div class="form-group">
                     <label for="name" class="required">姓名</label>
-                    <input type="text" id="name" required>
+                    <input type="text" id="name" placeholder="請輸入姓名" required>
                 </div>
                 <div class="form-group">
                     <label for="company">公司名稱</label>
-                    <input type="text" id="company">
+                    <input type="text" id="company" placeholder="選擇簽單付款時需填寫">
+                </div>
+                <div class="form-group">
+                    <label for="department">部門</label>
+                    <input type="text" id="department" placeholder="部門名稱（選填）">
                 </div>
                 <div class="form-group">
                     <label for="email">電郵信箱</label>
-                    <input type="email" id="email">
+                    <input type="email" id="email" placeholder="接收預約確認信">
+                </div>
+                <div class="form-group">
+                    <label for="proxyEmail">代理信箱</label>
+                    <input type="email" id="proxyEmail" placeholder="代理人信箱（選填）">
+                </div>
+                <div class="form-group">
+                    <label for="costCenter">成本中心</label>
+                    <input type="text" id="costCenter" placeholder="成本中心代碼（選填）">
                 </div>
                 <div class="form-group">
                     <label for="payment" class="required">付款方式</label>
@@ -122,24 +160,30 @@ index.html - Doug Shuttle Service Fixed
                     <input type="date" id="date" required>
                 </div>
                 <div class="form-group">
-                    <label for="time" class="required">時間</label>
-                    <input type="time" id="time" required>
+                    <label for="time" class="required" id="time-label">時間</label>
+                    <select id="time" required>
+                        <option value="">請選擇時間</option>
+                    </select>
                 </div>
                 <div class="form-group" id="flight-group">
-                    <label for="flight">航班編號</label>
-                    <input type="text" id="flight" placeholder="例：CI123">
+                    <label for="flight" id="flight-label">航班編號</label>
+                    <input type="text" id="flight" placeholder="例：CI123, BR857">
                 </div>
                 <div class="form-group">
                     <label for="pickup" class="required">上車地點</label>
-                    <input type="text" id="pickup" required>
+                    <input type="text" id="pickup" placeholder="詳細地址或地標" required>
+                </div>
+                <div class="form-group">
+                    <label for="midstop">中停點</label>
+                    <input type="text" id="midstop" placeholder="中途停靠地點（選填）">
                 </div>
                 <div class="form-group">
                     <label for="dropoff" class="required">下車地點</label>
-                    <input type="text" id="dropoff" required>
+                    <input type="text" id="dropoff" placeholder="目的地地址" required>
                 </div>
                 <div class="form-group">
                     <label for="remarks">備註</label>
-                    <textarea id="remarks" rows="3"></textarea>
+                    <textarea id="remarks" placeholder="特殊需求或注意事項"></textarea>
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-outline" onclick="goPrev(3)">上一步</button>
@@ -160,7 +204,18 @@ index.html - Doug Shuttle Service Fixed
             <!-- 完成頁面 -->
             <div class="step" id="complete" style="text-align:center">
                 <h2 style="color:#10b981;margin-bottom:15px">🎉 預約成功！</h2>
-                <p>您的預約已建立完成</p>
+                <p style="color:#6b7280;margin-bottom:20px">您的預約已建立完成</p>
+                <div id="booking-details" class="summary" style="text-align:left"></div>
+                
+                <div class="line-invitation" id="line-invitation" style="display:none">
+                    <h4>接收預約提醒</h4>
+                    <p>加入 LINE 官方帳號，即可收到預約確認及出發提醒</p>
+                    <a href="https://line.me/R/ti/p/@doug_shuttle" class="btn-line">加入 LINE 官方帳號</a>
+                    <p style="font-size:0.9rem;color:#0369a1;margin-top:10px">
+                        加入後請傳送您的手機號碼：<strong id="user-phone-display"></strong>
+                    </p>
+                </div>
+                
                 <div class="btn-group" style="margin-top:30px">
                     <a href="query.html" class="btn">查看預約</a>
                     <button class="btn btn-outline" onclick="location.reload()">新增預約</button>
@@ -174,64 +229,238 @@ index.html - Doug Shuttle Service Fixed
         let selectedService = '';
         const API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
 
-        // 初始化
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('系統初始化...');
-            
+            console.log('Doug Shuttle Service - 系統初始化...');
+            initializeApp();
+        });
+
+        function initializeApp() {
             // 設置最小日期為今天
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date').min = today;
             
-            // 服務選擇事件
+            // 生成時間選項
+            generateTimeOptions();
+            
+            // 綁定服務選擇事件
+            bindServiceEvents();
+            
+            // 綁定手機號碼查詢事件
+            bindPhoneEvents();
+            
+            console.log('初始化完成');
+        }
+
+        function generateTimeOptions() {
+            const timeSelect = document.getElementById('time');
+            timeSelect.innerHTML = '<option value="">請選擇時間</option>';
+            
+            for (let hour = 0; hour < 24; hour++) {
+                for (let minute = 0; minute < 60; minute += 15) {
+                    const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                    const option = document.createElement('option');
+                    option.value = timeValue;
+                    option.textContent = timeValue;
+                    timeSelect.appendChild(option);
+                }
+            }
+        }
+
+        function bindServiceEvents() {
             document.querySelectorAll('.service-card').forEach(card => {
                 card.addEventListener('click', function() {
                     console.log('選擇服務:', this.dataset.service);
                     
-                    // 清除選擇
                     document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
-                    
-                    // 設置選擇
                     this.classList.add('selected');
                     selectedService = this.dataset.service;
                     
-                    // 啟用下一步
+                    updateServiceFields();
                     document.getElementById('next1').disabled = false;
                     
-                    // 更新航班欄位顯示
-                    updateFlightField();
+                    // 自動進入下一步
+                    setTimeout(() => goNext(1), 500);
                 });
             });
-            
-            console.log('初始化完成');
-        });
+        }
 
-        function updateFlightField() {
+        function bindPhoneEvents() {
+            const phoneInput = document.getElementById('phone');
+            
+            phoneInput.addEventListener('input', function() {
+                const phone = this.value.replace(/\D/g, '');
+                if (phone.length === 10) {
+                    setTimeout(() => lookupUserData(phone), 800);
+                }
+            });
+            
+            phoneInput.addEventListener('blur', function() {
+                const phone = this.value.replace(/\D/g, '');
+                if (phone.length === 10) {
+                    this.value = phone.substring(0, 4) + '-' + phone.substring(4, 7) + '-' + phone.substring(7);
+                }
+            });
+        }
+
+        function updateServiceFields() {
+            const timeLabel = document.getElementById('time-label');
             const flightGroup = document.getElementById('flight-group');
-            const flightLabel = flightGroup.querySelector('label');
+            const flightLabel = document.getElementById('flight-label');
             const flightInput = document.getElementById('flight');
             
-            if (selectedService === '接機') {
-                flightLabel.textContent = '航班編號 *';
-                flightLabel.classList.add('required');
-                flightInput.required = true;
-            } else if (selectedService === '送機') {
+            if (selectedService === '送機') {
+                timeLabel.textContent = '登車時間';
                 flightLabel.textContent = '航班編號';
                 flightLabel.classList.remove('required');
                 flightInput.required = false;
-            } else {
+                flightGroup.style.display = 'block';
+            } else if (selectedService === '接機') {
+                timeLabel.textContent = '抵達時間';
+                flightLabel.textContent = '航班編號';
+                flightLabel.classList.add('required');
+                flightInput.required = true;
+                flightGroup.style.display = 'block';
+            } else if (selectedService === '包車') {
+                timeLabel.textContent = '出發時間';
                 flightGroup.style.display = 'none';
+                flightInput.required = false;
+            }
+        }
+
+        async function lookupUserData(phone) {
+            const loadingElement = document.getElementById('loading');
+            loadingElement.className = 'loading show';
+            
+            try {
+                const response = await apiCall('getUserDataByPhone', { phone: phone });
+                if (response && response.success) {
+                    console.log('提交成功！');
+                    showSuccessPage();
+                    showToast('預約建立成功！', 'success');
+                } else {
+                    throw new Error(response?.message || '提交失敗');
+                }
+                
+            } catch (error) {
+                console.error('提交錯誤:', error);
+                showToast('提交失敗: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '確認預約';
+            }
+        }
+
+        function showSuccessPage() {
+            console.log('顯示成功頁面');
+            showStep(5);
+            
+            const detailsElement = document.getElementById('booking-details');
+            let timeLabel = selectedService === '送機' ? '登車時間' : selectedService === '接機' ? '抵達時間' : '出發時間';
+            
+            let html = '<div class="summary-section">';
+            html += '<div class="summary-title">📋 預約詳情</div>';
+            html += `<div class="summary-item"><span class="summary-label">預約編號:</span><span class="summary-value">B${Date.now().toString().slice(-6)}</span></div>`;
+            html += `<div class="summary-item"><span class="summary-label">服務類型:</span><span class="summary-value">${selectedService}</span></div>`;
+            html += `<div class="summary-item"><span class="summary-label">服務日期:</span><span class="summary-value">${document.getElementById('date').value}</span></div>`;
+            html += `<div class="summary-item"><span class="summary-label">${timeLabel}:</span><span class="summary-value">${document.getElementById('time').value}</span></div>`;
+            html += `<div class="summary-item"><span class="summary-label">聯絡人:</span><span class="summary-value">${document.getElementById('name').value}</span></div>`;
+            html += `<div class="summary-item"><span class="summary-label">手機號碼:</span><span class="summary-value">${document.getElementById('phone').value}</span></div>`;
+            html += `<div class="summary-item"><span class="summary-label">付款方式:</span><span class="summary-value">${document.getElementById('payment').value}</span></div>`;
+            html += '</div>';
+            
+            detailsElement.innerHTML = html;
+            
+            // 檢查LINE綁定
+            const phoneNumber = document.getElementById('phone').value.replace(/\D/g, '');
+            checkLineBinding(phoneNumber);
+        }
+
+        async function checkLineBinding(phoneNumber) {
+            try {
+                const response = await apiCall('getBookingsByPhone', { phone: phoneNumber });
+                if (response.success && response.data && response.data.length > 0) {
+                    const hasLineBinding = response.data.some(booking => booking.lineUserId && booking.lineUserId.trim() !== '');
+                    if (!hasLineBinding) {
+                        document.getElementById('line-invitation').style.display = 'block';
+                        document.getElementById('user-phone-display').textContent = phoneNumber;
+                    }
+                }
+            } catch (error) {
+                // 如果檢查失敗，顯示LINE邀請
+                document.getElementById('line-invitation').style.display = 'block';
+                document.getElementById('user-phone-display').textContent = phoneNumber;
+            }
+        }
+
+        async function apiCall(action, data) {
+            try {
+                const params = Object.keys(data)
+                    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key] || '')}`)
+                    .join('&');
+                
+                const body = `action=${encodeURIComponent(action)}&${params}`;
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: body
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API調用失敗:', error);
+                throw error;
+            }
+        }
+
+        function showToast(message, type) {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 3000);
+        }
+
+        // 全域錯誤處理
+        window.addEventListener('error', function(e) {
+            console.error('JavaScript錯誤:', e.error);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('未處理的Promise拒絕:', e.reason);
+        });
+    </script>
+</body>
+</html>.success && response.data) {
+                    const data = response.data;
+                    if (data.name) document.getElementById('name').value = data.name;
+                    if (data.company) document.getElementById('company').value = data.company;
+                    if (data.email) document.getElementById('email').value = data.email;
+                    if (data.proxyEmail) document.getElementById('proxyEmail').value = data.proxyEmail;
+                    if (data.costCenter) document.getElementById('costCenter').value = data.costCenter;
+                    if (data.payment) document.getElementById('payment').value = data.payment;
+                    showToast('已自動帶入歷史資料', 'success');
+                }
+            } catch (error) {
+                console.log('查詢用戶資料無結果或錯誤');
+            } finally {
+                loadingElement.className = 'loading';
             }
         }
 
         function goNext(step) {
             console.log('下一步，當前步驟:', step);
-            
             if (!validateStep(step)) return;
-            
-            if (step === 3) {
-                generateSummary();
-            }
-            
+            if (step === 3) generateSummary();
             showStep(step + 1);
         }
 
@@ -243,14 +472,15 @@ index.html - Doug Shuttle Service Fixed
         function showStep(stepNum) {
             console.log('顯示步驟:', stepNum);
             
-            // 隱藏所有步驟
             document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
             
-            // 顯示目標步驟
-            document.getElementById('step' + stepNum).classList.add('active');
+            if (stepNum === 5) {
+                document.getElementById('complete').classList.add('active');
+            } else {
+                document.getElementById('step' + stepNum).classList.add('active');
+                updateIndicator(stepNum);
+            }
             
-            // 更新指示器
-            updateIndicator(stepNum);
             currentStep = stepNum;
         }
 
@@ -279,12 +509,12 @@ index.html - Doug Shuttle Service Fixed
                     break;
                     
                 case 2:
-                    const phone = document.getElementById('phone').value.trim();
+                    const phone = document.getElementById('phone').value.replace(/\D/g, '');
                     const name = document.getElementById('name').value.trim();
                     const payment = document.getElementById('payment').value;
                     
-                    if (!phone || phone.length < 10) {
-                        showToast('請輸入正確的手機號碼', 'error');
+                    if (!phone || phone.length !== 10) {
+                        showToast('請輸入正確的10位手機號碼', 'error');
                         return false;
                     }
                     if (!name) {
@@ -293,6 +523,10 @@ index.html - Doug Shuttle Service Fixed
                     }
                     if (!payment) {
                         showToast('請選擇付款方式', 'error');
+                        return false;
+                    }
+                    if (payment === '簽單' && !document.getElementById('company').value.trim()) {
+                        showToast('選擇簽單付款需填寫公司名稱', 'error');
                         return false;
                     }
                     break;
@@ -334,23 +568,49 @@ index.html - Doug Shuttle Service Fixed
             console.log('生成摘要');
             const summaryDiv = document.getElementById('summary');
             
-            const data = {
-                服務類型: selectedService,
-                姓名: document.getElementById('name').value,
-                手機: document.getElementById('phone').value,
-                公司: document.getElementById('company').value || '-',
-                日期: document.getElementById('date').value,
-                時間: document.getElementById('time').value,
-                航班: document.getElementById('flight').value || '-',
-                上車點: document.getElementById('pickup').value,
-                下車點: document.getElementById('dropoff').value,
-                付款: document.getElementById('payment').value,
-                備註: document.getElementById('remarks').value || '-'
-            };
+            let timeLabel = '時間';
+            if (selectedService === '送機') timeLabel = '登車時間';
+            else if (selectedService === '接機') timeLabel = '抵達時間';
+            else timeLabel = '出發時間';
             
-            let html = '<div class="summary">';
-            for (const [key, value] of Object.entries(data)) {
-                html += `<div class="summary-item"><span>${key}:</span><span>${value}</span></div>`;
+            let html = '<div class="summary-section">';
+            html += '<div class="summary-title">🚗 服務資訊</div>';
+            html += `<div class="summary-item"><span class="summary-label">服務類型:</span><span class="summary-value">${selectedService}</span></div>`;
+            html += `<div class="summary-item"><span class="summary-label">服務日期:</span><span class="summary-value">${document.getElementById('date').value}</span></div>`;
+            html += `<div class="summary-item"><span class="summary-label">${timeLabel}:</span><span class="summary-value">${document.getElementById('time').value}</span></div>`;
+            
+            if (document.getElementById('flight').value.trim()) {
+                html += `<div class="summary-item"><span class="summary-label">航班編號:</span><span class="summary-value">${document.getElementById('flight').value}</span></div>`;
+            }
+            html += '</div>';
+            
+            html += '<div class="summary-section">';
+            html += '<div class="summary-title">👤 聯絡資訊</div>';
+            html += `<div class="summary-item"><span class="summary-label">姓名:</span><span class="summary-value">${document.getElementById('name').value}</span></div>`;
+            html += `<div class="summary-item"><span class="summary-label">手機:</span><span class="summary-value">${document.getElementById('phone').value}</span></div>`;
+            
+            const company = document.getElementById('company').value.trim();
+            if (company) {
+                html += `<div class="summary-item"><span class="summary-label">公司:</span><span class="summary-value">${company}</span></div>`;
+            }
+            
+            html += `<div class="summary-item"><span class="summary-label">付款:</span><span class="summary-value">${document.getElementById('payment').value}</span></div>`;
+            html += '</div>';
+            
+            html += '<div class="summary-section">';
+            html += '<div class="summary-title">📍 行程資訊</div>';
+            html += `<div class="summary-item"><span class="summary-label">上車點:</span><span class="summary-value">${document.getElementById('pickup').value}</span></div>`;
+            
+            const midstop = document.getElementById('midstop').value.trim();
+            if (midstop) {
+                html += `<div class="summary-item"><span class="summary-label">中停點:</span><span class="summary-value">${midstop}</span></div>`;
+            }
+            
+            html += `<div class="summary-item"><span class="summary-label">下車點:</span><span class="summary-value">${document.getElementById('dropoff').value}</span></div>`;
+            
+            const remarks = document.getElementById('remarks').value.trim();
+            if (remarks) {
+                html += `<div class="summary-item"><span class="summary-label">備註:</span><span class="summary-value">${remarks}</span></div>`;
             }
             html += '</div>';
             
@@ -365,100 +625,28 @@ index.html - Doug Shuttle Service Fixed
             submitBtn.textContent = '提交中...';
             
             try {
-                // 準備資料 - 確保欄位名稱完全對應後端
                 const bookingData = {
                     '服務項目': selectedService,
+                    '公司名稱': document.getElementById('company').value.trim(),
+                    '部門': document.getElementById('department').value.trim(),
                     '手機號碼': document.getElementById('phone').value.replace(/\D/g, ''),
                     '姓名': document.getElementById('name').value.trim(),
-                    '公司名稱': document.getElementById('company').value.trim(),
-                    '部門': '',
                     '日期': document.getElementById('date').value,
                     '時間': document.getElementById('time').value,
                     '航班編號': document.getElementById('flight').value.trim(),
                     '上車點': document.getElementById('pickup').value.trim(),
-                    '中停點': '',
+                    '中停點': document.getElementById('midstop').value.trim(),
                     '下車點': document.getElementById('dropoff').value.trim(),
                     '備註': document.getElementById('remarks').value.trim(),
                     '費用支付': document.getElementById('payment').value,
                     '電郵信箱': document.getElementById('email').value.trim(),
-                    '代理信箱': '',
-                    '成本中心': ''
+                    '代理信箱': document.getElementById('proxyEmail').value.trim(),
+                    '成本中心': document.getElementById('costCenter').value.trim()
                 };
                 
                 console.log('準備提交的資料:', bookingData);
                 
-                // 建立請求
-                const formBody = Object.keys(bookingData)
-                    .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(bookingData[key] || ''))
-                    .join('&');
+                const response = await apiCall('createBooking', bookingData);
+                console.log('API回應:', response);
                 
-                const requestBody = 'action=createBooking&' + formBody;
-                console.log('請求體:', requestBody);
-                
-                // 發送請求
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: requestBody
-                });
-                
-                console.log('回應狀態:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error('網絡錯誤: ' + response.status);
-                }
-                
-                const result = await response.json();
-                console.log('API回應:', result);
-                
-                if (result.success) {
-                    console.log('提交成功！');
-                    showStep(5); // 顯示完成頁面
-                    showToast('預約建立成功！', 'success');
-                } else {
-                    throw new Error(result.message || '提交失敗');
-                }
-                
-            } catch (error) {
-                console.error('提交錯誤:', error);
-                showToast('提交失敗: ' + error.message, 'error');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '確認預約';
-            }
-        }
-
-        function showToast(message, type) {
-            // 移除現有toast
-            const existing = document.querySelector('.toast');
-            if (existing) existing.remove();
-            
-            // 創建新toast
-            const toast = document.createElement('div');
-            toast.className = 'toast toast-' + type;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            // 3秒後移除
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 3000);
-        }
-
-        // 步驟5顯示完成頁面
-        function showStep(stepNum) {
-            console.log('顯示步驟:', stepNum);
-            
-            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-            
-            if (stepNum === 5) {
-                document.getElementById('complete').classList.add('active');
-            } else {
-                document.getElementById('step' + stepNum).classList.add('active');
-                updateIndicator(stepNum);
-            }
-            
-            currentStep = stepNum;
-        }
-    </script>
-</body>
-</html>
+                if (response
