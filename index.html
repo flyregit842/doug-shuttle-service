@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-index.html - Doug Shuttle Service Booking System (修正版)
-修正submitForm函數中斷問題，確保資料正確傳送至Google Sheets
-版本: v5.1 | 修正日期: 2025-09-20
+index.html - Doug Shuttle Service (除錯版)
+修正表單提交問題，加強除錯輸出
+版本: v5.2 Debug | 2025-09-20
 -->
 <html lang="zh-TW">
 <head>
@@ -60,12 +60,6 @@ index.html - Doug Shuttle Service Booking System (修正版)
         .summary-item:last-child{border-bottom:none}
         .summary-label{font-weight:600;color:#374151;min-width:120px}
         .summary-value{color:#6b7280;text-align:right;flex:1;margin-left:20px}
-        .line-invitation{background:#f0f9ff;border:1px solid #0ea5e9;border-radius:8px;padding:20px;margin:20px 0;text-align:center}
-        .line-invitation h4{color:#0c4a6e;margin-bottom:10px}
-        .line-invitation p{color:#075985;margin-bottom:15px}
-        .btn-line{background:#00b900;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;margin:10px 0;transition:all 0.2s ease}
-        .btn-line:hover{background:#009400;transform:translateY(-1px)}
-        .binding-instruction{font-size:0.9rem;color:#0369a1;margin-top:10px}
         @media (max-width:600px){.container{margin:10px;border-radius:0}.content{padding:15px}.btn-group{flex-direction:column}.service-grid{grid-template-columns:1fr;gap:12px}.step-item{width:32px;height:32px;font-size:14px;margin:0 6px}.summary-item{flex-direction:column;align-items:flex-start;gap:5px}.summary-value{text-align:left;margin-left:0}}
     </style>
 </head>
@@ -89,7 +83,7 @@ index.html - Doug Shuttle Service Booking System (修正版)
                 <div class="step-item" id="indicator-4">4</div>
             </div>
             
-            <!-- 步驟1: 選擇服務 -->
+            <!-- 步驟1 -->
             <div class="step active" id="step1">
                 <h3>選擇服務項目</h3>
                 <div class="service-grid">
@@ -111,7 +105,7 @@ index.html - Doug Shuttle Service Booking System (修正版)
                 </div>
             </div>
 
-            <!-- 步驟2: 基本資訊 -->
+            <!-- 步驟2 -->
             <div class="step" id="step2">
                 <h3>基本資訊</h3>
                 <div class="form-group">
@@ -153,7 +147,7 @@ index.html - Doug Shuttle Service Booking System (修正版)
                 </div>
             </div>
 
-            <!-- 步驟3: 時間與地點 -->
+            <!-- 步驟3 -->
             <div class="step" id="step3">
                 <h3>時間與地點</h3>
                 <div class="form-group">
@@ -192,13 +186,13 @@ index.html - Doug Shuttle Service Booking System (修正版)
                 </div>
             </div>
 
-            <!-- 步驟4: 確認 -->
+            <!-- 步驟4 -->
             <div class="step" id="step4">
                 <h3>確認預約資訊</h3>
                 <div id="summary-container"></div>
                 <div class="btn-group">
                     <button class="btn btn-outline" onclick="prevStep(4)">返回修改</button>
-                    <button class="btn" onclick="submitForm()">確認預約</button>
+                    <button class="btn" id="submit-btn" onclick="submitForm()">確認預約</button>
                 </div>
             </div>
 
@@ -207,14 +201,6 @@ index.html - Doug Shuttle Service Booking System (修正版)
                 <h2 style="color: #10b981; margin-bottom: 16px;">🎉 預約成功！</h2>
                 <p style="color: #6b7280; margin-bottom: 20px;">您的預約已建立完成</p>
                 <div id="booking-details" class="summary" style="text-align: left;"></div>
-                
-                <div class="line-invitation" id="line-invitation" style="display: none;">
-                    <h4>接收預約提醒</h4>
-                    <p>加入 LINE 官方帳號，即可收到預約確認及出發提醒</p>
-                    <a href="https://line.me/R/ti/p/@doug_shuttle" class="btn-line">加入 LINE 官方帳號</a>
-                    <p class="binding-instruction">加入後請傳送您的手機號碼：<strong id="user-phone-display"></strong></p>
-                </div>
-                
                 <div class="btn-group">
                     <a href="query.html" class="btn">查看預約</a>
                     <button class="btn btn-outline" onclick="location.reload()">新增預約</button>
@@ -224,50 +210,24 @@ index.html - Doug Shuttle Service Booking System (修正版)
     </div>
 
     <script>
-        let currentStep = 1, selectedService = '';
+        let currentStep = 1;
+        let selectedService = '';
         const API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Doug Shuttle Service - 系統初始化中...');
-            setTodayDate();
             initializeEventListeners();
             generateTimeOptions();
-            initCustomDateInput();
-            updateStepIndicator();
+            initDateInput();
         });
 
-        function setTodayDate() {
-            const now = new Date();
-            const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
-            const today = taiwanTime.toISOString().split('T')[0];
-            const dateInput = document.getElementById('date');
-            const minDate = formatDateToDisplay(today);
-            dateInput.setAttribute('data-min-date', minDate);
-        }
-
-        function initCustomDateInput() {
-            const dateInput = document.getElementById('date');
-            dateInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 8) value = value.substring(0, 8);
-                let formatted = '';
-                if (value.length >= 1) formatted = value.substring(0, Math.min(2, value.length));
-                if (value.length >= 3) formatted += '/' + value.substring(2, Math.min(4, value.length));
-                if (value.length >= 5) formatted += '/' + value.substring(4);
-                e.target.value = formatted;
-            });
-            dateInput.addEventListener('blur', function(e) {
-                const value = e.target.value;
-                if (value && !isValidDate(value)) {
-                    showToast('請輸入正確的日期格式 (MM/DD/YYYY)', 'error');
-                    e.target.focus();
-                }
-            });
-        }
-
         function initializeEventListeners() {
+            console.log('綁定事件監聽器...');
+            
+            // 服務選擇
             document.querySelectorAll('.service-card').forEach(card => {
                 card.addEventListener('click', function() {
+                    console.log('選擇服務:', this.dataset.service);
                     document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
                     this.classList.add('selected');
                     selectedService = this.dataset.service;
@@ -277,6 +237,7 @@ index.html - Doug Shuttle Service Booking System (修正版)
                 });
             });
 
+            // 手機號碼
             const phoneInput = document.getElementById('phone');
             phoneInput.addEventListener('input', function() {
                 const phone = this.value.replace(/\D/g, '');
@@ -284,11 +245,32 @@ index.html - Doug Shuttle Service Booking System (修正版)
                     setTimeout(() => lookupUserData(phone), 500);
                 }
             });
-            phoneInput.addEventListener('blur', function() {
-                const phone = this.value.replace(/\D/g, '');
-                if (phone.length === 10) {
-                    this.value = phone.substring(0, 4) + '-' + phone.substring(4, 7) + '-' + phone.substring(7);
+        }
+
+        function generateTimeOptions() {
+            const timeSelect = document.getElementById('time');
+            timeSelect.innerHTML = '<option value="">請選擇時間</option>';
+            for (let hour = 0; hour < 24; hour++) {
+                for (let minute = 0; minute < 60; minute += 5) {
+                    const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                    const option = document.createElement('option');
+                    option.value = timeValue;
+                    option.textContent = timeValue;
+                    timeSelect.appendChild(option);
                 }
+            }
+        }
+
+        function initDateInput() {
+            const dateInput = document.getElementById('date');
+            dateInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 8) value = value.substring(0, 8);
+                let formatted = '';
+                if (value.length >= 1) formatted = value.substring(0, Math.min(2, value.length));
+                if (value.length >= 3) formatted += '/' + value.substring(2, Math.min(4, value.length));
+                if (value.length >= 5) formatted += '/' + value.substring(4);
+                e.target.value = formatted;
             });
         }
 
@@ -315,23 +297,8 @@ index.html - Doug Shuttle Service Booking System (修正版)
             }
         }
 
-        function generateTimeOptions() {
-            const timeSelect = document.getElementById('time');
-            timeSelect.innerHTML = '<option value="">請選擇時間</option>';
-            for (let hour = 0; hour < 24; hour++) {
-                for (let minute = 0; minute < 60; minute += 5) {
-                    const hourStr = hour.toString().padStart(2, '0');
-                    const minuteStr = minute.toString().padStart(2, '0');
-                    const timeValue = `${hourStr}:${minuteStr}`;
-                    const option = document.createElement('option');
-                    option.value = timeValue;
-                    option.textContent = timeValue;
-                    timeSelect.appendChild(option);
-                }
-            }
-        }
-
         function nextStep(fromStep) {
+            console.log('下一步從:', fromStep);
             if (validateStep(fromStep)) {
                 const nextStepNum = fromStep + 1;
                 showStep(nextStepNum);
@@ -340,10 +307,12 @@ index.html - Doug Shuttle Service Booking System (修正版)
         }
 
         function prevStep(fromStep) {
+            console.log('上一步從:', fromStep);
             showStep(fromStep - 1);
         }
 
         function showStep(stepNum) {
+            console.log('顯示步驟:', stepNum);
             document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
             document.getElementById(`step${stepNum}`).classList.add('active');
             updateStepIndicator(stepNum);
@@ -360,6 +329,7 @@ index.html - Doug Shuttle Service Booking System (修正版)
         }
 
         function validateStep(step) {
+            console.log('驗證步驟:', step);
             switch(step) {
                 case 1:
                     if (!selectedService) {
@@ -383,17 +353,12 @@ index.html - Doug Shuttle Service Booking System (修正版)
                         showToast('請選擇付款方式', 'error');
                         return false;
                     }
-                    if (payment === '簽單' && !document.getElementById('company').value.trim()) {
-                        showToast('選擇簽單付款需填寫公司名稱', 'error');
-                        return false;
-                    }
                     return true;
                 case 3:
                     const date = document.getElementById('date').value;
                     const time = document.getElementById('time').value;
                     const pickup = document.getElementById('pickup').value.trim();
                     const dropoff = document.getElementById('dropoff').value.trim();
-                    const flight = document.getElementById('flight').value.trim();
                     if (!date || !isValidDate(date)) {
                         showToast('請輸入正確的服務日期', 'error');
                         return false;
@@ -410,7 +375,7 @@ index.html - Doug Shuttle Service Booking System (修正版)
                         showToast('請輸入下車地點', 'error');
                         return false;
                     }
-                    if (selectedService === '接機' && !flight) {
+                    if (selectedService === '接機' && !document.getElementById('flight').value.trim()) {
                         showToast('接機服務需要填寫航班編號', 'error');
                         return false;
                     }
@@ -420,82 +385,42 @@ index.html - Doug Shuttle Service Booking System (修正版)
         }
 
         function generateSummary() {
+            console.log('生成摘要...');
             const container = document.getElementById('summary-container');
-            let timeLabel = '時間';
-            if (selectedService === '送機') timeLabel = '登車時間';
-            else if (selectedService === '接機') timeLabel = '抵達時間';
-            else timeLabel = '出發時間';
+            let timeLabel = selectedService === '送機' ? '登車時間' : selectedService === '接機' ? '抵達時間' : '出發時間';
             
-            let summaryHTML = `
+            let html = `
                 <div class="summary-section">
                     <div class="summary-title">🚗 服務資訊</div>
                     <div class="summary-item"><span class="summary-label">服務類型：</span><span class="summary-value">${selectedService}</span></div>
                     <div class="summary-item"><span class="summary-label">服務日期：</span><span class="summary-value">${document.getElementById('date').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">${timeLabel}：</span><span class="summary-value">${document.getElementById('time').value}</span></div>`;
-            
-            if (document.getElementById('flight').value.trim()) {
-                summaryHTML += `<div class="summary-item"><span class="summary-label">航班編號：</span><span class="summary-value">${document.getElementById('flight').value}</span></div>`;
-            }
-            summaryHTML += `</div>`;
-            
-            summaryHTML += `
+                    <div class="summary-item"><span class="summary-label">${timeLabel}：</span><span class="summary-value">${document.getElementById('time').value}</span></div>
+                </div>
                 <div class="summary-section">
                     <div class="summary-title">👤 聯絡資訊</div>
                     <div class="summary-item"><span class="summary-label">姓名：</span><span class="summary-value">${document.getElementById('name').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">手機號碼：</span><span class="summary-value">${document.getElementById('phone').value}</span></div>`;
-            
-            const optionalFields = [
-                { id: 'company', label: '公司名稱' },
-                { id: 'email', label: '電郵信箱' },
-                { id: 'proxyEmail', label: '代理信箱' },
-                { id: 'costCenter', label: '成本中心' }
-            ];
-            
-            optionalFields.forEach(field => {
-                const value = document.getElementById(field.id).value.trim();
-                if (value) {
-                    summaryHTML += `<div class="summary-item"><span class="summary-label">${field.label}：</span><span class="summary-value">${value}</span></div>`;
-                }
-            });
-            summaryHTML += `</div>`;
-            
-            summaryHTML += `
+                    <div class="summary-item"><span class="summary-label">手機號碼：</span><span class="summary-value">${document.getElementById('phone').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">付款方式：</span><span class="summary-value">${document.getElementById('payment').value}</span></div>
+                </div>
                 <div class="summary-section">
                     <div class="summary-title">📍 行程資訊</div>
-                    <div class="summary-item"><span class="summary-label">上車地點：</span><span class="summary-value">${document.getElementById('pickup').value}</span></div>`;
-            
-            if (document.getElementById('midstop').value.trim()) {
-                summaryHTML += `<div class="summary-item"><span class="summary-label">中停點：</span><span class="summary-value">${document.getElementById('midstop').value}</span></div>`;
-            }
-            
-            summaryHTML += `<div class="summary-item"><span class="summary-label">下車地點：</span><span class="summary-value">${document.getElementById('dropoff').value}</span></div>`;
-            
-            if (document.getElementById('remarks').value.trim()) {
-                summaryHTML += `<div class="summary-item"><span class="summary-label">備註：</span><span class="summary-value">${document.getElementById('remarks').value}</span></div>`;
-            }
-            summaryHTML += `</div>`;
-            
-            summaryHTML += `
-                <div class="summary-section">
-                    <div class="summary-title">💳 付款資訊</div>
-                    <div class="summary-item"><span class="summary-label">付款方式：</span><span class="summary-value">${document.getElementById('payment').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">上車地點：</span><span class="summary-value">${document.getElementById('pickup').value}</span></div>
+                    <div class="summary-item"><span class="summary-label">下車地點：</span><span class="summary-value">${document.getElementById('dropoff').value}</span></div>
                 </div>`;
             
-            container.innerHTML = summaryHTML;
+            container.innerHTML = html;
         }
 
         async function lookupUserData(phone) {
+            console.log('查詢用戶資料:', phone);
             const loadingElement = document.getElementById('loading');
             loadingElement.className = 'loading show';
             try {
-                const response = await apiCall('getUserDataByPhone', { phone: phone, serviceType: selectedService });
+                const response = await apiCall('getUserDataByPhone', { phone: phone });
                 if (response.success && response.data) {
                     const data = response.data;
                     if (data.name) document.getElementById('name').value = data.name;
                     if (data.company) document.getElementById('company').value = data.company;
-                    if (data.email) document.getElementById('email').value = data.email;
-                    if (data.proxyEmail) document.getElementById('proxyEmail').value = data.proxyEmail;
-                    if (data.costCenter) document.getElementById('costCenter').value = data.costCenter;
                     if (data.payment) document.getElementById('payment').value = data.payment;
                     showToast('已自動帶入歷史資料', 'success');
                 }
@@ -507,23 +432,19 @@ index.html - Doug Shuttle Service Booking System (修正版)
         }
 
         async function submitForm() {
-            const submitBtn = document.querySelector('#step4 .btn:last-child');
+            console.log('=== 開始提交表單 ===');
+            const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
             submitBtn.textContent = '提交中...';
             
             try {
-                if (!selectedService) {
-                    const selectedCard = document.querySelector('.service-card.selected');
-                    if (selectedCard) selectedService = selectedCard.dataset.service;
-                }
+                console.log('準備表單資料...');
                 
+                // 日期格式轉換
                 const dateStr = document.getElementById('date').value;
                 const dateParts = dateStr.split('/');
-                if (dateParts.length !== 3) throw new Error('日期格式錯誤，請使用 MM/DD/YYYY');
-                const month = dateParts[0].padStart(2, '0');
-                const day = dateParts[1].padStart(2, '0');
-                const year = dateParts[2];
-                const standardDate = `${year}-${month}-${day}`;
+                if (dateParts.length !== 3) throw new Error('日期格式錯誤');
+                const standardDate = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
                 
                 const formData = {
                     '服務項目': selectedService,
@@ -544,8 +465,13 @@ index.html - Doug Shuttle Service Booking System (修正版)
                     '成本中心': document.getElementById('costCenter').value.trim()
                 };
                 
+                console.log('表單資料:', formData);
+                
                 const response = await apiCall('createBooking', formData);
+                console.log('API回應:', response);
+                
                 if (response && response.success) {
+                    console.log('預約建立成功');
                     showSuccessPage();
                     showToast('預約建立成功！', 'success');
                 } else {
@@ -553,7 +479,7 @@ index.html - Doug Shuttle Service Booking System (修正版)
                 }
                 
             } catch (error) {
-                console.error('提交錯誤詳情:', error);
+                console.error('提交錯誤:', error);
                 showToast(error.message || '預約失敗，請稍後再試', 'error');
             } finally {
                 submitBtn.disabled = false;
@@ -562,65 +488,53 @@ index.html - Doug Shuttle Service Booking System (修正版)
         }
 
         function showSuccessPage() {
+            console.log('顯示成功頁面');
             document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
             document.getElementById('complete').classList.add('active');
-            updateStepIndicator(5);
             
             const detailsElement = document.getElementById('booking-details');
-            let timeLabel = '時間';
-            if (selectedService === '送機') timeLabel = '登車時間';
-            else if (selectedService === '接機') timeLabel = '抵達時間';
-            else timeLabel = '出發時間';
+            let timeLabel = selectedService === '送機' ? '登車時間' : selectedService === '接機' ? '抵達時間' : '出發時間';
             
-            let detailsHTML = `
+            detailsElement.innerHTML = `
                 <div class="summary-section">
                     <div class="summary-title">📋 預約詳情</div>
-                    <div class="summary-item"><span class="summary-label">預約編號：</span><span class="summary-value">B${Date.now().toString().slice(-6)}</span></div>
                     <div class="summary-item"><span class="summary-label">服務類型：</span><span class="summary-value">${selectedService}</span></div>
                     <div class="summary-item"><span class="summary-label">服務日期：</span><span class="summary-value">${document.getElementById('date').value}</span></div>
                     <div class="summary-item"><span class="summary-label">${timeLabel}：</span><span class="summary-value">${document.getElementById('time').value}</span></div>
                     <div class="summary-item"><span class="summary-label">聯絡人：</span><span class="summary-value">${document.getElementById('name').value}</span></div>
                     <div class="summary-item"><span class="summary-label">手機號碼：</span><span class="summary-value">${document.getElementById('phone').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">付款方式：</span><span class="summary-value">${document.getElementById('payment').value}</span></div>
                 </div>`;
-            
-            detailsElement.innerHTML = detailsHTML;
-            
-            const phoneNumber = document.getElementById('phone').value.replace(/\D/g, '');
-            checkLineBinding(phoneNumber);
-        }
-
-        async function checkLineBinding(phoneNumber) {
-            try {
-                const response = await apiCall('getBookingsByPhone', { phone: phoneNumber });
-                if (response.success && response.data && response.data.length > 0) {
-                    const hasLineBinding = response.data.some(booking => booking.lineUserId && booking.lineUserId.trim() !== '');
-                    if (!hasLineBinding) {
-                        document.getElementById('line-invitation').style.display = 'block';
-                        document.getElementById('user-phone-display').textContent = phoneNumber;
-                    }
-                }
-            } catch (error) {
-                document.getElementById('line-invitation').style.display = 'block';
-                document.getElementById('user-phone-display').textContent = phoneNumber;
-            }
         }
 
         async function apiCall(action, data) {
+            console.log('=== API調用 ===');
+            console.log('Action:', action);
+            console.log('Data:', data);
+            
             try {
                 const params = Object.keys(data)
                     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key] || '')}`)
                     .join('&');
                 
                 const body = `action=${encodeURIComponent(action)}&${params}`;
+                console.log('Request body:', body);
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: body
                 });
 
-                if (!response.ok) throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
-                return await response.json();
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('API結果:', result);
+                return result;
+                
             } catch (error) {
                 console.error('API調用失敗:', error);
                 throw error;
@@ -628,6 +542,7 @@ index.html - Doug Shuttle Service Booking System (修正版)
         }
 
         function showToast(message, type) {
+            console.log('顯示Toast:', message, type);
             const existingToast = document.querySelector('.toast');
             if (existingToast) existingToast.remove();
             
@@ -655,13 +570,14 @@ index.html - Doug Shuttle Service Booking System (修正版)
             return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
         }
 
-        function formatDateToDisplay(isoDate) {
-            const date = new Date(isoDate + 'T00:00:00+08:00');
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            const year = date.getFullYear();
-            return `${month}/${day}/${year}`;
-        }
+        // 全域錯誤處理
+        window.addEventListener('error', function(e) {
+            console.error('全域錯誤:', e.error);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('未處理的Promise拒絕:', e.reason);
+        });
     </script>
 </body>
 </html>
