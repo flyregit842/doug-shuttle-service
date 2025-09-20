@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-query.html - Doug Shuttle Service Final Complete Query System
-最終完整查詢系統：簡化顯示，過濾過往預約，完整修改功能
-版本: v7.0 Final | 2025-09-20
+query.html - Doug Shuttle Service Fixed Query System
+修正版本：統一用詞、格式修正、支援多種手機號碼格式
+版本: v8.0 Fixed | 2025-09-21
 -->
 <html lang="zh-TW">
 <head>
@@ -91,7 +91,7 @@ query.html - Doug Shuttle Service Final Complete Query System
                 <div class="form-group">
                     <label for="phone-search">手機號碼查詢：</label>
                     <div class="search-group">
-                        <input type="tel" id="phone-search" maxlength="15">
+                        <input type="tel" id="phone-search" placeholder="支援格式: 0912345678 或 0912-345-678">
                         <button class="btn" id="search-btn">查詢預約</button>
                     </div>
                 </div>
@@ -125,11 +125,11 @@ query.html - Doug Shuttle Service Final Complete Query System
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="edit-date">服務日期：</label>
+                    <label for="edit-date">接送日期：</label>
                     <input type="date" id="edit-date">
                 </div>
                 <div class="form-group">
-                    <label for="edit-time" id="edit-time-label">時間：</label>
+                    <label for="edit-time">接送時間：</label>
                     <input type="time" id="edit-time">
                 </div>
                 <div class="form-group" id="edit-flight-group">
@@ -210,32 +210,28 @@ query.html - Doug Shuttle Service Final Complete Query System
             });
             
             phoneInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/[^\d\-\+]/g, '');
-                if (value.length > 15) value = value.substring(0, 15);
-                e.target.value = value;
-                
-                const normalized = normalizePhone(value);
-                if (normalized && normalized.length === 10) {
+                // 支援多種手機號碼格式
+                const normalizedPhone = normalizePhone(e.target.value);
+                if (normalizedPhone && normalizedPhone.length === 10) {
                     clearTimeout(window.autoSearchTimer);
                     window.autoSearchTimer = setTimeout(() => searchBookings(), 500);
                 }
             });
 
-            // 服務類型變更事件
             document.getElementById('edit-service').addEventListener('change', function() {
                 updateEditServiceFields(this.value);
             });
         }
 
         function normalizePhone(input) {
+            if (!input) return '';
+            // 移除所有非數字字符，支援 xxxx-xxx-xxx 格式
             let digits = input.replace(/\D/g, '');
+            // 處理國際格式
             if (digits.startsWith('886')) {
                 digits = '0' + digits.substring(3);
             }
-            if (digits.length === 10 && digits.startsWith('09')) {
-                return digits;
-            }
-            return null;
+            return digits;
         }
 
         async function searchBookings() {
@@ -249,7 +245,7 @@ query.html - Doug Shuttle Service Final Complete Query System
             }
             
             const normalizedPhone = normalizePhone(inputValue);
-            if (!normalizedPhone) {
+            if (!normalizedPhone || normalizedPhone.length !== 10) {
                 showToast('請輸入正確的手機號碼格式', 'error');
                 phoneInput.focus();
                 return;
@@ -266,7 +262,7 @@ query.html - Doug Shuttle Service Final Complete Query System
             try {
                 const response = await apiCall('getBookingsByPhone', { phone: normalizedPhone });
                 if (response.success) {
-                    // 過濾掉過往預約（只顯示今天及未來的預約）
+                    // 過濾掉過往預約
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     
@@ -275,7 +271,7 @@ query.html - Doug Shuttle Service Final Complete Query System
                             const bookingDate = new Date(booking.date);
                             return bookingDate >= today;
                         }
-                        return true; // 如果沒有日期資料，保留顯示
+                        return true;
                     });
                     
                     searchCache.set(cacheKey, { data: futureBookings, timestamp: Date.now() });
@@ -321,6 +317,30 @@ query.html - Doug Shuttle Service Final Complete Query System
             }
         }
 
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}/${month}/${day}`;
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            // 處理各種時間格式，確保輸出 HH:MM
+            if (timeStr.includes('T')) {
+                const timePart = timeStr.split('T')[1];
+                return timePart.substring(0, 5);
+            }
+            if (timeStr.includes(':')) {
+                const parts = timeStr.split(':');
+                return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+            }
+            return timeStr;
+        }
+
         function generateResultsList(results) {
             const resultsList = document.getElementById('results-list');
             
@@ -333,25 +353,20 @@ query.html - Doug Shuttle Service Final Complete Query System
             
             let html = '';
             sortedResults.forEach(booking => {
-                let timeLabel = '時間';
-                if (booking.service === '送機') timeLabel = '登車時間';
-                else if (booking.service === '接機') timeLabel = '抵達時間';
-                else timeLabel = '出發時間';
-                
                 html += `<div class="booking-card" data-booking-id="${booking.rowIndex}">`;
                 
                 // 標題
                 html += '<div class="booking-header">';
                 html += '<div class="booking-service-info">';
                 html += `<div class="service-type">${booking.service}</div>`;
-                html += `<div><strong>${formatDate(booking.date)} ${booking.time || ''}</strong></div>`;
+                html += `<div><strong>${formatDate(booking.date)} ${formatTime(booking.time)}</strong></div>`;
                 html += '</div>';
                 html += '<div class="booking-status">預約中</div>';
                 html += '</div>';
                 
-                // 詳細資訊（簡化顯示）
+                // 詳細資訊
                 html += '<div class="booking-details">';
-                html += `<div class="detail-row"><span class="detail-label">${timeLabel}:</span><span class="detail-value">${booking.time || '-'}</span></div>`;
+                html += `<div class="detail-row"><span class="detail-label">接送時間:</span><span class="detail-value">${formatTime(booking.time)}</span></div>`;
                 if (booking.airport && booking.airport.trim()) {
                     html += `<div class="detail-row"><span class="detail-label">航班:</span><span class="detail-value">${booking.airport}</span></div>`;
                 }
@@ -360,7 +375,7 @@ query.html - Doug Shuttle Service Final Complete Query System
                     html += `<div class="detail-row"><span class="detail-label">中停點:</span><span class="detail-value">${booking.midstop}</span></div>`;
                 }
                 html += `<div class="detail-row"><span class="detail-label">下車點:</span><span class="detail-value">${booking.dropoff || '-'}</span></div>`;
-                if (booking.remarks && typeof booking.remarks === 'string' && booking.remarks.trim()) {
+                if (booking.remarks && booking.remarks.trim()) {
                     html += `<div class="detail-row"><span class="detail-label">備註:</span><span class="detail-value">${booking.remarks}</span></div>`;
                 }
                 html += '</div>';
@@ -403,7 +418,7 @@ query.html - Doug Shuttle Service Final Complete Query System
             // 填入所有欄位供修改
             document.getElementById('edit-service').value = booking.service || '';
             document.getElementById('edit-date').value = booking.date || '';
-            document.getElementById('edit-time').value = booking.time || '';
+            document.getElementById('edit-time').value = formatTime(booking.time) || '';
             document.getElementById('edit-flight').value = booking.airport || '';
             document.getElementById('edit-pickup').value = booking.pickup || '';
             document.getElementById('edit-midstop').value = booking.midstop || '';
@@ -424,17 +439,11 @@ query.html - Doug Shuttle Service Final Complete Query System
         }
 
         function updateEditServiceFields(service) {
-            const timeLabel = document.getElementById('edit-time-label');
             const flightGroup = document.getElementById('edit-flight-group');
             
-            if (service === '送機') {
-                timeLabel.textContent = '登車時間：';
-                flightGroup.style.display = 'block';
-            } else if (service === '接機') {
-                timeLabel.textContent = '抵達時間：';
+            if (service === '送機' || service === '接機') {
                 flightGroup.style.display = 'block';
             } else if (service === '包車') {
-                timeLabel.textContent = '出發時間：';
                 flightGroup.style.display = 'none';
             }
         }
@@ -543,16 +552,6 @@ query.html - Doug Shuttle Service Final Complete Query System
             setTimeout(() => {
                 if (toast.parentNode) toast.remove();
             }, 3000);
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return dateString;
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            return `${year}/${month}/${day}`;
         }
     </script>
 </body>
