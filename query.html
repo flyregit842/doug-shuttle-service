@@ -358,26 +358,35 @@ query.html - Doug Shuttle Service Fixed Query System
                 // 標題
                 html += '<div class="booking-header">';
                 html += '<div class="booking-service-info">';
-                html += `<div class="service-type">${booking.service}</div>`;
+                html += `<div class="service-type">${booking.service || ''}</div>`;
                 html += `<div><strong>${formatDate(booking.date)} ${formatTime(booking.time)}</strong></div>`;
                 html += '</div>';
                 html += '<div class="booking-status">預約中</div>';
                 html += '</div>';
                 
-                // 詳細資訊
+                // 詳細資訊 - 安全處理所有字段
                 html += '<div class="booking-details">';
-                html += `<div class="detail-row"><span class="detail-label">接送時間:</span><span class="detail-value">${formatTime(booking.time)}</span></div>`;
-                if (booking.airport && typeof booking.airport === 'string' && booking.airport.trim()) {
-                    html += `<div class="detail-row"><span class="detail-label">航班:</span><span class="detail-value">${booking.airport}</span></div>`;
+                html += `<div class="detail-row"><span class="detail-label">接送時間:</span><span class="detail-value">${formatTime(booking.time) || '-'}</span></div>`;
+                
+                // 安全檢查 airport 字段
+                if (booking.airport && String(booking.airport).trim()) {
+                    html += `<div class="detail-row"><span class="detail-label">航班:</span><span class="detail-value">${String(booking.airport).trim()}</span></div>`;
                 }
+                
                 html += `<div class="detail-row"><span class="detail-label">上車點:</span><span class="detail-value">${booking.pickup || '-'}</span></div>`;
-                if (booking.midstop && typeof booking.midstop === 'string' && booking.midstop.trim()) {
-                    html += `<div class="detail-row"><span class="detail-label">中停點:</span><span class="detail-value">${booking.midstop}</span></div>`;
+                
+                // 安全檢查 midstop 字段
+                if (booking.midstop && String(booking.midstop).trim()) {
+                    html += `<div class="detail-row"><span class="detail-label">中停點:</span><span class="detail-value">${String(booking.midstop).trim()}</span></div>`;
                 }
+                
                 html += `<div class="detail-row"><span class="detail-label">下車點:</span><span class="detail-value">${booking.dropoff || '-'}</span></div>`;
-                if (booking.remarks && typeof booking.remarks === 'string' && booking.remarks.trim()) {
-                    html += `<div class="detail-row"><span class="detail-label">備註:</span><span class="detail-value">${booking.remarks}</span></div>`;
+                
+                // 安全檢查 remarks 字段
+                if (booking.remarks && String(booking.remarks).trim()) {
+                    html += `<div class="detail-row"><span class="detail-label">備註:</span><span class="detail-value">${String(booking.remarks).trim()}</span></div>`;
                 }
+                
                 html += '</div>';
                 
                 // 操作按鈕
