@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-index.html - Doug Shuttle Service Complete Fixed
-完全修正版：解決所有8個問題
-版本: v6.2 Complete Fixed | 2025-09-20
+index.html - Doug Shuttle Service Final Complete System
+最終完整系統：解決所有7個問題，簡化格式，完整確認頁面
+版本: v7.0 Final | 2025-09-20
 -->
 <html lang="zh-TW">
 <head>
@@ -18,10 +18,12 @@ index.html - Doug Shuttle Service Complete Fixed
         .nav-links{text-align:center;margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #e5e7eb}
         .nav-links a{margin:0 10px;padding:10px 16px;text-decoration:none;color:#667eea;border:1px solid #667eea;border-radius:6px;transition:all 0.2s ease;display:inline-block}
         .nav-links a:hover,.nav-links a.active{background:#667eea;color:white}
-        .step-indicator{display:flex;justify-content:center;margin-bottom:20px}
-        .step-item{width:35px;height:35px;border-radius:50%;background:#e5e7eb;color:#6b7280;display:flex;align-items:center;justify-content:center;font-weight:bold;margin:0 8px;transition:all 0.3s ease}
+        .step-indicator{display:flex;justify-content:center;align-items:center;margin-bottom:30px}
+        .step-item{width:35px;height:35px;border-radius:50%;background:#e5e7eb;color:#6b7280;display:flex;align-items:center;justify-content:center;font-weight:bold;transition:all 0.3s ease;position:relative}
         .step-item.active{background:#667eea;color:white}
         .step-item.completed{background:#10b981;color:white}
+        .step-line{flex:1;height:2px;background:#e5e7eb;margin:0 10px;transition:all 0.3s ease}
+        .step-line.completed{background:#10b981}
         .step{display:none}
         .step.active{display:block}
         .form-group{margin-bottom:15px}
@@ -56,7 +58,7 @@ index.html - Doug Shuttle Service Complete Fixed
         .toast-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
         .toast-info{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
         @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-        @media (max-width:600px){.container{margin:10px;border-radius:0}.content{padding:15px}.btn-group{flex-direction:column}.service-grid{grid-template-columns:1fr;gap:8px}.summary-item{flex-direction:column;align-items:flex-start;gap:3px}.summary-value{text-align:left;margin-left:0}}
+        @media (max-width:600px){.container{margin:10px;border-radius:0}.content{padding:15px}.btn-group{flex-direction:column}.service-grid{grid-template-columns:1fr;gap:8px}.summary-item{flex-direction:column;align-items:flex-start;gap:3px}.summary-value{text-align:left;margin-left:0}.step-indicator{margin-bottom:20px}.step-item{width:30px;height:30px;font-size:14px}.step-line{margin:0 5px}}
     </style>
 </head>
 <body>
@@ -74,14 +76,16 @@ index.html - Doug Shuttle Service Complete Fixed
             
             <div class="step-indicator">
                 <div class="step-item active" id="step-1">1</div>
+                <div class="step-line" id="line-1"></div>
                 <div class="step-item" id="step-2">2</div>
+                <div class="step-line" id="line-2"></div>
                 <div class="step-item" id="step-3">3</div>
+                <div class="step-line" id="line-3"></div>
                 <div class="step-item" id="step-4">4</div>
             </div>
             
-            <!-- 步驟1: 選擇服務 - 移除下一步按鈕 -->
+            <!-- 步驟1: 選擇服務 -->
             <div class="step active" id="step1">
-                <h3>選擇服務項目</h3>
                 <div class="service-grid">
                     <div class="service-card" data-service="送機">
                         <h4>✈️ 送機</h4>
@@ -96,7 +100,9 @@ index.html - Doug Shuttle Service Complete Fixed
                         <p>客製行程</p>
                     </div>
                 </div>
-                <!-- 移除下一步按鈕 -->
+                <div class="btn-group">
+                    <button class="btn" onclick="goNext(1)" disabled id="next1">下一步</button>
+                </div>
             </div>
 
             <!-- 步驟2: 基本資訊 -->
@@ -140,8 +146,8 @@ index.html - Doug Shuttle Service Complete Fixed
                     </select>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-outline" onclick="goPrev(2)">上一步</button>
                     <button class="btn" onclick="goNext(2)">下一步</button>
+                    <button class="btn btn-outline" onclick="goPrev(2)">上一步</button>
                 </div>
             </div>
 
@@ -177,18 +183,18 @@ index.html - Doug Shuttle Service Complete Fixed
                     <textarea id="remarks" placeholder="如有特別需求事項敬請註明" rows="3"></textarea>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-outline" onclick="goPrev(3)">上一步</button>
                     <button class="btn" onclick="goNext(3)">下一步</button>
+                    <button class="btn btn-outline" onclick="goPrev(3)">上一步</button>
                 </div>
             </div>
 
-            <!-- 步驟4: 確認 -->
+            <!-- 步驟4: 確認所有資訊 -->
             <div class="step" id="step4">
                 <h3>確認預約資訊</h3>
                 <div id="summary"></div>
                 <div class="btn-group">
-                    <button class="btn btn-outline" onclick="goPrev(4)">返回修改</button>
                     <button class="btn" onclick="submitBooking()" id="submitBtn">確認預約</button>
+                    <button class="btn btn-outline" onclick="goPrev(4)">上一步</button>
                 </div>
             </div>
 
@@ -234,9 +240,7 @@ index.html - Doug Shuttle Service Complete Fixed
                     
                     updateServiceFields();
                     setDefaultLocations();
-                    
-                    // 自動進入下一步
-                    setTimeout(() => goNext(1), 300);
+                    document.getElementById('next1').disabled = false;
                 });
             });
         }
@@ -248,7 +252,6 @@ index.html - Doug Shuttle Service Complete Fixed
                 const phone = this.value.replace(/\D/g, '');
                 this.value = phone;
                 
-                // 輸入10位數字立即搜尋
                 if (phone.length === 10) {
                     lookupUserData(phone);
                 }
@@ -310,7 +313,6 @@ index.html - Doug Shuttle Service Complete Fixed
         }
 
         function fillUserData(data) {
-            // 填入除日期、時間、航班編號外的所有欄位
             const fieldMapping = {
                 'name': 'name',
                 'company': 'company', 
@@ -334,7 +336,6 @@ index.html - Doug Shuttle Service Complete Fixed
                 }
             });
             
-            // 重新設置預設地點（覆蓋歷史資料）
             setDefaultLocations();
         }
 
@@ -364,10 +365,14 @@ index.html - Doug Shuttle Service Complete Fixed
         function updateIndicator(step) {
             for (let i = 1; i <= 4; i++) {
                 const indicator = document.getElementById('step-' + i);
+                const line = document.getElementById('line-' + i);
+                
                 indicator.classList.remove('active', 'completed');
+                if (line) line.classList.remove('completed');
                 
                 if (i < step) {
                     indicator.classList.add('completed');
+                    if (line) line.classList.add('completed');
                 } else if (i === step) {
                     indicator.classList.add('active');
                 }
@@ -447,48 +452,35 @@ index.html - Doug Shuttle Service Complete Fixed
             else if (selectedService === '接機') timeLabel = '抵達時間';
             else timeLabel = '出發時間';
             
+            // 收集所有輸入項目進行確認
+            const allFields = [
+                {label: '服務類型', value: selectedService},
+                {label: '服務日期', value: document.getElementById('date').value},
+                {label: timeLabel, value: document.getElementById('time').value},
+                {label: '航班編號', value: document.getElementById('flight').value || '-'},
+                {label: '上車地點', value: document.getElementById('pickup').value},
+                {label: '中停點', value: document.getElementById('midstop').value || '-'},
+                {label: '下車地點', value: document.getElementById('dropoff').value},
+                {label: '備註', value: document.getElementById('remarks').value || '-'},
+                {label: '姓名', value: document.getElementById('name').value},
+                {label: '手機號碼', value: document.getElementById('phone').value},
+                {label: '公司名稱', value: document.getElementById('company').value || '-'},
+                {label: '部門', value: document.getElementById('department').value || '-'},
+                {label: '電郵信箱', value: document.getElementById('email').value || '-'},
+                {label: '代理信箱', value: document.getElementById('proxyEmail').value || '-'},
+                {label: '成本中心', value: document.getElementById('costCenter').value || '-'},
+                {label: '付款方式', value: document.getElementById('payment').value}
+            ];
+            
             let html = '<div class="summary-section">';
-            html += '<div class="summary-title">🚗 服務資訊</div>';
-            html += `<div class="summary-item"><span class="summary-label">服務類型:</span><span class="summary-value">${selectedService}</span></div>`;
-            html += `<div class="summary-item"><span class="summary-label">服務日期:</span><span class="summary-value">${document.getElementById('date').value}</span></div>`;
-            html += `<div class="summary-item"><span class="summary-label">${timeLabel}:</span><span class="summary-value">${document.getElementById('time').value}</span></div>`;
+            html += '<div class="summary-title">確認所有預約資訊</div>';
             
-            const flight = document.getElementById('flight').value.trim();
-            if (flight) {
-                html += `<div class="summary-item"><span class="summary-label">航班編號:</span><span class="summary-value">${flight}</span></div>`;
-            }
+            allFields.forEach(field => {
+                if (field.label === '航班編號' && selectedService === '包車') return; // 包車不顯示航班
+                html += `<div class="summary-item"><span class="summary-label">${field.label}:</span><span class="summary-value">${field.value}</span></div>`;
+            });
+            
             html += '</div>';
-            
-            html += '<div class="summary-section">';
-            html += '<div class="summary-title">👤 聯絡資訊</div>';
-            html += `<div class="summary-item"><span class="summary-label">姓名:</span><span class="summary-value">${document.getElementById('name').value}</span></div>`;
-            html += `<div class="summary-item"><span class="summary-label">手機:</span><span class="summary-value">${document.getElementById('phone').value}</span></div>`;
-            
-            const company = document.getElementById('company').value.trim();
-            if (company) {
-                html += `<div class="summary-item"><span class="summary-label">公司:</span><span class="summary-value">${company}</span></div>`;
-            }
-            
-            html += `<div class="summary-item"><span class="summary-label">付款:</span><span class="summary-value">${document.getElementById('payment').value}</span></div>`;
-            html += '</div>';
-            
-            html += '<div class="summary-section">';
-            html += '<div class="summary-title">📍 行程資訊</div>';
-            html += `<div class="summary-item"><span class="summary-label">上車點:</span><span class="summary-value">${document.getElementById('pickup').value}</span></div>`;
-            
-            const midstop = document.getElementById('midstop').value.trim();
-            if (midstop) {
-                html += `<div class="summary-item"><span class="summary-label">中停點:</span><span class="summary-value">${midstop}</span></div>`;
-            }
-            
-            html += `<div class="summary-item"><span class="summary-label">下車點:</span><span class="summary-value">${document.getElementById('dropoff').value}</span></div>`;
-            
-            const remarks = document.getElementById('remarks').value.trim();
-            if (remarks) {
-                html += `<div class="summary-item"><span class="summary-label">備註:</span><span class="summary-value">${remarks}</span></div>`;
-            }
-            html += '</div>';
-            
             summaryDiv.innerHTML = html;
         }
 
@@ -541,7 +533,7 @@ index.html - Doug Shuttle Service Complete Fixed
             let timeLabel = selectedService === '送機' ? '登車時間' : selectedService === '接機' ? '抵達時間' : '出發時間';
             
             let html = '<div class="summary-section">';
-            html += '<div class="summary-title">📋 預約詳情</div>';
+            html += '<div class="summary-title">預約詳情</div>';
             html += `<div class="summary-item"><span class="summary-label">預約編號:</span><span class="summary-value">B${Date.now().toString().slice(-6)}</span></div>`;
             html += `<div class="summary-item"><span class="summary-label">服務類型:</span><span class="summary-value">${selectedService}</span></div>`;
             html += `<div class="summary-item"><span class="summary-label">服務日期:</span><span class="summary-value">${document.getElementById('date').value}</span></div>`;
