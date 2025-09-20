@@ -1,583 +1,251 @@
 <!DOCTYPE html>
 <!--
-index.html - Doug Shuttle Service (除錯版)
-修正表單提交問題，加強除錯輸出
-版本: v5.2 Debug | 2025-09-20
+index.html - 極簡測試版
+專注解決核心提交問題，移除所有非必要功能
+版本: v5.3 Minimal | 2025-09-20
 -->
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doug Shuttle Service - 機場接送預約</title>
+    <title>Doug Shuttle Service - 測試版</title>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f5;padding:20px;line-height:1.6}
-        .container{max-width:600px;margin:0 auto;background:white;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);overflow:hidden}
-        .header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px 20px;text-align:center}
-        .header h1{font-size:2rem;margin-bottom:0.5rem}
-        .header p{opacity:0.9;font-size:1.1rem}
-        .content{padding:20px}
-        .nav-links{text-align:center;margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #e5e7eb}
-        .nav-links a{margin:0 10px;padding:10px 16px;text-decoration:none;color:#667eea;border:1px solid #667eea;border-radius:6px;transition:all 0.2s ease;display:inline-block}
-        .nav-links a:hover,.nav-links a.active{background:#667eea;color:white;transform:translateY(-1px)}
-        .step-indicator{display:flex;justify-content:center;margin-bottom:30px}
-        .step-item{width:40px;height:40px;border-radius:50%;background:#e5e7eb;color:#6b7280;display:flex;align-items:center;justify-content:center;font-weight:bold;margin:0 10px;transition:all 0.3s ease}
-        .step-item.active{background:#667eea;color:white}
-        .step-item.completed{background:#10b981;color:white}
+        body{font-family:Arial,sans-serif;max-width:600px;margin:20px auto;padding:20px}
+        .form-group{margin:15px 0}
+        label{display:block;margin-bottom:5px;font-weight:bold}
+        input,select,textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:4px}
+        .btn{background:#007bff;color:white;padding:10px 20px;border:none;border-radius:4px;cursor:pointer}
+        .btn:hover{background:#0056b3}
+        .service-card{border:2px solid #ddd;padding:15px;margin:10px;text-align:center;cursor:pointer}
+        .service-card.selected{border-color:#007bff;background:#f0f8ff}
         .step{display:none}
         .step.active{display:block}
-        .form-group{margin-bottom:20px}
-        label{display:block;margin-bottom:8px;font-weight:600;color:#374151}
-        .required::after{content:" *";color:#dc2626;font-weight:bold}
-        input,select,textarea{width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:6px;font-size:16px;transition:all 0.3s ease;font-family:inherit}
-        input:focus,select:focus,textarea:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1);outline:none}
-        textarea{resize:vertical;min-height:80px}
-        .service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;margin-top:15px}
-        .service-card{padding:20px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;cursor:pointer;transition:all 0.3s ease;background:white}
-        .service-card:hover{transform:translateY(-2px);box-shadow:0 8px 16px rgba(0,0,0,0.1);border-color:#d1d5db}
-        .service-card.selected{border-color:#667eea;background:#f0f4ff;box-shadow:0 4px 12px rgba(102,126,234,0.2)}
-        .service-card h4{font-size:1.1rem;margin-bottom:8px;color:#374151}
-        .service-card p{color:#6b7280;font-size:0.9rem}
-        .btn{padding:12px 24px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;font-weight:500;transition:all 0.2s ease;text-decoration:none;display:inline-block}
-        .btn:hover:not(:disabled){background:#5a67d8;transform:translateY(-1px);box-shadow:0 4px 8px rgba(0,0,0,0.1)}
-        .btn:disabled{opacity:0.6;cursor:not-allowed;transform:none!important;box-shadow:none!important}
-        .btn-outline{background:transparent;border:2px solid #667eea;color:#667eea}
-        .btn-outline:hover:not(:disabled){background:#667eea;color:white}
-        .btn-group{display:flex;gap:12px;justify-content:center;margin-top:30px}
-        .loading{display:none;text-align:center;color:#667eea;padding:10px;background:#f0f4ff;border-radius:6px;font-size:14px;margin-top:8px}
-        .loading.show{display:flex;align-items:center;justify-content:center;gap:10px}
-        .loading::before{content:'';width:16px;height:16px;border:2px solid #667eea;border-top:2px solid transparent;border-radius:50%;animation:spin 1s linear infinite}
-        @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-        .toast{position:fixed;top:20px;right:20px;padding:16px 20px;border-radius:6px;z-index:1000;animation:slideIn 0.3s ease-out;min-width:280px;max-width:400px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
-        .toast-success{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}
-        .toast-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
-        .toast-info{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
-        @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-        .summary{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px;margin-bottom:20px}
-        .summary-section{margin-bottom:25px;padding:15px;background:white;border-radius:8px;border-left:4px solid #667eea}
-        .summary-title{font-size:18px;font-weight:600;color:#2c3e50;margin-bottom:15px;display:flex;align-items:center;gap:8px}
-        .summary-item{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid #f3f4f6}
-        .summary-item:last-child{border-bottom:none}
-        .summary-label{font-weight:600;color:#374151;min-width:120px}
-        .summary-value{color:#6b7280;text-align:right;flex:1;margin-left:20px}
-        @media (max-width:600px){.container{margin:10px;border-radius:0}.content{padding:15px}.btn-group{flex-direction:column}.service-grid{grid-template-columns:1fr;gap:12px}.step-item{width:32px;height:32px;font-size:14px;margin:0 6px}.summary-item{flex-direction:column;align-items:flex-start;gap:5px}.summary-value{text-align:left;margin-left:0}}
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Doug Shuttle Service</h1>
-            <p>專業機場接送預約系統</p>
+    <h1>Doug Shuttle Service - 測試版</h1>
+    
+    <!-- 步驟1: 服務選擇 -->
+    <div class="step active" id="step1">
+        <h3>選擇服務</h3>
+        <div class="service-card" onclick="selectService('送機')">送機</div>
+        <div class="service-card" onclick="selectService('接機')">接機</div>
+        <div class="service-card" onclick="selectService('包車')">包車</div>
+        <button class="btn" onclick="goToStep2()" id="nextBtn" disabled>下一步</button>
+    </div>
+    
+    <!-- 步驟2: 表單 -->
+    <div class="step" id="step2">
+        <h3>填寫資料</h3>
+        <div class="form-group">
+            <label>服務項目</label>
+            <input type="text" id="service" readonly>
+        </div>
+        <div class="form-group">
+            <label>手機號碼*</label>
+            <input type="tel" id="phone" required>
+        </div>
+        <div class="form-group">
+            <label>姓名*</label>
+            <input type="text" id="name" required>
+        </div>
+        <div class="form-group">
+            <label>公司名稱</label>
+            <input type="text" id="company">
+        </div>
+        <div class="form-group">
+            <label>日期* (YYYY-MM-DD)</label>
+            <input type="date" id="date" required>
+        </div>
+        <div class="form-group">
+            <label>時間*</label>
+            <input type="time" id="time" required>
+        </div>
+        <div class="form-group">
+            <label>航班編號</label>
+            <input type="text" id="flight">
+        </div>
+        <div class="form-group">
+            <label>上車地點*</label>
+            <input type="text" id="pickup" required>
+        </div>
+        <div class="form-group">
+            <label>下車地點*</label>
+            <input type="text" id="dropoff" required>
+        </div>
+        <div class="form-group">
+            <label>付款方式*</label>
+            <select id="payment" required>
+                <option value="">請選擇</option>
+                <option value="現金">現金</option>
+                <option value="簽單">簽單</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>備註</label>
+            <textarea id="remarks"></textarea>
         </div>
         
-        <div class="content">
-            <div class="nav-links">
-                <a href="#" class="active" onclick="location.reload()">新增預約</a>
-                <a href="query.html">查詢預約</a>
-            </div>
-            
-            <div class="step-indicator">
-                <div class="step-item active" id="indicator-1">1</div>
-                <div class="step-item" id="indicator-2">2</div>
-                <div class="step-item" id="indicator-3">3</div>
-                <div class="step-item" id="indicator-4">4</div>
-            </div>
-            
-            <!-- 步驟1 -->
-            <div class="step active" id="step1">
-                <h3>選擇服務項目</h3>
-                <div class="service-grid">
-                    <div class="service-card" data-service="送機">
-                        <h4>✈️ 送機</h4>
-                        <p>前往機場</p>
-                    </div>
-                    <div class="service-card" data-service="接機">
-                        <h4>🏠 接機</h4>
-                        <p>機場回來</p>
-                    </div>
-                    <div class="service-card" data-service="包車">
-                        <h4>🚗 包車</h4>
-                        <p>客製行程</p>
-                    </div>
-                </div>
-                <div class="btn-group">
-                    <button class="btn" id="next1" onclick="nextStep(1)" disabled>下一步</button>
-                </div>
-            </div>
-
-            <!-- 步驟2 -->
-            <div class="step" id="step2">
-                <h3>基本資訊</h3>
-                <div class="form-group">
-                    <label for="phone" class="required">手機號碼</label>
-                    <input type="tel" id="phone" required>
-                    <div class="loading" id="loading">查詢歷史資料中...</div>
-                </div>
-                <div class="form-group">
-                    <label for="name" class="required">姓名</label>
-                    <input type="text" id="name" placeholder="請輸入姓名" required>
-                </div>
-                <div class="form-group">
-                    <label for="company">公司名稱</label>
-                    <input type="text" id="company">
-                </div>
-                <div class="form-group">
-                    <label for="email">電郵信箱</label>
-                    <input type="email" id="email">
-                </div>
-                <div class="form-group">
-                    <label for="proxyEmail">代理信箱</label>
-                    <input type="email" id="proxyEmail">
-                </div>
-                <div class="form-group">
-                    <label for="costCenter">成本中心</label>
-                    <input type="text" id="costCenter">
-                </div>
-                <div class="form-group">
-                    <label for="payment" class="required">付款方式</label>
-                    <select id="payment" required>
-                        <option value="">請選擇付款方式</option>
-                        <option value="簽單">簽單</option>
-                        <option value="現金">現金</option>
-                    </select>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-outline" onclick="prevStep(2)">上一步</button>
-                    <button class="btn" onclick="nextStep(2)">下一步</button>
-                </div>
-            </div>
-
-            <!-- 步驟3 -->
-            <div class="step" id="step3">
-                <h3>時間與地點</h3>
-                <div class="form-group">
-                    <label for="date" class="required">服務日期</label>
-                    <input type="text" id="date" placeholder="MM/DD/YYYY" required>
-                </div>
-                <div class="form-group">
-                    <label for="time" class="required" id="time-label">時間</label>
-                    <select id="time" required>
-                        <option value="">請選擇時間</option>
-                    </select>
-                </div>
-                <div class="form-group" id="flight-group">
-                    <label for="flight">航班編號</label>
-                    <input type="text" id="flight" placeholder="例：CI123">
-                </div>
-                <div class="form-group">
-                    <label for="pickup" class="required">上車地點</label>
-                    <input type="text" id="pickup" required>
-                </div>
-                <div class="form-group">
-                    <label for="midstop">中停點</label>
-                    <input type="text" id="midstop">
-                </div>
-                <div class="form-group">
-                    <label for="dropoff" class="required">下車地點</label>
-                    <input type="text" id="dropoff" required>
-                </div>
-                <div class="form-group">
-                    <label for="remarks">備註</label>
-                    <textarea id="remarks" placeholder="如有特殊需求請在此說明"></textarea>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-outline" onclick="prevStep(3)">上一步</button>
-                    <button class="btn" onclick="nextStep(3)">下一步</button>
-                </div>
-            </div>
-
-            <!-- 步驟4 -->
-            <div class="step" id="step4">
-                <h3>確認預約資訊</h3>
-                <div id="summary-container"></div>
-                <div class="btn-group">
-                    <button class="btn btn-outline" onclick="prevStep(4)">返回修改</button>
-                    <button class="btn" id="submit-btn" onclick="submitForm()">確認預約</button>
-                </div>
-            </div>
-
-            <!-- 完成頁面 -->
-            <div class="step" id="complete" style="text-align: center;">
-                <h2 style="color: #10b981; margin-bottom: 16px;">🎉 預約成功！</h2>
-                <p style="color: #6b7280; margin-bottom: 20px;">您的預約已建立完成</p>
-                <div id="booking-details" class="summary" style="text-align: left;"></div>
-                <div class="btn-group">
-                    <a href="query.html" class="btn">查看預約</a>
-                    <button class="btn btn-outline" onclick="location.reload()">新增預約</button>
-                </div>
-            </div>
-        </div>
+        <button class="btn" onclick="goToStep1()">返回</button>
+        <button class="btn" onclick="submitForm()" id="submitBtn">提交預約</button>
+    </div>
+    
+    <!-- 成功頁面 -->
+    <div class="step" id="success">
+        <h3>預約成功！</h3>
+        <p>您的預約已建立完成</p>
+        <button class="btn" onclick="location.reload()">新增預約</button>
     </div>
 
     <script>
-        let currentStep = 1;
+        console.log('=== 腳本開始載入 ===');
+        
         let selectedService = '';
         const API_URL = 'https://script.google.com/macros/s/AKfycbwmXgTbydw-G5-WLvE0PMBB8Qbi3Umq3yOl91a7c-Y9iiIlEhHOikLZHjDf5VS0H-4npw/exec';
-
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Doug Shuttle Service - 系統初始化中...');
-            initializeEventListeners();
-            generateTimeOptions();
-            initDateInput();
-        });
-
-        function initializeEventListeners() {
-            console.log('綁定事件監聽器...');
+        
+        console.log('API_URL:', API_URL);
+        
+        function selectService(service) {
+            console.log('選擇服務:', service);
+            selectedService = service;
             
-            // 服務選擇
+            // 清除之前的選擇
             document.querySelectorAll('.service-card').forEach(card => {
-                card.addEventListener('click', function() {
-                    console.log('選擇服務:', this.dataset.service);
-                    document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
-                    this.classList.add('selected');
-                    selectedService = this.dataset.service;
-                    updateServiceFields(selectedService);
-                    document.getElementById('next1').disabled = false;
-                    setTimeout(() => nextStep(1), 300);
-                });
+                card.classList.remove('selected');
             });
-
-            // 手機號碼
-            const phoneInput = document.getElementById('phone');
-            phoneInput.addEventListener('input', function() {
-                const phone = this.value.replace(/\D/g, '');
-                if (phone.length === 10) {
-                    setTimeout(() => lookupUserData(phone), 500);
-                }
-            });
-        }
-
-        function generateTimeOptions() {
-            const timeSelect = document.getElementById('time');
-            timeSelect.innerHTML = '<option value="">請選擇時間</option>';
-            for (let hour = 0; hour < 24; hour++) {
-                for (let minute = 0; minute < 60; minute += 5) {
-                    const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                    const option = document.createElement('option');
-                    option.value = timeValue;
-                    option.textContent = timeValue;
-                    timeSelect.appendChild(option);
-                }
-            }
-        }
-
-        function initDateInput() {
-            const dateInput = document.getElementById('date');
-            dateInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 8) value = value.substring(0, 8);
-                let formatted = '';
-                if (value.length >= 1) formatted = value.substring(0, Math.min(2, value.length));
-                if (value.length >= 3) formatted += '/' + value.substring(2, Math.min(4, value.length));
-                if (value.length >= 5) formatted += '/' + value.substring(4);
-                e.target.value = formatted;
-            });
-        }
-
-        function updateServiceFields(service) {
-            const timeLabel = document.getElementById('time-label');
-            const flightGroup = document.getElementById('flight-group');
-            const flightLabel = document.querySelector('#flight-group label');
-            const flightInput = document.getElementById('flight');
             
-            if (service === '送機') {
-                timeLabel.textContent = '登車時間';
-                flightLabel.classList.remove('required');
-                flightInput.required = false;
-                flightGroup.style.display = 'block';
-            } else if (service === '接機') {
-                timeLabel.textContent = '抵達時間';
-                flightLabel.classList.add('required');
-                flightInput.required = true;
-                flightGroup.style.display = 'block';
-            } else {
-                timeLabel.textContent = '出發時間';
-                flightGroup.style.display = 'none';
-                flightInput.required = false;
-            }
-        }
-
-        function nextStep(fromStep) {
-            console.log('下一步從:', fromStep);
-            if (validateStep(fromStep)) {
-                const nextStepNum = fromStep + 1;
-                showStep(nextStepNum);
-                if (nextStepNum === 4) generateSummary();
-            }
-        }
-
-        function prevStep(fromStep) {
-            console.log('上一步從:', fromStep);
-            showStep(fromStep - 1);
-        }
-
-        function showStep(stepNum) {
-            console.log('顯示步驟:', stepNum);
-            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
-            document.getElementById(`step${stepNum}`).classList.add('active');
-            updateStepIndicator(stepNum);
-            currentStep = stepNum;
-        }
-
-        function updateStepIndicator(step = currentStep) {
-            for (let i = 1; i <= 4; i++) {
-                const indicator = document.getElementById(`indicator-${i}`);
-                indicator.classList.remove('active', 'completed');
-                if (i < step) indicator.classList.add('completed');
-                else if (i === step) indicator.classList.add('active');
-            }
-        }
-
-        function validateStep(step) {
-            console.log('驗證步驟:', step);
-            switch(step) {
-                case 1:
-                    if (!selectedService) {
-                        showToast('請選擇服務項目', 'error');
-                        return false;
-                    }
-                    return true;
-                case 2:
-                    const phone = document.getElementById('phone').value.replace(/\D/g, '');
-                    const name = document.getElementById('name').value.trim();
-                    const payment = document.getElementById('payment').value;
-                    if (phone.length !== 10) {
-                        showToast('請輸入完整的手機號碼', 'error');
-                        return false;
-                    }
-                    if (!name) {
-                        showToast('請輸入姓名', 'error');
-                        return false;
-                    }
-                    if (!payment) {
-                        showToast('請選擇付款方式', 'error');
-                        return false;
-                    }
-                    return true;
-                case 3:
-                    const date = document.getElementById('date').value;
-                    const time = document.getElementById('time').value;
-                    const pickup = document.getElementById('pickup').value.trim();
-                    const dropoff = document.getElementById('dropoff').value.trim();
-                    if (!date || !isValidDate(date)) {
-                        showToast('請輸入正確的服務日期', 'error');
-                        return false;
-                    }
-                    if (!time) {
-                        showToast('請選擇服務時間', 'error');
-                        return false;
-                    }
-                    if (!pickup) {
-                        showToast('請輸入上車地點', 'error');
-                        return false;
-                    }
-                    if (!dropoff) {
-                        showToast('請輸入下車地點', 'error');
-                        return false;
-                    }
-                    if (selectedService === '接機' && !document.getElementById('flight').value.trim()) {
-                        showToast('接機服務需要填寫航班編號', 'error');
-                        return false;
-                    }
-                    return true;
-            }
-            return true;
-        }
-
-        function generateSummary() {
-            console.log('生成摘要...');
-            const container = document.getElementById('summary-container');
-            let timeLabel = selectedService === '送機' ? '登車時間' : selectedService === '接機' ? '抵達時間' : '出發時間';
+            // 標記當前選擇
+            event.target.classList.add('selected');
             
-            let html = `
-                <div class="summary-section">
-                    <div class="summary-title">🚗 服務資訊</div>
-                    <div class="summary-item"><span class="summary-label">服務類型：</span><span class="summary-value">${selectedService}</span></div>
-                    <div class="summary-item"><span class="summary-label">服務日期：</span><span class="summary-value">${document.getElementById('date').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">${timeLabel}：</span><span class="summary-value">${document.getElementById('time').value}</span></div>
-                </div>
-                <div class="summary-section">
-                    <div class="summary-title">👤 聯絡資訊</div>
-                    <div class="summary-item"><span class="summary-label">姓名：</span><span class="summary-value">${document.getElementById('name').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">手機號碼：</span><span class="summary-value">${document.getElementById('phone').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">付款方式：</span><span class="summary-value">${document.getElementById('payment').value}</span></div>
-                </div>
-                <div class="summary-section">
-                    <div class="summary-title">📍 行程資訊</div>
-                    <div class="summary-item"><span class="summary-label">上車地點：</span><span class="summary-value">${document.getElementById('pickup').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">下車地點：</span><span class="summary-value">${document.getElementById('dropoff').value}</span></div>
-                </div>`;
+            // 啟用下一步按鈕
+            document.getElementById('nextBtn').disabled = false;
             
-            container.innerHTML = html;
+            console.log('已選擇服務:', selectedService);
         }
-
-        async function lookupUserData(phone) {
-            console.log('查詢用戶資料:', phone);
-            const loadingElement = document.getElementById('loading');
-            loadingElement.className = 'loading show';
-            try {
-                const response = await apiCall('getUserDataByPhone', { phone: phone });
-                if (response.success && response.data) {
-                    const data = response.data;
-                    if (data.name) document.getElementById('name').value = data.name;
-                    if (data.company) document.getElementById('company').value = data.company;
-                    if (data.payment) document.getElementById('payment').value = data.payment;
-                    showToast('已自動帶入歷史資料', 'success');
-                }
-            } catch (error) {
-                console.error('查詢用戶資料錯誤:', error);
-            } finally {
-                loadingElement.className = 'loading';
+        
+        function goToStep1() {
+            console.log('回到步驟1');
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step1').classList.add('active');
+        }
+        
+        function goToStep2() {
+            console.log('前往步驟2');
+            if (!selectedService) {
+                alert('請選擇服務項目');
+                return;
             }
+            
+            document.getElementById('service').value = selectedService;
+            document.getElementById('step1').classList.remove('active');
+            document.getElementById('step2').classList.add('active');
         }
-
+        
+        function showSuccess() {
+            console.log('顯示成功頁面');
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('success').classList.add('active');
+        }
+        
         async function submitForm() {
             console.log('=== 開始提交表單 ===');
-            const submitBtn = document.getElementById('submit-btn');
+            
+            const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = '提交中...';
             
             try {
-                console.log('準備表單資料...');
-                
-                // 日期格式轉換
-                const dateStr = document.getElementById('date').value;
-                const dateParts = dateStr.split('/');
-                if (dateParts.length !== 3) throw new Error('日期格式錯誤');
-                const standardDate = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
-                
+                // 收集表單資料
                 const formData = {
                     '服務項目': selectedService,
-                    '手機號碼': document.getElementById('phone').value.replace(/\D/g, ''),
+                    '手機號碼': document.getElementById('phone').value.trim(),
                     '姓名': document.getElementById('name').value.trim(),
                     '公司名稱': document.getElementById('company').value.trim(),
                     '部門': '',
-                    '日期': standardDate,
+                    '日期': document.getElementById('date').value,
                     '時間': document.getElementById('time').value,
                     '航班編號': document.getElementById('flight').value.trim(),
                     '上車點': document.getElementById('pickup').value.trim(),
-                    '中停點': document.getElementById('midstop').value.trim(),
+                    '中停點': '',
                     '下車點': document.getElementById('dropoff').value.trim(),
                     '備註': document.getElementById('remarks').value.trim(),
                     '費用支付': document.getElementById('payment').value,
-                    '電郵信箱': document.getElementById('email').value.trim(),
-                    '代理信箱': document.getElementById('proxyEmail').value.trim(),
-                    '成本中心': document.getElementById('costCenter').value.trim()
+                    '電郵信箱': '',
+                    '代理信箱': '',
+                    '成本中心': ''
                 };
                 
                 console.log('表單資料:', formData);
                 
-                const response = await apiCall('createBooking', formData);
-                console.log('API回應:', response);
-                
-                if (response && response.success) {
-                    console.log('預約建立成功');
-                    showSuccessPage();
-                    showToast('預約建立成功！', 'success');
-                } else {
-                    throw new Error(response?.message || '後端回應success為false');
+                // 檢查必填欄位
+                if (!formData['手機號碼'] || !formData['姓名'] || !formData['日期'] || 
+                    !formData['時間'] || !formData['上車點'] || !formData['下車點'] || !formData['費用支付']) {
+                    throw new Error('請填寫所有必填欄位');
                 }
                 
-            } catch (error) {
-                console.error('提交錯誤:', error);
-                showToast(error.message || '預約失敗，請稍後再試', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '確認預約';
-            }
-        }
-
-        function showSuccessPage() {
-            console.log('顯示成功頁面');
-            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-            document.getElementById('complete').classList.add('active');
-            
-            const detailsElement = document.getElementById('booking-details');
-            let timeLabel = selectedService === '送機' ? '登車時間' : selectedService === '接機' ? '抵達時間' : '出發時間';
-            
-            detailsElement.innerHTML = `
-                <div class="summary-section">
-                    <div class="summary-title">📋 預約詳情</div>
-                    <div class="summary-item"><span class="summary-label">服務類型：</span><span class="summary-value">${selectedService}</span></div>
-                    <div class="summary-item"><span class="summary-label">服務日期：</span><span class="summary-value">${document.getElementById('date').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">${timeLabel}：</span><span class="summary-value">${document.getElementById('time').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">聯絡人：</span><span class="summary-value">${document.getElementById('name').value}</span></div>
-                    <div class="summary-item"><span class="summary-label">手機號碼：</span><span class="summary-value">${document.getElementById('phone').value}</span></div>
-                </div>`;
-        }
-
-        async function apiCall(action, data) {
-            console.log('=== API調用 ===');
-            console.log('Action:', action);
-            console.log('Data:', data);
-            
-            try {
-                const params = Object.keys(data)
-                    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key] || '')}`)
+                console.log('開始API調用...');
+                
+                // 建立請求體
+                const params = Object.keys(formData)
+                    .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(formData[key] || ''))
                     .join('&');
                 
-                const body = `action=${encodeURIComponent(action)}&${params}`;
-                console.log('Request body:', body);
-
+                const body = 'action=createBooking&' + params;
+                console.log('請求體長度:', body.length);
+                console.log('請求體前100字符:', body.substring(0, 100));
+                
+                // 發送請求
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: body
                 });
-
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
-
+                
+                console.log('回應狀態:', response.status);
+                console.log('回應OK:', response.ok);
+                
                 if (!response.ok) {
-                    throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
+                    throw new Error('HTTP錯誤: ' + response.status);
                 }
                 
                 const result = await response.json();
-                console.log('API結果:', result);
-                return result;
+                console.log('API回應:', result);
+                
+                if (result.success) {
+                    console.log('提交成功!');
+                    showSuccess();
+                    alert('預約建立成功！');
+                } else {
+                    throw new Error(result.message || '提交失敗');
+                }
                 
             } catch (error) {
-                console.error('API調用失敗:', error);
-                throw error;
+                console.error('提交錯誤:', error);
+                alert('錯誤: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '提交預約';
+                console.log('=== 提交流程結束 ===');
             }
         }
-
-        function showToast(message, type) {
-            console.log('顯示Toast:', message, type);
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) existingToast.remove();
+        
+        // 頁面載入完成
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== 頁面載入完成 ===');
             
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
+            // 設置今天作為最小日期
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').min = today;
             
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 3000);
-        }
-
-        function isValidDate(dateString) {
-            const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
-            const match = dateString.match(regex);
-            if (!match) return false;
-            const month = parseInt(match[1]);
-            const day = parseInt(match[2]);
-            const year = parseInt(match[3]);
-            if (month < 1 || month > 12) return false;
-            if (day < 1 || day > 31) return false;
-            if (year < 2025) return false;
-            const date = new Date(year, month - 1, day);
-            return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
-        }
-
-        // 全域錯誤處理
+            console.log('初始化完成，今天日期:', today);
+        });
+        
+        // 錯誤監聽
         window.addEventListener('error', function(e) {
-            console.error('全域錯誤:', e.error);
+            console.error('JavaScript錯誤:', e.error);
+            console.error('錯誤位置:', e.filename + ':' + e.lineno);
         });
-
-        window.addEventListener('unhandledrejection', function(e) {
-            console.error('未處理的Promise拒絕:', e.reason);
-        });
+        
+        console.log('=== 腳本載入完成 ===');
     </script>
 </body>
 </html>
