@@ -72,7 +72,7 @@
                     <input type="tel" id="phone" maxlength="10">
                 </div>
                 <button class="btn btn-primary" onclick="searchBookings()">查詢預約</button>
-                <button class="btn btn-secondary" onclick="window.open('index.html', '_blank')">新增預約</button>
+                <button class="btn btn-secondary" onclick="window.location.href='index.html'">新增預約</button>
             </div>
 
             <div id="loading" class="loading">
@@ -185,9 +185,9 @@
             setupUppercaseInputs();
         });
 
-        // 設定英文自動轉大寫（除了姓名職稱、備註、電郵信箱、公司名稱、代理信箱、部門）
+        // 設定英文自動轉大寫（只有航班編號和地點欄位）
         function setupUppercaseInputs() {
-            const uppercaseInputs = ['editAirport', 'editPickup', 'editMidstop', 'editDropoff', 'editCostCenter'];
+            const uppercaseInputs = ['editAirport', 'editPickup', 'editMidstop', 'editDropoff'];
             
             uppercaseInputs.forEach(inputId => {
                 const input = document.getElementById(inputId);
@@ -291,7 +291,7 @@
                     <div class="no-results">
                         <h3>未找到有效預約記錄</h3>
                         <p>此手機號碼沒有未到期的預約記錄</p>
-                        <button class="btn btn-primary" onclick="window.open('index.html', '_blank')" style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="window.location.href='index.html'" style="margin-top: 20px;">
                             立即預約
                         </button>
                     </div>
