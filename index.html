@@ -184,6 +184,42 @@
             display: block;
         }
 
+        .confirmation-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .confirmation-section h3 {
+            color: #495057;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .confirmation-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .confirmation-item:last-child {
+            border-bottom: none;
+        }
+
+        .confirmation-label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .confirmation-value {
+            color: #212529;
+            text-align: right;
+            max-width: 60%;
+            word-wrap: break-word;
+        }
+
         .success-message, .error-message {
             padding: 20px;
             border-radius: 10px;
@@ -211,6 +247,16 @@
             
             .form-container {
                 padding: 20px;
+            }
+
+            .confirmation-item {
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .confirmation-value {
+                text-align: left;
+                max-width: 100%;
             }
         }
     </style>
@@ -248,7 +294,7 @@
                 
                 <div class="form-group">
                     <label for="phone" class="required">手機號碼</label>
-                    <input type="tel" id="phone" name="phone" maxlength="20">
+                    <input type="tel" id="phone" name="phone" maxlength="10">
                     <div id="loadingUserData" class="loading">
                         <p>🔍 正在查詢您的資料...</p>
                     </div>
@@ -352,12 +398,20 @@
                     <input type="text" id="costCenter" name="costCenter">
                 </div>
 
-                <div class="form-group">
-                    <label for="amount">預估金額</label>
-                    <input type="number" id="amount" name="amount" placeholder="新台幣">
+                <button type="button" class="btn btn-secondary" onclick="previousStep()">上一步</button>
+                <button type="button" class="btn btn-primary" onclick="showConfirmation()">預覽預約</button>
+            </div>
+
+            <!-- 步驟5：確認預約 -->
+            <div id="step5" class="step">
+                <h2 style="margin-bottom: 30px; text-align: center; color: #333;">確認預約資訊</h2>
+                
+                <div class="confirmation-section">
+                    <h3>請確認以下預約資訊</h3>
+                    <div id="confirmationDetails"></div>
                 </div>
 
-                <button type="button" class="btn btn-secondary" onclick="previousStep()">上一步</button>
+                <button type="button" class="btn btn-secondary" onclick="previousStep()">修改資訊</button>
                 <button type="button" class="btn btn-primary" onclick="submitBooking()">確認預約</button>
             </div>
 
@@ -433,13 +487,21 @@
         // 設定手機號碼輸入
         function setupPhoneInput() {
             const phoneInput = document.getElementById('phone');
-            phoneInput.addEventListener('blur', lookupUserData);
+            phoneInput.addEventListener('input', function(e) {
+                // 只允許數字
+                this.value = this.value.replace(/\D/g, '');
+                
+                // 當輸入滿10位數字時自動查詢
+                if (this.value.length === 10) {
+                    lookupUserData();
+                }
+            });
         }
 
         // 查詢用戶資料
         async function lookupUserData() {
             const phone = document.getElementById('phone').value.trim();
-            if (!phone) return;
+            if (phone.length !== 10) return;
 
             const loadingDiv = document.getElementById('loadingUserData');
             loadingDiv.classList.add('show');
@@ -456,6 +518,59 @@
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('success', '預約成功！', '您的預約已成功建立，我們將盡快與您聯繫確認詳細資訊。');
+                } else {
+                    showResult('error', '預約失敗', result.message || '系統發生錯誤，請稍後重試');
+                }
+            } catch (error) {
+                console.error('提交預約失敗:', error);
+                showResult('error', '提交失敗', '網路連線錯誤，請檢查網路連線後重試');
+            } finally {
+                submittingDiv.style.display = 'none';
+            }
+        }
+
+        // 顯示訊息
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
+            messageDiv.textContent = message;
+            
+            const formContainer = document.querySelector('.form-container');
+            formContainer.insertBefore(messageDiv, formContainer.firstChild);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // 顯示結果
+        function showResult(type, title, message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div class="${type === 'success' ? 'success-message' : 'error-message'}">
+                    <h3>${title}</h3>
+                    <p>${message}</p>
+                    <button class="btn btn-primary" onclick="location.reload()" style="margin-top: 20px;">
+                        ${type === 'success' ? '建立新預約' : '重新預約'}
+                    </button>
+                    ${type === 'success' ? '<button class="btn btn-secondary" onclick="window.open(\'query.html\', \'_blank\')" style="margin-top: 10px;">查詢預約記錄</button>' : ''}
+                </div>
+            `;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
                 });
 
                 if (!response.ok) {
@@ -491,7 +606,6 @@
             if (data.pickup) document.getElementById('pickup').value = data.pickup;
             if (data.midstop) document.getElementById('midstop').value = data.midstop;
             if (data.dropoff) document.getElementById('dropoff').value = data.dropoff;
-            if (data.amount) document.getElementById('amount').value = data.amount;
         }
 
         // 設定付款方式變更事件
@@ -571,8 +685,8 @@
             // 手機號碼格式驗證
             if (currentStep === 2) {
                 const phone = document.getElementById('phone').value.trim();
-                if (!/^[\d\-\+\s\(\)]+$/.test(phone)) {
-                    showMessage('手機號碼格式不正確', 'error');
+                if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
+                    showMessage('請輸入正確的10位手機號碼', 'error');
                     return false;
                 }
             }
@@ -590,13 +704,55 @@
             return true;
         }
 
-        // 提交預約
-        async function submitBooking() {
+        // 顯示確認頁面
+        function showConfirmation() {
             if (!validateStep()) return;
 
+            const hour = document.getElementById('hour').value;
+            const minute = document.getElementById('minute').value;
+            const timeString = `${hour}:${minute}`;
+
+            const confirmationData = [
+                { label: '服務項目', value: selectedService },
+                { label: '手機號碼', value: document.getElementById('phone').value },
+                { label: '姓名', value: document.getElementById('name').value },
+                { label: '公司名稱', value: document.getElementById('company').value || '未填寫' },
+                { label: '部門', value: document.getElementById('department').value || '未填寫' },
+                { label: '接送日期', value: document.getElementById('date').value },
+                { label: '接送時間', value: timeString },
+                { label: '航班編號', value: document.getElementById('airport').value || '未填寫' },
+                { label: '上車地點', value: document.getElementById('pickup').value },
+                { label: '中停地點', value: document.getElementById('midstop').value || '無' },
+                { label: '下車地點', value: document.getElementById('dropoff').value },
+                { label: '備註', value: document.getElementById('remarks').value || '無' },
+                { label: '付款方式', value: document.getElementById('payment').value },
+                { label: '電子郵件', value: document.getElementById('email').value || '未填寫' },
+                { label: '代理信箱', value: document.getElementById('proxyEmail').value || '未填寫' },
+                { label: '成本中心', value: document.getElementById('costCenter').value || '未填寫' }
+            ];
+
+            let confirmationHTML = '';
+            confirmationData.forEach(item => {
+                confirmationHTML += `
+                    <div class="confirmation-item">
+                        <span class="confirmation-label">${item.label}</span>
+                        <span class="confirmation-value">${item.value}</span>
+                    </div>
+                `;
+            });
+
+            document.getElementById('confirmationDetails').innerHTML = confirmationHTML;
+
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            currentStep++;
+            document.getElementById(`step${currentStep}`).classList.add('active');
+        }
+
+        // 提交預約
+        async function submitBooking() {
             const submittingDiv = document.getElementById('submitting');
             submittingDiv.style.display = 'block';
-            document.getElementById('step4').style.display = 'none';
+            document.getElementById('step5').style.display = 'none';
 
             try {
                 const formData = new URLSearchParams();
@@ -621,7 +777,6 @@
                 formData.append('電郵信箱', document.getElementById('email').value.trim());
                 formData.append('代理信箱', document.getElementById('proxyEmail').value.trim());
                 formData.append('成本中心', document.getElementById('costCenter').value.trim());
-                formData.append('金額', document.getElementById('amount').value.trim());
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -629,56 +784,3 @@
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showResult('success', '預約成功！', `您的預約已成功建立，預約編號：${result.data.bookingId}。我們將盡快與您聯繫確認詳細資訊。`);
-                } else {
-                    showResult('error', '預約失敗', result.message || '系統發生錯誤，請稍後重試');
-                }
-            } catch (error) {
-                console.error('提交預約失敗:', error);
-                showResult('error', '提交失敗', '網路連線錯誤，請檢查網路連線後重試');
-            } finally {
-                submittingDiv.style.display = 'none';
-            }
-        }
-
-        // 顯示訊息
-        function showMessage(message, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
-            messageDiv.textContent = message;
-            
-            const formContainer = document.querySelector('.form-container');
-            formContainer.insertBefore(messageDiv, formContainer.firstChild);
-            
-            setTimeout(() => {
-                messageDiv.remove();
-            }, 5000);
-        }
-
-        // 顯示結果
-        function showResult(type, title, message) {
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `
-                <div class="${type === 'success' ? 'success-message' : 'error-message'}">
-                    <h3>${title}</h3>
-                    <p>${message}</p>
-                    <button class="btn btn-primary" onclick="location.reload()" style="margin-top: 20px;">
-                        ${type === 'success' ? '建立新預約' : '重新預約'}
-                    </button>
-                    ${type === 'success' ? '<button class="btn btn-secondary" onclick="window.open(\'query.html\', \'_blank\')" style="margin-top: 10px;">查詢預約記錄</button>' : ''}
-                </div>
-            `;
-            resultDiv.style.display = 'block';
-        }
-    </script>
-</body>
-</html>
