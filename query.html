@@ -83,11 +83,59 @@
             <div id="results" class="results-section">
                 <div id="resultsContent"></div>
             </div>
+
+            <!-- 修改預約表單 -->
+            <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <h3 style="margin-bottom: 20px; text-align: center;">修改預約資料</h3>
+                    
+                    <div class="form-group">
+                        <label for="editDate">接送日期</label>
+                        <input type="date" id="editDate">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editTime">接送時間</label>
+                        <input type="time" id="editTime">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editAirport">航班編號</label>
+                        <input type="text" id="editAirport" placeholder="如適用">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editPickup">上車地點</label>
+                        <input type="text" id="editPickup">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editMidstop">中停地點</label>
+                        <input type="text" id="editMidstop" placeholder="如需要">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editDropoff">下車地點</label>
+                        <input type="text" id="editDropoff">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editRemarks">備註</label>
+                        <textarea id="editRemarks" rows="3"></textarea>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="saveBookingChanges()" style="flex: 1;">儲存修改</button>
+                        <button class="btn btn-secondary" onclick="closeEditModal()" style="flex: 1;">取消</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwvgpFcEpzkYhd4wEhx0z-spQpUOFFqjHzW_WwvIh2kHlEN958kTy0Z_ENZG4pI-BU/exec';
+        let currentEditingBookingId = null;
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('phone').addEventListener('input', function(e) {
@@ -215,7 +263,7 @@
 
                         <div class="booking-details">
                             <div class="detail-item">
-                                <span class="detail-label">預約人</span>
+                                <span class="detail-label">姓名職稱</span>
                                 <span class="detail-value">${booking.name}</span>
                             </div>
 
@@ -285,8 +333,114 @@
         }
 
         async function editBooking(bookingId) {
-            if (!confirm('確定要修改此預約嗎？')) return;
-            showMessage('修改功能開發中，如需修改請聯繫客服', 'error');
+            try {
+                currentEditingBookingId = bookingId;
+                
+                // 從當前顯示的預約列表中找到對應的資料
+                const bookingCards = document.querySelectorAll('.booking-card');
+                let bookingData = null;
+                
+                bookingCards.forEach(card => {
+                    const editBtn = card.querySelector(`button[onclick*="editBooking(${bookingId})"]`);
+                    if (editBtn) {
+                        const detailItems = card.querySelectorAll('.detail-item');
+                        const getValue = (label) => {
+                            for (let item of detailItems) {
+                                if (item.querySelector('.detail-label').textContent.includes(label)) {
+                                    return item.querySelector('.detail-value').textContent;
+                                }
+                            }
+                            return '';
+                        };
+                        
+                        bookingData = {
+                            date: getValue('接送日期'),
+                            time: getValue('接送時間'),
+                            airport: getValue('航班編號'),
+                            pickup: getValue('上車地點'),
+                            midstop: getValue('中停地點'),
+                            dropoff: getValue('下車地點'),
+                            remarks: getValue('備註')
+                        };
+                    }
+                });
+                
+                if (bookingData) {
+                    // 轉換日期格式 yyyy/mm/dd 到 yyyy-mm-dd
+                    const dateParts = bookingData.date.split('/');
+                    const formattedDate = `${dateParts[0]}-${dateParts[1].padStart(2, '0')}-${dateParts[2].padStart(2, '0')}`;
+                    
+                    // 填入表單
+                    document.getElementById('editDate').value = formattedDate;
+                    document.getElementById('editTime').value = bookingData.time !== '未設定' ? bookingData.time : '';
+                    document.getElementById('editAirport').value = bookingData.airport || '';
+                    document.getElementById('editPickup').value = bookingData.pickup || '';
+                    document.getElementById('editMidstop').value = bookingData.midstop || '';
+                    document.getElementById('editDropoff').value = bookingData.dropoff || '';
+                    document.getElementById('editRemarks').value = bookingData.remarks || '';
+                    
+                    // 顯示修改表單
+                    document.getElementById('editModal').style.display = 'block';
+                } else {
+                    showMessage('無法載入預約資料', 'error');
+                }
+            } catch (error) {
+                console.error('載入預約資料失敗:', error);
+                showMessage('載入預約資料失敗', 'error');
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentEditingBookingId = null;
+        }
+
+        async function saveBookingChanges() {
+            if (!currentEditingBookingId) {
+                showMessage('無效的預約ID', 'error');
+                return;
+            }
+
+            const editDate = document.getElementById('editDate').value;
+            const editTime = document.getElementById('editTime').value;
+
+            if (!editDate || !editTime) {
+                showMessage('請填寫接送日期和時間', 'error');
+                return;
+            }
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('action', 'updateBooking');
+                formData.append('bookingId', currentEditingBookingId);
+                formData.append('接送日期', editDate);
+                formData.append('接送時間', editTime);
+                formData.append('航班編號', document.getElementById('editAirport').value);
+                formData.append('上車點', document.getElementById('editPickup').value);
+                formData.append('中停點', document.getElementById('editMidstop').value);
+                formData.append('下車點', document.getElementById('editDropoff').value);
+                formData.append('備註', document.getElementById('editRemarks').value);
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('預約修改成功', 'success');
+                    closeEditModal();
+                    setTimeout(() => searchBookings(), 1500);
+                } else {
+                    showMessage(result.message || '修改失敗', 'error');
+                }
+            } catch (error) {
+                console.error('修改預約失敗:', error);
+                showMessage('網路連線錯誤，請重試', 'error');
+            }
         }
 
         async function cancelBooking(bookingId) {
