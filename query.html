@@ -1,3 +1,8 @@
+<!-- 
+檔案名稱: query.html
+系統名稱: Doug Shuttle Service - 預約查詢系統
+修正內容: 1.修正時間顯示問題 2.過濾已過期預約 3.統一用字為"資料"
+-->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -5,280 +10,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doug Shuttle Service - 預約查詢</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            padding: 30px;
-            text-align: center;
-            color: white;
-        }
-
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 16px;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .search-section {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #4facfe;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
-        }
-
-        .btn-secondary {
-            background: #f8f9fa;
-            color: #666;
-            margin-left: 10px;
-        }
-
-        .btn-secondary:hover {
-            background: #e9ecef;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .loading.show {
-            display: block;
-        }
-
-        .results-section {
-            display: none;
-        }
-
-        .results-section.show {
-            display: block;
-        }
-
-        .booking-card {
-            background: white;
-            border: 2px solid #e9ecef;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .booking-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
-        }
-
-        .booking-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f8f9fa;
-        }
-
-        .booking-number {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .service-type {
-            background: #28a745;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .booking-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .detail-item {
-            display: flex;
-            align-items: center;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            min-height: 60px;
-        }
-
-        .detail-label {
-            font-weight: 600;
-            color: #495057;
-            min-width: 100px;
-            margin-right: 15px;
-            font-size: 14px;
-        }
-
-        .detail-value {
-            color: #212529;
-            font-weight: 500;
-            font-size: 16px;
-            flex: 1;
-        }
-
-        .booking-actions {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-            text-align: center;
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .no-results {
-            text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-
-        .no-results h3 {
-            margin-bottom: 15px;
-            color: #495057;
-        }
-
-        .success-message, .error-message {
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .success-message {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 30px; text-align: center; color: white; }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 16px; }
+        .content { padding: 30px; }
+        .search-section { background: #f8f9fa; padding: 25px; border-radius: 15px; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
+        .form-group input { width: 100%; padding: 15px; border: 2px solid #e9ecef; border-radius: 10px; font-size: 16px; transition: border-color 0.3s ease; }
+        .form-group input:focus { outline: none; border-color: #4facfe; }
+        .btn { padding: 15px 30px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .btn-primary { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3); }
+        .btn-secondary { background: #f8f9fa; color: #666; margin-left: 10px; }
+        .btn-secondary:hover { background: #e9ecef; }
+        .loading { display: none; text-align: center; padding: 40px; }
+        .loading.show { display: block; }
+        .results-section { display: none; }
+        .results-section.show { display: block; }
+        .booking-card { background: white; border: 2px solid #e9ecef; border-radius: 15px; padding: 25px; margin-bottom: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
+        .booking-card:hover { transform: translateY(-3px); box-shadow: 0 12px 35px rgba(0,0,0,0.15); }
+        .booking-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f8f9fa; }
+        .booking-number { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 10px 20px; border-radius: 25px; font-weight: 600; font-size: 16px; }
+        .service-type { background: #28a745; color: white; padding: 10px 20px; border-radius: 25px; font-weight: 600; font-size: 16px; }
+        .booking-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .detail-item { display: flex; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 10px; min-height: 60px; }
+        .detail-label { font-weight: 600; color: #495057; min-width: 100px; margin-right: 15px; font-size: 14px; }
+        .detail-value { color: #212529; font-weight: 500; font-size: 16px; flex: 1; }
+        .booking-actions { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef; text-align: center; display: flex; gap: 15px; justify-content: center; }
+        .no-results { text-align: center; padding: 60px 20px; color: #666; }
+        .no-results h3 { margin-bottom: 15px; color: #495057; }
+        .success-message, .error-message { padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+        .success-message { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error-message { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         @media (max-width: 768px) {
-            .container {
-                margin: 0;
-                border-radius: 0;
-            }
-            
-            .content {
-                padding: 20px;
-            }
-
-            .booking-details {
-                grid-template-columns: 1fr;
-            }
-
-            .booking-header {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .booking-actions {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-                margin: 5px 0;
-            }
-
-            .detail-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-
-            .detail-label {
-                min-width: auto;
-                margin-right: 0;
-            }
+            .container { margin: 0; border-radius: 0; }
+            .content { padding: 20px; }
+            .booking-details { grid-template-columns: 1fr; }
+            .booking-header { flex-direction: column; gap: 10px; }
+            .booking-actions { flex-direction: column; }
+            .btn { width: 100%; margin: 5px 0; }
+            .detail-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .detail-label { min-width: auto; margin-right: 0; }
         }
     </style>
 </head>
@@ -295,7 +71,6 @@
                     <label for="phone">手機號碼</label>
                     <input type="tel" id="phone" maxlength="10">
                 </div>
-
                 <button class="btn btn-primary" onclick="searchBookings()">查詢預約</button>
                 <button class="btn btn-secondary" onclick="window.open('index.html', '_blank')">新增預約</button>
             </div>
@@ -314,20 +89,15 @@
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwvgpFcEpzkYhd4wEhx0z-spQpUOFFqjHzW_WwvIh2kHlEN958kTy0Z_ENZG4pI-BU/exec';
 
-        // 初始化
         document.addEventListener('DOMContentLoaded', function() {
-            // 限制手機號碼只能輸入數字，並在10位數字時自動搜尋
             document.getElementById('phone').addEventListener('input', function(e) {
                 this.value = this.value.replace(/\D/g, '');
-                
-                // 當輸入滿10位數字時自動查詢
                 if (this.value.length === 10) {
                     searchBookings();
                 }
             });
         });
 
-        // 查詢預約
         async function searchBookings() {
             const phone = document.getElementById('phone').value.trim();
             
@@ -355,19 +125,16 @@
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: formData,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    }
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
                 
                 if (result.success) {
-                    displayResults(result.data);
+                    // 過濾未到期的預約
+                    const validBookings = filterValidBookings(result.data);
+                    displayResults(validBookings);
                     results.classList.add('show');
                 } else {
                     showMessage(result.message || '查詢失敗', 'error');
@@ -380,15 +147,44 @@
             }
         }
 
-        // 顯示查詢結果
+        // 過濾未到期的預約
+        function filterValidBookings(bookings) {
+            if (!bookings || bookings.length === 0) return [];
+            
+            const now = new Date();
+            return bookings.filter(booking => {
+                try {
+                    // 解析日期和時間
+                    const [year, month, day] = booking.date.split('/');
+                    const [hour, minute] = booking.time.split(':');
+                    
+                    // 建立預約日期時間物件
+                    const bookingDateTime = new Date(
+                        parseInt(year), 
+                        parseInt(month) - 1, 
+                        parseInt(day), 
+                        parseInt(hour), 
+                        parseInt(minute)
+                    );
+                    
+                    // 只返回未到期的預約（預約時間大於當前時間）
+                    return bookingDateTime > now;
+                } catch (error) {
+                    console.error('日期解析錯誤:', error, booking);
+                    // 如果解析失敗，保留該預約
+                    return true;
+                }
+            });
+        }
+
         function displayResults(bookings) {
             const resultsContent = document.getElementById('resultsContent');
             
             if (!bookings || bookings.length === 0) {
                 resultsContent.innerHTML = `
                     <div class="no-results">
-                        <h3>未找到預約記錄</h3>
-                        <p>此手機號碼沒有相關的預約記錄</p>
+                        <h3>未找到有效預約記錄</h3>
+                        <p>此手機號碼沒有未到期的預約記錄</p>
                         <button class="btn btn-primary" onclick="window.open('index.html', '_blank')" style="margin-top: 20px;">
                             立即預約
                         </button>
@@ -397,9 +193,19 @@
                 return;
             }
 
-            let html = `<h2 style="margin-bottom: 25px; color: #333; text-align: center;">找到 ${bookings.length} 筆預約記錄</h2>`;
+            let html = `<h2 style="margin-bottom: 25px; color: #333; text-align: center;">找到 ${bookings.length} 筆有效預約記錄</h2>`;
             
             bookings.forEach(booking => {
+                // 確保時間格式正確顯示
+                let displayTime = booking.time || '未設定';
+                if (displayTime && displayTime !== '未設定') {
+                    // 確保時間格式為 HH:MM
+                    const timeParts = displayTime.split(':');
+                    if (timeParts.length === 2) {
+                        displayTime = `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`;
+                    }
+                }
+
                 html += `
                     <div class="booking-card">
                         <div class="booking-header">
@@ -420,7 +226,7 @@
 
                             <div class="detail-item">
                                 <span class="detail-label">接送時間</span>
-                                <span class="detail-value">${booking.time || '未設定'}</span>
+                                <span class="detail-value">${displayTime}</span>
                             </div>
 
                             ${booking.company ? `
@@ -478,13 +284,11 @@
             resultsContent.innerHTML = html;
         }
 
-        // 修改預約
         async function editBooking(bookingId) {
             if (!confirm('確定要修改此預約嗎？')) return;
             showMessage('修改功能開發中，如需修改請聯繫客服', 'error');
         }
 
-        // 取消預約
         async function cancelBooking(bookingId) {
             if (!confirm('確定要取消此預約嗎？此操作無法復原。')) return;
 
@@ -496,22 +300,15 @@
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: formData,
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    }
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
                 
                 if (result.success) {
                     showMessage('預約已成功取消', 'success');
-                    setTimeout(() => {
-                        searchBookings();
-                    }, 1500);
+                    setTimeout(() => searchBookings(), 1500);
                 } else {
                     showMessage(result.message || '取消失敗', 'error');
                 }
@@ -521,18 +318,13 @@
             }
         }
 
-        // 顯示訊息
         function showMessage(message, type) {
             const messageDiv = document.createElement('div');
             messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
             messageDiv.textContent = message;
-            
             const content = document.querySelector('.content');
             content.insertBefore(messageDiv, content.firstChild);
-            
-            setTimeout(() => {
-                messageDiv.remove();
-            }, 5000);
+            setTimeout(() => messageDiv.remove(), 5000);
         }
     </script>
 </body>
