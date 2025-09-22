@@ -102,7 +102,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="name" class="required">姓名</label>
+                    <label for="name" class="required">姓名職稱</label>
                     <input type="text" id="name" name="name" required>
                 </div>
                 <div class="form-group">
@@ -397,7 +397,7 @@
             const confirmationData = [
                 { label: '服務項目', value: selectedService },
                 { label: '手機號碼', value: document.getElementById('phone').value },
-                { label: '姓名', value: document.getElementById('name').value },
+                { label: '姓名職稱', value: document.getElementById('name').value },
                 { label: '公司名稱', value: document.getElementById('company').value || '未填寫' },
                 { label: '部門', value: document.getElementById('department').value || '未填寫' },
                 { label: '接送日期', value: document.getElementById('date').value },
@@ -436,7 +436,7 @@
                 formData.append('action', 'createBooking');
                 formData.append('服務項目', selectedService);
                 formData.append('手機號碼', document.getElementById('phone').value.trim());
-                formData.append('姓名', document.getElementById('name').value.trim());
+                formData.append('姓名職稱', document.getElementById('name').value.trim());
                 formData.append('公司名稱', document.getElementById('company').value.trim());
                 formData.append('部門', document.getElementById('department').value.trim());
                 formData.append('接送日期', document.getElementById('date').value);

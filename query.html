@@ -86,8 +86,23 @@
 
             <!-- 修改預約表單 -->
             <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
                     <h3 style="margin-bottom: 20px; text-align: center;">修改預約資料</h3>
+                    
+                    <div class="form-group">
+                        <label for="editName">姓名職稱</label>
+                        <input type="text" id="editName">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editCompany">公司名稱</label>
+                        <input type="text" id="editCompany">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editDepartment">部門</label>
+                        <input type="text" id="editDepartment">
+                    </div>
                     
                     <div class="form-group">
                         <label for="editDate">接送日期</label>
@@ -122,6 +137,30 @@
                     <div class="form-group">
                         <label for="editRemarks">備註</label>
                         <textarea id="editRemarks" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editPayment">付款方式</label>
+                        <select id="editPayment">
+                            <option value="現金">現金</option>
+                            <option value="信用卡">信用卡</option>
+                            <option value="簽單">簽單</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editEmail">電子郵件</label>
+                        <input type="email" id="editEmail">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editProxyEmail">代理信箱</label>
+                        <input type="email" id="editProxyEmail">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editCostCenter">成本中心</label>
+                        <input type="text" id="editCostCenter">
                     </div>
                     
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -354,13 +393,20 @@
                         };
                         
                         bookingData = {
+                            name: getValue('姓名職稱'),
+                            company: getValue('公司'),
+                            department: getValue('部門') || '',
                             date: getValue('接送日期'),
                             time: getValue('接送時間'),
                             airport: getValue('航班編號'),
                             pickup: getValue('上車地點'),
                             midstop: getValue('中停地點'),
                             dropoff: getValue('下車地點'),
-                            remarks: getValue('備註')
+                            remarks: getValue('備註'),
+                            payment: getValue('付款方式'),
+                            email: getValue('電子郵件') || '',
+                            proxyEmail: getValue('代理信箱') || '',
+                            costCenter: getValue('成本中心') || ''
                         };
                     }
                 });
@@ -371,6 +417,9 @@
                     const formattedDate = `${dateParts[0]}-${dateParts[1].padStart(2, '0')}-${dateParts[2].padStart(2, '0')}`;
                     
                     // 填入表單
+                    document.getElementById('editName').value = bookingData.name || '';
+                    document.getElementById('editCompany').value = bookingData.company || '';
+                    document.getElementById('editDepartment').value = bookingData.department || '';
                     document.getElementById('editDate').value = formattedDate;
                     document.getElementById('editTime').value = bookingData.time !== '未設定' ? bookingData.time : '';
                     document.getElementById('editAirport').value = bookingData.airport || '';
@@ -378,6 +427,10 @@
                     document.getElementById('editMidstop').value = bookingData.midstop || '';
                     document.getElementById('editDropoff').value = bookingData.dropoff || '';
                     document.getElementById('editRemarks').value = bookingData.remarks || '';
+                    document.getElementById('editPayment').value = bookingData.payment || '現金';
+                    document.getElementById('editEmail').value = bookingData.email || '';
+                    document.getElementById('editProxyEmail').value = bookingData.proxyEmail || '';
+                    document.getElementById('editCostCenter').value = bookingData.costCenter || '';
                     
                     // 顯示修改表單
                     document.getElementById('editModal').style.display = 'block';
@@ -403,9 +456,10 @@
 
             const editDate = document.getElementById('editDate').value;
             const editTime = document.getElementById('editTime').value;
+            const editName = document.getElementById('editName').value.trim();
 
-            if (!editDate || !editTime) {
-                showMessage('請填寫接送日期和時間', 'error');
+            if (!editDate || !editTime || !editName) {
+                showMessage('請填寫必要欄位：姓名職稱、接送日期和時間', 'error');
                 return;
             }
 
@@ -413,13 +467,20 @@
                 const formData = new URLSearchParams();
                 formData.append('action', 'updateBooking');
                 formData.append('bookingId', currentEditingBookingId);
+                formData.append('姓名職稱', editName);
+                formData.append('公司名稱', document.getElementById('editCompany').value.trim());
+                formData.append('部門', document.getElementById('editDepartment').value.trim());
                 formData.append('接送日期', editDate);
                 formData.append('接送時間', editTime);
-                formData.append('航班編號', document.getElementById('editAirport').value);
-                formData.append('上車點', document.getElementById('editPickup').value);
-                formData.append('中停點', document.getElementById('editMidstop').value);
-                formData.append('下車點', document.getElementById('editDropoff').value);
-                formData.append('備註', document.getElementById('editRemarks').value);
+                formData.append('航班編號', document.getElementById('editAirport').value.trim());
+                formData.append('上車點', document.getElementById('editPickup').value.trim());
+                formData.append('中停點', document.getElementById('editMidstop').value.trim());
+                formData.append('下車點', document.getElementById('editDropoff').value.trim());
+                formData.append('備註', document.getElementById('editRemarks').value.trim());
+                formData.append('費用支付', document.getElementById('editPayment').value);
+                formData.append('電郵信箱', document.getElementById('editEmail').value.trim());
+                formData.append('代理信箱', document.getElementById('editProxyEmail').value.trim());
+                formData.append('成本中心', document.getElementById('editCostCenter').value.trim());
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
