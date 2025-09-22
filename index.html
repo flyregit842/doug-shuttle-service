@@ -791,9 +791,9 @@
                     <h3>${title}</h3>
                     <p>${message}</p>
                     <button class="btn btn-primary" onclick="location.reload()" style="margin-top: 20px;">
-                        ${type === 'success' ? '建立新預約' : '重新預約'}
+                        ${type === 'success' ? '繼續新增預約' : '重新預約'}
                     </button>
-                    ${type === 'success' ? '<button class="btn btn-secondary" onclick="window.open(\'query.html\', \'_blank\')" style="margin-top: 10px;">查詢預約記錄</button>' : ''}
+                    ${type === 'success' ? '<button class="btn btn-secondary" onclick="window.open(\'query.html\', \'_blank\')" style="margin-top: 10px;">查詢修改預約</button>' : ''}
                 </div>
             `;
             resultDiv.style.display = 'block';
