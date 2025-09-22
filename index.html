@@ -526,59 +526,6 @@
 
                 const result = await response.json();
                 
-                if (result.success) {
-                    showResult('success', '預約成功！', '您的預約已成功建立，我們將盡快與您聯繫確認詳細資訊。');
-                } else {
-                    showResult('error', '預約失敗', result.message || '系統發生錯誤，請稍後重試');
-                }
-            } catch (error) {
-                console.error('提交預約失敗:', error);
-                showResult('error', '提交失敗', '網路連線錯誤，請檢查網路連線後重試');
-            } finally {
-                submittingDiv.style.display = 'none';
-            }
-        }
-
-        // 顯示訊息
-        function showMessage(message, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
-            messageDiv.textContent = message;
-            
-            const formContainer = document.querySelector('.form-container');
-            formContainer.insertBefore(messageDiv, formContainer.firstChild);
-            
-            setTimeout(() => {
-                messageDiv.remove();
-            }, 5000);
-        }
-
-        // 顯示結果
-        function showResult(type, title, message) {
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `
-                <div class="${type === 'success' ? 'success-message' : 'error-message'}">
-                    <h3>${title}</h3>
-                    <p>${message}</p>
-                    <button class="btn btn-primary" onclick="location.reload()" style="margin-top: 20px;">
-                        ${type === 'success' ? '建立新預約' : '重新預約'}
-                    </button>
-                    ${type === 'success' ? '<button class="btn btn-secondary" onclick="window.open(\'query.html\', \'_blank\')" style="margin-top: 10px;">查詢預約記錄</button>' : ''}
-                </div>
-            `;
-            resultDiv.style.display = 'block';
-        }
-    </script>
-</body>
-</html>
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                
                 if (result.success && result.data && Object.keys(result.data).length > 0) {
                     userData = result.data;
                     fillUserData(result.data);
@@ -784,3 +731,56 @@
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('success', '預約成功！', '您的預約已成功建立，我們將盡快與您聯繫確認詳細資訊。');
+                } else {
+                    showResult('error', '預約失敗', result.message || '系統發生錯誤，請稍後重試');
+                }
+            } catch (error) {
+                console.error('提交預約失敗:', error);
+                showResult('error', '提交失敗', '網路連線錯誤，請檢查網路連線後重試');
+            } finally {
+                submittingDiv.style.display = 'none';
+            }
+        }
+
+        // 顯示訊息
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
+            messageDiv.textContent = message;
+            
+            const formContainer = document.querySelector('.form-container');
+            formContainer.insertBefore(messageDiv, formContainer.firstChild);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // 顯示結果
+        function showResult(type, title, message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div class="${type === 'success' ? 'success-message' : 'error-message'}">
+                    <h3>${title}</h3>
+                    <p>${message}</p>
+                    <button class="btn btn-primary" onclick="location.reload()" style="margin-top: 20px;">
+                        ${type === 'success' ? '建立新預約' : '重新預約'}
+                    </button>
+                    ${type === 'success' ? '<button class="btn btn-secondary" onclick="window.open(\'query.html\', \'_blank\')" style="margin-top: 10px;">查詢預約記錄</button>' : ''}
+                </div>
+            `;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
