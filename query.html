@@ -185,9 +185,9 @@
             setupUppercaseInputs();
         });
 
-        // 設定英文自動轉大寫（除了姓名職稱和備註）
+        // 設定英文自動轉大寫（除了姓名職稱、備註、電郵信箱、公司名稱、代理信箱、部門）
         function setupUppercaseInputs() {
-            const uppercaseInputs = ['editCompany', 'editDepartment', 'editAirport', 'editPickup', 'editMidstop', 'editDropoff', 'editEmail', 'editProxyEmail', 'editCostCenter'];
+            const uppercaseInputs = ['editAirport', 'editPickup', 'editMidstop', 'editDropoff', 'editCostCenter'];
             
             uppercaseInputs.forEach(inputId => {
                 const input = document.getElementById(inputId);

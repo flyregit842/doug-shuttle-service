@@ -70,7 +70,6 @@
         <div class="form-container">
             <!-- 步驟1：選擇服務類型 -->
             <div id="step1" class="step active">
-                <h2 style="margin-bottom: 30px; text-align: center; color: #333;">選擇服務類型</h2>
                 <div class="service-selection">
                     <div class="service-option" data-service="送機">
                         <h3>🚗 送機服務</h3>
@@ -222,9 +221,9 @@
             setupUppercaseInputs();
         });
 
-        // 設定英文自動轉大寫（除了姓名職稱和備註）
+        // 設定英文自動轉大寫（只有航班編號和地點欄位）
         function setupUppercaseInputs() {
-            const uppercaseInputs = ['company', 'department', 'phone', 'airport', 'pickup', 'midstop', 'dropoff', 'email', 'proxyEmail', 'costCenter'];
+            const uppercaseInputs = ['phone', 'airport', 'pickup', 'midstop', 'dropoff'];
             
             uppercaseInputs.forEach(inputId => {
                 const input = document.getElementById(inputId);
