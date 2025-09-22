@@ -201,45 +201,6 @@
             flex: 1;
         }
 
-        .route-info {
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-            padding: 20px;
-            border-radius: 15px;
-            margin: 20px 0;
-        }
-
-        .route-info h4 {
-            color: #1976d2;
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 18px;
-        }
-
-        .route-path {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .route-point {
-            background: white;
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-weight: 600;
-            color: #333;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            min-width: 120px;
-            text-align: center;
-        }
-
-        .route-arrow {
-            color: #1976d2;
-            font-size: 20px;
-            font-weight: bold;
-        }
-
         .booking-actions {
             margin-top: 20px;
             padding-top: 20px;
@@ -308,14 +269,6 @@
                 margin: 5px 0;
             }
 
-            .route-path {
-                flex-direction: column;
-            }
-
-            .route-arrow {
-                transform: rotate(90deg);
-            }
-
             .detail-item {
                 flex-direction: column;
                 align-items: flex-start;
@@ -363,15 +316,14 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('phone').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    searchBookings();
-                }
-            });
-
-            // 限制手機號碼只能輸入數字
+            // 限制手機號碼只能輸入數字，並在10位數字時自動搜尋
             document.getElementById('phone').addEventListener('input', function(e) {
                 this.value = this.value.replace(/\D/g, '');
+                
+                // 當輸入滿10位數字時自動查詢
+                if (this.value.length === 10) {
+                    searchBookings();
+                }
             });
         });
 
@@ -468,7 +420,7 @@
 
                             <div class="detail-item">
                                 <span class="detail-label">接送時間</span>
-                                <span class="detail-value">${booking.time}</span>
+                                <span class="detail-value">${booking.time || '未設定'}</span>
                             </div>
 
                             ${booking.company ? `
@@ -486,30 +438,34 @@
                             ` : ''}
 
                             <div class="detail-item">
+                                <span class="detail-label">上車地點</span>
+                                <span class="detail-value">${booking.pickup}</span>
+                            </div>
+
+                            ${booking.midstop ? `
+                            <div class="detail-item">
+                                <span class="detail-label">中停地點</span>
+                                <span class="detail-value">${booking.midstop}</span>
+                            </div>
+                            ` : ''}
+
+                            <div class="detail-item">
+                                <span class="detail-label">下車地點</span>
+                                <span class="detail-value">${booking.dropoff}</span>
+                            </div>
+
+                            <div class="detail-item">
                                 <span class="detail-label">付款方式</span>
                                 <span class="detail-value">${booking.payment}</span>
                             </div>
-                        </div>
 
-                        <div class="route-info">
-                            <h4>🚗 接送路線</h4>
-                            <div class="route-path">
-                                <div class="route-point">${booking.pickup}</div>
-                                ${booking.midstop ? `
-                                    <span class="route-arrow">→</span>
-                                    <div class="route-point">${booking.midstop}</div>
-                                ` : ''}
-                                <span class="route-arrow">→</span>
-                                <div class="route-point">${booking.dropoff}</div>
+                            ${booking.remarks ? `
+                            <div class="detail-item">
+                                <span class="detail-label">備註</span>
+                                <span class="detail-value">${booking.remarks}</span>
                             </div>
+                            ` : ''}
                         </div>
-
-                        ${booking.remarks ? `
-                        <div class="detail-item">
-                            <span class="detail-label">備註</span>
-                            <span class="detail-value">${booking.remarks}</span>
-                        </div>
-                        ` : ''}
 
                         <div class="booking-actions">
                             <button class="btn btn-secondary" onclick="editBooking(${booking.rowIndex})">修改預約</button>
