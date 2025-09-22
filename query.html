@@ -143,7 +143,6 @@
                         <label for="editPayment">付款方式</label>
                         <select id="editPayment">
                             <option value="現金">現金</option>
-                            <option value="信用卡">信用卡</option>
                             <option value="簽單">簽單</option>
                         </select>
                     </div>
@@ -183,7 +182,27 @@
                     searchBookings();
                 }
             });
+            setupUppercaseInputs();
         });
+
+        // 設定英文自動轉大寫（除了姓名職稱和備註）
+        function setupUppercaseInputs() {
+            const uppercaseInputs = ['editCompany', 'editDepartment', 'editAirport', 'editPickup', 'editMidstop', 'editDropoff', 'editEmail', 'editProxyEmail', 'editCostCenter'];
+            
+            uppercaseInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.addEventListener('input', function(e) {
+                        const cursorPosition = e.target.selectionStart;
+                        const oldLength = e.target.value.length;
+                        e.target.value = e.target.value.toUpperCase();
+                        const newLength = e.target.value.length;
+                        // 保持光標位置
+                        e.target.setSelectionRange(cursorPosition + (newLength - oldLength), cursorPosition + (newLength - oldLength));
+                    });
+                }
+            });
+        }
 
         async function searchBookings() {
             const phone = document.getElementById('phone').value.trim();
