@@ -1,15 +1,15 @@
 // ==================== 道格商號完整預約系統 - 整合版 ====================
 
 // 核心設定 (必須修改)
-const LINE_TOKEN = 'IvpYuQCnsZmxvsR1qzC6maYeMKaCwxJc72LShExiaqlVi8WPOSvyfZ0R1cVeGMIC9VyHVi/y5rzfRTzYD2efRWQHTWXw79tXWVMxExikF5Qxfah/bd19zbZPGU7V3YdO9NzMhcV6NlU0zhbSNITqcgdB04t89/1O/w1cDnyilFU=';
-const LINE_SECRET = 'fe89e3111f5441f179a1c87a0ec5b864';
-const ADMIN_LINE_ID = 'U0b57cc0f9fef1319e146af46ff052554';
-const ADMIN_EMAIL = 'jg0989280920@gmail.com';
-const BOOKING_FORM_URL = 'https://github.com/flyregit842/doug-shuttle-service/blob/main/index.html';
-const QUERY_FORM_URL = 'https://github.com/flyregit842/doug-shuttle-service/blob/main/query.html';
+const LINE_TOKEN = '';
+const LINE_SECRET = '';
+const ADMIN_LINE_ID = '';
+const ADMIN_EMAIL = '';
+const BOOKING_FORM_URL = '';
+const QUERY_FORM_URL = '';
 
 // 試算表設定
-const SPREADSHEET_ID = '1J8wuDVtj2U54O-6VGXmGz1x3JGld4cWYiyYN5bED1gQ';
+const SPREADSHEET_ID = '';
 const SHEET_NAME = 'Sheet1';
 
 // ==================== 主要 API 處理函數 ====================
