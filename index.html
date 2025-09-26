@@ -1,8 +1,3 @@
-<!-- 
-檔案名稱: index.html
-系統名稱: Doug Shuttle Service - 機場接送預約表單  
-修正內容: 1.移除確認頁面多餘標題 2.修正時間顯示問題 3.統一用字為"資料"
--->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -30,8 +25,11 @@
         .form-group { margin-bottom: 25px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
         .required::after { content: " *"; color: #dc3545; }
+        .optional::after { content: " (選填)"; color: #6c757d; font-weight: normal; font-size: 14px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 15px; border: 2px solid #e9ecef; border-radius: 10px; font-size: 16px; transition: border-color 0.3s ease; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #4facfe; }
+        .form-group input.error, .form-group select.error { border-color: #dc3545; }
+        .error-message-inline { color: #dc3545; font-size: 14px; margin-top: 5px; display: none; }
         .time-input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn { width: 100%; padding: 18px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
         .btn-primary { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
@@ -95,7 +93,8 @@
                 <h2 style="margin-bottom: 30px; text-align: center; color: #333;">基本資料</h2>
                 <div class="form-group">
                     <label for="phone" class="required">手機號碼</label>
-                    <input type="tel" id="phone" name="phone" maxlength="10">
+                    <input type="tel" id="phone" name="phone" maxlength="15" placeholder="台灣：09XXXXXXXX 或 國際號碼">
+                    <div id="phoneError" class="error-message-inline"></div>
                     <div id="loadingUserData" class="loading">
                         <p>🔍 正在查詢您的資料...</p>
                     </div>
@@ -134,9 +133,10 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-group" id="airportGroup" style="display: none;">
-                    <label for="airport" class="required">航班編號</label>
+                <div class="form-group" id="airportGroup">
+                    <label for="airport" id="airportLabel" class="optional">航班編號</label>
                     <input type="text" id="airport" name="airport" placeholder="例如: CI101, BR216">
+                    <div id="airportError" class="error-message-inline"></div>
                 </div>
                 <div class="form-group">
                     <label for="pickup" class="required" id="pickupLabel">上車地點</label>
@@ -182,7 +182,7 @@
                     <input type="text" id="costCenter" name="costCenter">
                 </div>
                 <button type="button" class="btn btn-secondary" onclick="previousStep()">上一步</button>
-                <button type="button" class="btn btn-primary" onclick="showConfirmation()">預覽預約</button>
+                <button type="button" class="btn btn-primary" onclick="showConfirmation()">下一步</button>
             </div>
 
             <!-- 步驟5：確認預約 -->
@@ -207,7 +207,7 @@
     </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbyW1OuF12MnnK8sYIkVw1mpdLN02JtSmABqAUkvuaR_PrdM9-fP1khLWXTzDT7kwDuMwQ/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyoUSoXb4rMdNlSu4OuW6QhC-QwTBLKwcGaHXim2L7HYiI1X3jzlHVlz0k5EieelbzW/exec';
         let currentStep = 1;
         let selectedService = '';
         let userData = {};
@@ -216,25 +216,20 @@
             initializeTimeSelects();
             setupServiceSelection();
             setupPhoneInput();
+            setupAirportInput();
             setupPaymentChange();
             setMinDate();
             setupUppercaseInputs();
         });
 
-        // 設定英文自動轉大寫（只有航班編號和地點欄位）
         function setupUppercaseInputs() {
-            const uppercaseInputs = ['phone', 'airport', 'pickup', 'midstop', 'dropoff'];
-            
-            uppercaseInputs.forEach(inputId => {
-                const input = document.getElementById(inputId);
+            ['pickup', 'midstop', 'dropoff'].forEach(id => {
+                const input = document.getElementById(id);
                 if (input) {
                     input.addEventListener('input', function(e) {
-                        const cursorPosition = e.target.selectionStart;
-                        const oldLength = e.target.value.length;
+                        const pos = e.target.selectionStart;
                         e.target.value = e.target.value.toUpperCase();
-                        const newLength = e.target.value.length;
-                        // 保持光標位置
-                        e.target.setSelectionRange(cursorPosition + (newLength - oldLength), cursorPosition + (newLength - oldLength));
+                        e.target.setSelectionRange(pos, pos);
                     });
                 }
             });
@@ -275,29 +270,122 @@
         }
 
         function setupPhoneInput() {
-            document.getElementById('phone').addEventListener('input', function(e) {
+            const phoneInput = document.getElementById('phone');
+            phoneInput.addEventListener('input', function(e) {
                 this.value = this.value.replace(/\D/g, '');
-                if (this.value.length === 10) lookupUserData();
+                validatePhoneNumber(false);
+                if (this.value.length === 10 && this.value.startsWith('09')) {
+                    lookupUserData();
+                }
             });
+            phoneInput.addEventListener('blur', function() {
+                validatePhoneNumber(true);
+            });
+        }
+
+        function validatePhoneNumber(showError = true) {
+            const phoneInput = document.getElementById('phone');
+            const phoneError = document.getElementById('phoneError');
+            const phone = phoneInput.value.trim();
+            
+            phoneInput.classList.remove('error');
+            phoneError.style.display = 'none';
+            
+            if (!phone) return true;
+            
+            if (phone.length < 10) {
+                if (showError) {
+                    phoneInput.classList.add('error');
+                    phoneError.textContent = '請至少輸入10位數字';
+                    phoneError.style.display = 'block';
+                }
+                return false;
+            }
+            
+            if (phone.length === 10 && !phone.startsWith('09')) {
+                if (showError) {
+                    phoneInput.classList.add('error');
+                    phoneError.textContent = '格式不符，請確認（台灣手機號碼需以09開頭，國際號碼請完整輸入）';
+                    phoneError.style.display = 'block';
+                }
+                return false;
+            }
+            
+            return true;
+        }
+
+        function setupAirportInput() {
+            const airportInput = document.getElementById('airport');
+            airportInput.addEventListener('input', function(e) {
+                const pos = e.target.selectionStart;
+                e.target.value = e.target.value.toUpperCase();
+                e.target.setSelectionRange(pos, pos);
+                
+                if (selectedService === '接機') {
+                    validateAirportCode(false);
+                }
+            });
+            
+            airportInput.addEventListener('blur', function() {
+                if (selectedService === '接機') {
+                    validateAirportCode(true);
+                }
+            });
+        }
+
+        function validateAirportCode(showError = true) {
+            const airportInput = document.getElementById('airport');
+            const airportError = document.getElementById('airportError');
+            const code = airportInput.value.trim();
+            
+            airportInput.classList.remove('error');
+            airportError.style.display = 'none';
+            
+            if (!code) {
+                if (selectedService === '接機' && showError) {
+                    airportInput.classList.add('error');
+                    airportError.textContent = '接機服務必須填寫航班編號';
+                    airportError.style.display = 'block';
+                    return false;
+                }
+                return true;
+            }
+            
+            const airportPattern = /^[A-Z]{2}\d+$/;
+            if (!airportPattern.test(code)) {
+                if (showError) {
+                    airportInput.classList.add('error');
+                    airportError.textContent = '航班編號格式：前兩碼英文字母+數字（如：CI101）';
+                    airportError.style.display = 'block';
+                }
+                return false;
+            }
+            
+            return true;
         }
 
         async function lookupUserData() {
             const phone = document.getElementById('phone').value.trim();
-            if (phone.length !== 10) return;
+            if (phone.length !== 10 || !validatePhoneNumber(false)) return;
+            
             const loadingDiv = document.getElementById('loadingUserData');
             loadingDiv.classList.add('show');
+            
             try {
                 const formData = new URLSearchParams();
                 formData.append('action', 'getUserDataByPhone');
                 formData.append('phone', phone);
                 formData.append('serviceType', selectedService);
+                
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: formData,
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
                 });
+                
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
+                
                 if (result.success && result.data && Object.keys(result.data).length > 0) {
                     userData = result.data;
                     fillUserData(result.data);
@@ -305,34 +393,28 @@
                 }
             } catch (error) {
                 console.error('查詢用戶資料失敗:', error);
-                showMessage('查詢資料時發生錯誤', 'error');
             } finally {
                 loadingDiv.classList.remove('show');
             }
         }
 
         function fillUserData(data) {
-            if (data.name) document.getElementById('name').value = data.name;
-            if (data.company) document.getElementById('company').value = data.company;
-            if (data.department) document.getElementById('department').value = data.department;
-            if (data.email) document.getElementById('email').value = data.email;
-            if (data.proxyEmail) document.getElementById('proxyEmail').value = data.proxyEmail;
-            if (data.costCenter) document.getElementById('costCenter').value = data.costCenter;
-            if (data.payment) document.getElementById('payment').value = data.payment;
-            if (data.pickup) document.getElementById('pickup').value = data.pickup;
-            if (data.midstop) document.getElementById('midstop').value = data.midstop;
-            if (data.dropoff) document.getElementById('dropoff').value = data.dropoff;
+            Object.keys(data).forEach(key => {
+                const element = document.getElementById(key);
+                if (element && data[key]) element.value = data[key];
+            });
         }
 
         function setupPaymentChange() {
             document.getElementById('payment').addEventListener('change', function() {
                 const companyField = document.getElementById('company');
+                const label = companyField.parentElement.querySelector('label');
                 if (this.value === '簽單') {
                     companyField.required = true;
-                    companyField.parentElement.querySelector('label').classList.add('required');
+                    label.classList.add('required');
                 } else {
                     companyField.required = false;
-                    companyField.parentElement.querySelector('label').classList.remove('required');
+                    label.classList.remove('required');
                 }
             });
         }
@@ -347,17 +429,14 @@
                     showMessage('請選擇服務類型', 'error');
                     return;
                 }
-                updateLabels();
+                updateLabelsAndRequirements();
             } else if (!validateStep()) {
                 return;
             }
+            
             document.getElementById(`step${currentStep}`).classList.remove('active');
             currentStep++;
             document.getElementById(`step${currentStep}`).classList.add('active');
-            if (currentStep === 3 && selectedService === '接機') {
-                document.getElementById('airportGroup').style.display = 'block';
-                document.getElementById('airport').required = true;
-            }
         }
 
         function previousStep() {
@@ -366,22 +445,42 @@
             document.getElementById(`step${currentStep}`).classList.add('active');
         }
 
-        function updateLabels() {
+        function updateLabelsAndRequirements() {
+            const airportLabel = document.getElementById('airportLabel');
+            const airportInput = document.getElementById('airport');
+            
             if (selectedService === '接機') {
                 document.getElementById('pickupLabel').textContent = '上車地點（機場）';
                 document.getElementById('dropoffLabel').textContent = '下車地點（目的地）';
+                airportLabel.className = 'required';
+                airportInput.required = true;
             } else if (selectedService === '送機') {
                 document.getElementById('pickupLabel').textContent = '上車地點（出發地）';
                 document.getElementById('dropoffLabel').textContent = '下車地點（機場）';
+                airportLabel.className = 'optional';
+                airportInput.required = false;
             } else {
                 document.getElementById('pickupLabel').textContent = '上車地點';
                 document.getElementById('dropoffLabel').textContent = '下車地點';
+                airportLabel.className = 'optional';
+                airportInput.required = false;
             }
         }
 
         function validateStep() {
+            if (currentStep === 2 && !validatePhoneNumber(true)) {
+                document.getElementById('phone').focus();
+                return false;
+            }
+            
+            if (currentStep === 3 && selectedService === '接機' && !validateAirportCode(true)) {
+                document.getElementById('airport').focus();
+                return false;
+            }
+            
             const step = document.getElementById(`step${currentStep}`);
             const requiredFields = step.querySelectorAll('[required]');
+            
             for (const field of requiredFields) {
                 if (!field.value.trim()) {
                     showMessage(`請填寫 ${field.parentElement.querySelector('label').textContent.replace(' *', '')}`, 'error');
@@ -389,13 +488,7 @@
                     return false;
                 }
             }
-            if (currentStep === 2) {
-                const phone = document.getElementById('phone').value.trim();
-                if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
-                    showMessage('請輸入正確的10位手機號碼', 'error');
-                    return false;
-                }
-            }
+            
             if (currentStep === 3) {
                 const hour = document.getElementById('hour').value;
                 const minute = document.getElementById('minute').value;
@@ -404,15 +497,18 @@
                     return false;
                 }
             }
+            
             return true;
         }
 
         function showConfirmation() {
             if (!validateStep()) return;
+            
             const hour = document.getElementById('hour').value;
             const minute = document.getElementById('minute').value;
             const timeString = `${hour}:${minute}`;
-            const confirmationData = [
+            
+            const data = [
                 { label: '服務項目', value: selectedService },
                 { label: '手機號碼', value: document.getElementById('phone').value },
                 { label: '姓名職稱', value: document.getElementById('name').value },
@@ -430,16 +526,13 @@
                 { label: '代理信箱', value: document.getElementById('proxyEmail').value || '未填寫' },
                 { label: '成本中心', value: document.getElementById('costCenter').value || '未填寫' }
             ];
-            let confirmationHTML = '';
-            confirmationData.forEach(item => {
-                confirmationHTML += `
-                    <div class="confirmation-item">
-                        <span class="confirmation-label">${item.label}</span>
-                        <span class="confirmation-value">${item.value}</span>
-                    </div>
-                `;
+            
+            let html = '';
+            data.forEach(item => {
+                html += `<div class="confirmation-item"><span class="confirmation-label">${item.label}</span><span class="confirmation-value">${item.value}</span></div>`;
             });
-            document.getElementById('confirmationDetails').innerHTML = confirmationHTML;
+            
+            document.getElementById('confirmationDetails').innerHTML = html;
             document.getElementById(`step${currentStep}`).classList.remove('active');
             currentStep++;
             document.getElementById(`step${currentStep}`).classList.add('active');
@@ -449,6 +542,7 @@
             const submittingDiv = document.getElementById('submitting');
             submittingDiv.style.display = 'block';
             document.getElementById('step5').style.display = 'none';
+            
             try {
                 const formData = new URLSearchParams();
                 formData.append('action', 'createBooking');
@@ -458,6 +552,7 @@
                 formData.append('公司名稱', document.getElementById('company').value.trim());
                 formData.append('部門', document.getElementById('department').value.trim());
                 formData.append('接送日期', document.getElementById('date').value);
+                
                 const hour = document.getElementById('hour').value;
                 const minute = document.getElementById('minute').value;
                 formData.append('接送時間', `${hour}:${minute}`);
@@ -470,21 +565,37 @@
                 formData.append('電郵信箱', document.getElementById('email').value.trim());
                 formData.append('代理信箱', document.getElementById('proxyEmail').value.trim());
                 formData.append('成本中心', document.getElementById('costCenter').value.trim());
+
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: formData,
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
                 });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                if (!response.ok) {
+                    throw new Error(`伺服器回應錯誤 ${response.status}: ${response.statusText}`);
+                }
+                
                 const result = await response.json();
+                
                 if (result.success) {
-                    showResult('success', '預約成功！', '您的預約已成功建立。');
+                    showResult('success', '預約成功！', '您的預約已成功建立，我們會盡快與您聯絡確認。');
                 } else {
-                    showResult('error', '預約失敗', result.message || '系統發生錯誤，請稍後重試');
+                    showResult('error', '預約失敗', result.message || '系統發生錯誤，請稍後重試或聯絡客服');
                 }
             } catch (error) {
                 console.error('提交預約失敗:', error);
-                showResult('error', '提交失敗', '網路連線錯誤，請檢查網路連線後重試');
+                let errorMessage = '提交失敗，請檢查以下可能原因：\n\n';
+                
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage += '• 網路連線問題\n• 請檢查網路連線後重試\n• 或稍後再試';
+                } else if (error.message.includes('伺服器回應錯誤')) {
+                    errorMessage += '• 伺服器暫時無法處理請求\n• 請稍後重試\n• 如持續發生請聯絡客服';
+                } else {
+                    errorMessage += '• 系統暫時異常\n• 請重新填寫表單\n• 如問題持續請聯絡客服';
+                }
+                
+                showResult('error', '提交失敗', errorMessage);
             } finally {
                 submittingDiv.style.display = 'none';
             }
@@ -504,7 +615,7 @@
             resultDiv.innerHTML = `
                 <div class="${type === 'success' ? 'success-message' : 'error-message'}">
                     <h3>${title}</h3>
-                    <p>${message}</p>
+                    <p style="white-space: pre-line;">${message}</p>
                     <button class="btn btn-primary" onclick="location.reload()" style="margin-top: 20px;">
                         ${type === 'success' ? '繼續新增預約' : '重新預約'}
                     </button>
