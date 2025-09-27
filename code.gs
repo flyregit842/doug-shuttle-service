@@ -340,3 +340,51 @@ function setup24HourReminderTrigger() {
 function createSpreadsheetNow() {
   // ...略...
 }
+
+// ==================== 測試函數 ====================
+function testStopCommand() {
+  console.log('Testing stop command functionality...');
+  
+  // Test different stop keywords
+  const testMessages = [
+    '停止',
+    'stop',  
+    'STOP',
+    '結束',
+    '退出',
+    'bye',
+    'BYE',
+    '再見',
+    '掰掰'
+  ];
+  
+  testMessages.forEach(msg => {
+    const mockEvent = {
+      replyToken: 'test-token',
+      message: { text: msg },
+      source: { userId: 'test-user' }
+    };
+    
+    console.log(`Testing message: "${msg}"`);
+    
+    // Simulate the text message handling logic
+    const m = msg.toLowerCase();
+    let reply = '';
+    
+    if (msg.match(/停止|stop|結束|退出|bye|再見|掰掰/i)) {
+      reply = `👋 感謝您使用道格商號接送服務！
+
+如需要服務，隨時歡迎回來：
+• 輸入「預約」開始預約
+• 輸入「查詢」查看預約
+• 輸入「幫助」查看功能
+
+祝您有美好的一天！🚗✨`;
+      console.log(`✅ Stop command detected for: "${msg}"`);
+    } else {
+      console.log(`❌ Stop command NOT detected for: "${msg}"`);
+    }
+  });
+  
+  console.log('Stop command test completed!');
+}
