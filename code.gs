@@ -88,6 +88,17 @@ function handleTextMessage(event) {
   else if (msg.includes('取消')) {
     reply = `❌ 取消預約請至：${QUERY_FORM_URL}\n輸入手機查詢後點選取消`;
   }
+  // 停止/結束對話
+  else if (msg.match(/停止|stop|結束|退出|bye|再見|掰掰/i)) {
+    reply = `👋 感謝您使用道格商號接送服務！
+
+如需要服務，隨時歡迎回來：
+• 輸入「預約」開始預約
+• 輸入「查詢」查看預約
+• 輸入「幫助」查看功能
+
+祝您有美好的一天！🚗✨`;
+  }
   // 幫助/歡迎
   else if (msg.match(/幫助|help|功能|menu|選單/)) {
     reply = getWelcomeMessage();
@@ -115,6 +126,9 @@ ${BOOKING_FORM_URL}
 【通知設定】
 輸入「綁定 手機號碼」
 範例：綁定 0912345678
+
+【其他功能】
+• 輸入「停止」或「stop」結束對話
 `;
 }
 
