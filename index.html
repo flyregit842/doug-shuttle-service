@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Booking CRUD WebApp</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 2em auto; }
+    input, select { margin: 0.2em 0; width: 100%; }
+    button { margin-top: 1em; }
+    .section { margin-bottom: 2em; border-bottom: 1px solid #eee; padding-bottom: 1em; }
+    .result { color: green; margin-top: 0.5em; }
+    .error { color: red; margin-top: 0.5em; }
+  </style>
+</head>
+<body>
+  <h2>Booking CRUD WebApp</h2>
+  <div class="section">
+    <h3>查詢預約</h3>
+    <input type="text" id="search_phone" placeholder="請輸入手機">
+    <button onclick="searchBooking()">查詢</button>
+    <div id="search_result"></div>
+  </div>
+  <div class="section">
+    <h3>新增/修改預約</h3>
+    <form id="bookingForm" onsubmit="return submitBooking();">
+      <label>服務項目 <input name="service"></label>
+      <label>手機* <input name="phone" required></label>
+      <label>姓名 <input name="name"></label>
+      <label>公司 <input name="company"></label>
+      <label>預約日期* <input name="date" type="date" required></label>
+      <label>預約時間 <input name="time" type="time"></label>
+      <label>航班 <input name="flight"></label>
+      <label>上車地點 <input name="pickup"></label>
+      <label>中停地點 <input name="midstop"></label>
+      <label>下車地點 <input name="dropoff"></label>
+      <label>備註 <input name="remark"></label>
+      <label>Email1 <input name="email1" type="email"></label>
+      <label>Email2 <input name="email2" type="email"></label>
+      <button type="submit">新增/修改</button>
+    </form>
+    <button onclick="deleteBooking()">刪除預約</button>
+    <div id="form_result"></div>
+  </div>
+  <script>
+    const apiUrl = ScriptApp.getService().getUrl(); // Apps Script WebApp URL
+
+    function searchBooking() {
+      const phone = document.getElementById('search_phone').value.trim();
+      if (!phone) return alert('請輸入手機');
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `action=read&phone=${encodeURIComponent(phone)}`
+      })
+      .then(r => r.json())
+      .then(data => {
+        const div = document.getElementById('search_result');
+        if (data.success && data.bookings.length) {
+          let list = data.bookings.map(b => {
+            return `<div>日期:${b['預約日期']} 姓名:${b['姓名']} 服務:${b['服務項目']}</div>`;
+          }).join('');
+          div.innerHTML = list;
+          // 若要自動填入表單，可加：填入第一筆
+          if (data.bookings[0]) {
+            for (const k in data.bookings[0]) {
+              const input = document.querySelector(`[name="${fieldMap[k]}"]`);
+              if (input) input.value = data.bookings[0][k];
+            }
+          }
+        } else {
+          div.innerHTML = '<span class="error">查無預約</span>';
+        }
+      });
+    }
+
+    // 欄位對應（中文→name）
+    const fieldMap = {
+      '服務項目': 'service',
+      '手機': 'phone',
+      '姓名': 'name',
+      '公司': 'company',
+      '預約日期': 'date',
+      '預約時間': 'time',
+      '航班': 'flight',
+      '上車地點': 'pickup',
+      '中停地點': 'midstop',
+      '下車地點': 'dropoff',
+      '備註': 'remark',
+      'email1': 'email1',
+      'email2': 'email2'
+    };
+
+    function submitBooking() {
+      const form = document.getElementById('bookingForm');
+      const data = {};
+      for (const el of form.elements) {
+        if (el.name) data[el.name] = el.value.trim();
+      }
+      if (!data.phone || !data.date) {
+        document.getElementById('form_result').innerHTML = '<span class="error">手機與預約日期必填</span>';
+        return false;
+      }
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `action=update&` + encodeURIComponent(JSON.stringify(data))
+      })
+      .then(r => r.json())
+      .then(res => {
+        document.getElementById('form_result').innerHTML = res.success
+          ? `<span class="result">${res.message}</span>`
+          : `<span class="error">${res.message}</span>`;
+        if (!res.success) createBooking(data); // 若無則新增
+      });
+      return false;
+    }
+
+    function createBooking(data) {
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `action=create&` + encodeURIComponent(JSON.stringify(data))
+      })
+      .then(r => r.json())
+      .then(res => {
+        document.getElementById('form_result').innerHTML = res.success
+          ? `<span class="result">${res.message}</span>`
+          : `<span class="error">${res.message}</span>`;
+      });
+    }
+
+    function deleteBooking() {
+      const form = document.getElementById('bookingForm');
+      const phone = form.phone.value.trim();
+      const date = form.date.value.trim();
+      if (!phone || !date) {
+        document.getElementById('form_result').innerHTML = '<span class="error">手機與預約日期必填</span>';
+        return;
+      }
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `action=delete&` + encodeURIComponent(JSON.stringify({phone, date}))
+      })
+      .then(r => r.json())
+      .then(res => {
+        document.getElementById('form_result').innerHTML = res.success
+          ? `<span class="result">${res.message}</span>`
+          : `<span class="error">${res.message}</span>`;
+      });
+    }
+  </script>
+</body>
+</html>
