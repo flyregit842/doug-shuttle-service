@@ -1,0 +1,10 @@
+<script>
+fetch('https://script.google.com/macros/s/你的新網址/exec', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({})
+})
+.then(r => r.text())
+.then(data => console.log(data))
+.catch(err => console.log('ERR:', err));
+</script>
