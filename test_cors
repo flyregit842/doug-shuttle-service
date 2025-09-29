@@ -1,5 +1,5 @@
 <script>
-fetch('https://script.google.com/macros/s/你的新網址/exec', {
+fetch('https://script.google.com/macros/s/AKfycbxDUbtK2jrciDfaXwaYQ_K4VOJjBwXrbZLtwxpHnkQd_XxnrtST_d9CTbq25yF3S7I/exec', {
   method: 'POST',
   headers: {'Content-Type': 'application/json'},
   body: JSON.stringify({})
