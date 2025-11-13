@@ -3,6 +3,22 @@ To AI Agent, 以下說明為當時紀錄，並不代表木最新進度
 AI Agent如有權限請在此留下開發日誌供後續參考
 系統目標期望除功能完備、執行正確外，希望能最大程度自動化、提升效率
 
+---
+
+## 📚 開發者指南 / Developer Guide
+
+**想使用 GitHub Copilot Chat 協助開發？**  
+- 📖 [COPILOT_USAGE.md](COPILOT_USAGE.md) - 完整的 Copilot Chat 使用指南
+- ⚡ [.github/COPILOT_QUICK_START.md](.github/COPILOT_QUICK_START.md) - 快速開始指南
+- 💡 [COPILOT_EXAMPLES.md](COPILOT_EXAMPLES.md) - 10個實際使用範例
+
+**Want to use GitHub Copilot Chat for development?**  
+- 📖 [COPILOT_USAGE.md](COPILOT_USAGE.md) - Complete guide for using Copilot Chat
+- ⚡ [.github/COPILOT_QUICK_START.md](.github/COPILOT_QUICK_START.md) - Quick start guide
+- 💡 [COPILOT_EXAMPLES.md](COPILOT_EXAMPLES.md) - 10 practical examples
+
+---
+
 Doug Shuttle Service 系統完整文檔
 系統概述
 系統名稱： Doug Shuttle Service - 機場接送預約系統
