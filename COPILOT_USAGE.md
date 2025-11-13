@@ -193,11 +193,28 @@ If you're stuck, try these Copilot Chat prompts:
 "What are the best practices for Google Apps Script development?"
 ```
 
+## Practical Examples
+
+For detailed, real-world examples of using Copilot Chat for common development tasks in this project, see:
+
+**[COPILOT_EXAMPLES.md](COPILOT_EXAMPLES.md)** - 10 practical examples including:
+- Understanding existing code
+- Adding new features (SMS confirmation)
+- Debugging issues
+- Code refactoring
+- UX improvements
+- Security enhancements
+- Analytics implementation
+- Internationalization
+- Testing
+- Mobile optimization
+
 ## Resources
 
 - [GitHub Copilot Chat Documentation](https://docs.github.com/en/copilot/using-github-copilot/asking-github-copilot-questions-in-your-ide)
 - [Copilot Chat in VS Code](https://code.visualstudio.com/docs/copilot/copilot-chat)
 - [Google Apps Script Best Practices](https://developers.google.com/apps-script/guides/best-practices)
+- [Project Examples](COPILOT_EXAMPLES.md) - Real-world usage examples
 
 ---
 

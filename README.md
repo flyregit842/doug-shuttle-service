@@ -8,10 +8,14 @@ AI Agent如有權限請在此留下開發日誌供後續參考
 ## 📚 開發者指南 / Developer Guide
 
 **想使用 GitHub Copilot Chat 協助開發？**  
-請參閱 [COPILOT_USAGE.md](COPILOT_USAGE.md) - 完整的 Copilot Chat 使用指南
+- 📖 [COPILOT_USAGE.md](COPILOT_USAGE.md) - 完整的 Copilot Chat 使用指南
+- ⚡ [.github/COPILOT_QUICK_START.md](.github/COPILOT_QUICK_START.md) - 快速開始指南
+- 💡 [COPILOT_EXAMPLES.md](COPILOT_EXAMPLES.md) - 10個實際使用範例
 
 **Want to use GitHub Copilot Chat for development?**  
-See [COPILOT_USAGE.md](COPILOT_USAGE.md) - Complete guide for using Copilot Chat instead of Copilot Agent
+- 📖 [COPILOT_USAGE.md](COPILOT_USAGE.md) - Complete guide for using Copilot Chat
+- ⚡ [.github/COPILOT_QUICK_START.md](.github/COPILOT_QUICK_START.md) - Quick start guide
+- 💡 [COPILOT_EXAMPLES.md](COPILOT_EXAMPLES.md) - 10 practical examples
 
 ---
 
